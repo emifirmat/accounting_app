@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block body %}
+    <form action="{% url 'company:company_settings' %}" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Confirm">
+    </form>
+
+
+{% endblock body %}
