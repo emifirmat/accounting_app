@@ -23,7 +23,6 @@ class ErpTestCase(TestCase):
             phone = "5493465406182",
             creation_date = datetime.date(1991, 3, 10),
             closing_date = datetime.date(2024, 6, 30),
-            financial_year = "2024",
         )
 
         cls.calendar = Calendar.objects.create(

@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 
 from erp.validators import validate_is_digit
 
@@ -46,14 +47,29 @@ class Company(PersonModel, SingletonModel):
     """Company information"""
     creation_date = models.DateField()
     closing_date = models.DateField()
-    financial_year = models.CharField(unique=True, max_length=4, validators=[
-        validate_is_digit
-    ])
 
     class Meta:
         verbose_name_plural = "Company"
 
 
+class FinancialYear(models.Model):
+    """Financial year of the company"""
+    year = models.CharField(unique=True, max_length=4, validators=[
+        validate_is_digit
+    ])
+    current = models.BooleanField(default=False)
+
+    class Meta: 
+        constraints = [
+            models.UniqueConstraint(fields=["current"], condition=Q(current=True),
+                name="unique_true_current_year"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.year}"
+    
+    
 class Calendar(SingletonModel):
     """Set calendar limits"""
     starting_date = models.OneToOneField(Company, on_delete=models.CASCADE)

@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Financial Year{% endblock title %}
+
+{% block body %}
+
+    <h2>Financial year</h2>
+    
+    <p id="current-year">Current Year: 
+        {% if current_year %} 
+            {{ current_year }}
+        {% else %}
+            Please, create and/or select a year.
+        {% endif %}
+    </p>
+    {% if years.count > 1 %}
+        <div class="dropdown">
+            <button id="year-dropdown" class="btn btn-secondary dropdown-toggle" 
+            type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Change Current Year
+            </button>
+            <ul class="dropdown-menu" id="change-year-menu">
+                {% for year in years %}
+                    <li><a href="#" class="dropdown-item year{% if year.current == True %} disabled{% endif %}">
+                    {{ year }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <form action="{% url 'company:year' %}" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Create Year">
+    </form>
+
+{% endblock body %}
+
+{% block script %}
+    <script src="{% static 'js/company.js' %}"></script>
+{% endblock script %}

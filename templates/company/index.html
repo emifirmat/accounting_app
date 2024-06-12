@@ -4,8 +4,11 @@
 
 {% block body %}
     {% if company %}
-        <h1>Company's name: --TO DO-- </h1>
-        <p>Company's financial year: --TO DO--</p>
+        <h1>Company's name: {{ company.name }} </h1>
+        <p>Company's financial year: {% if financial_year %}{{ financial_year.year }}
+        {% else %}You haven't picked a year yet. <a href="{% url 'company:year' %}">
+        Click Here.</a>{% endif %}</p>
+        
         <p>Current year Assets: --TO DO--</p>
         <p>Current year Liabilities: --TO DO--</p>
         <p>Current year Net Profit: --TO DO--</p>

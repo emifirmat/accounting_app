@@ -1,13 +1,22 @@
 {% extends "layout.html" %}
+{% load static %}
 
 {% block title %}Settings{% endblock %}
 
 {% block body %}
-    <form action="{% url 'company:company_settings' %}" method="POST">
+    <h2>Settings:</h2>
+    <form action="{% url 'company:settings' %}" method="POST">
         {% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Confirm">
     </form>
 
-
 {% endblock body %}
+
+{% block script %}
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<script src="{% static 'js/calendar.js' %}"></script>
+    
+
+{% endblock script %}
