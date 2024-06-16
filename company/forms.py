@@ -9,9 +9,9 @@ class CompanyForm(forms.ModelForm):
         fields = ["name", "address", "email", "phone", "tax_number", 
             "creation_date", "closing_date"]
         help_texts = {
-            "tax_number": "Only numbers",
-            "creation_date": "Company's starting date",
-            "closing_date": "Ending date of each financial year",
+            "tax_number": "Only numbers.",
+            "creation_date": "Company's starting date.",
+            "closing_date": "Ending date of each financial year.",
         } 
         widgets = {
             "email": forms.EmailInput(attrs={"placeholder": "example@email.com"}),

@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block title %}Clients{% endblock title %}
+
+{% block body %}
+
+    <h2>Clients Overview</h2>
+    {% if financial_year %}
+        <p>Accounts receivable {{ financial_year.year }}: --To Do--</p>
+    {% else %}
+        <p>You haven't picked a financial year yet.<a href="{% url 'company:year' %}">
+        Click Here.</a></p>
+    {% endif %}
+    {% if clients %}
+        <p>Last clients: <ul>{% for client in clients %}<li>{{ client }}</li>{% endfor %}</ul>--Finish sort--</p>
+        <p>Clients with highest debt: <ul>{% for client in clients %}<li>{{ client }}</li>{% endfor %}</ul>--Fix and finish sort--</p>
+        <p>Biggest clients: <ul>{% for client in clients %}<li>{{ client }}</li>{% endfor %}</ul>--Fix and finish sort--</p>
+        <p>Most frequent clients: <ul>{% for client in clients %}<li>{{ client }}</li>{% endfor %}</ul>--Fix and finish sort--</p>
+        <p>Last invoices: --TO DO--</p>
+        <p>Last receipts: --TO DO--</p>
+    {% else %}
+        <p>You haven't added any clients yet.</p>
+    {% endif %}
+
+{% endblock body %}

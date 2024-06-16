@@ -2,6 +2,7 @@ import datetime
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
+from django.urls import reverse
 
 # Create your tests here.
 from .models import (Company_client, Supplier, Client_current_account,
@@ -366,3 +367,54 @@ class ErpTestCase(TestCase):
                 related_invoice = self.purchase_invoice,
                 total_amount = "4000.11",
             )
+
+    def test_client_index_webpage(self):
+        response = self.client.get("/erp/client")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/client_index.html")
+        self.assertContains(response, "Clients Overview")
+    
+    def test_client_new_get(self):
+        response = self.client.get("/erp/client/new")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/client_new.html")
+        self.assertContains(response, "Address:")
+        
+    def test_client_new_post(self):    
+        response = self.client.post(reverse("erp:client_new"), {
+            "tax_number": "30361382485",
+            "name": "Client2 SRL",
+            "address": "Client2 street, Client city, Chile",
+            "email": "client2@email.com",
+            "phone": "987654321",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Company_client.objects.all().count(), 2)
+        
+    def test_client_new_post_error(self):
+        response = self.client.post(reverse("erp:client_new"), {
+            "tax_number": "20361382480",
+            "name": "Client2 SRL",
+            "address": "Client2 street, Client city, Chile",
+            "email": "client2@email.com",
+            "phone": "987654321",
+        })
+        # Check an error is displayed.
+        form = response.context["form"]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(form.errors["tax_number"],
+            ["The tax number you're trying to add belongs to the company."]
+        )
+
+
+    def test_client_edit_get(self):
+        response = self.client.get("/erp/client/edit")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/client_edit.html")
+        self.assertContains(response, "Client1 SRL | 20361382481")
+
+    def test_client_delete_get(self):
+        response = self.client.get("/erp/client/delete")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/client_delete.html")
+        self.assertContains(response, "Client1 SRL | 20361382481")

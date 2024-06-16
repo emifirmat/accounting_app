@@ -31,7 +31,7 @@ class PersonModel(models.Model):
     ])
     name = models.CharField(max_length=50)
     address = models.CharField(max_length=80)
-    email = models.EmailField(unique=True)
+    email = models.EmailField()
     phone = models.CharField(max_length=25, validators=[
         validate_is_digit
     ])

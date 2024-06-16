@@ -27,7 +27,7 @@ async function makeCurrentYear(event, currentYear) {
     const newCurrentYear = await searchCurrentYear(newYear);
     await changeCurrentYearStatus(newCurrentYear, true);
     document.querySelector('#year-dropdown').innerHTML = newCurrentYear.year;
-    setTimeout(() => location.reload(), 500);
+    setTimeout(() => location.reload(), 1000);
 }
 
 async function searchCurrentYear(year) {
@@ -47,7 +47,6 @@ async function searchCurrentYear(year) {
 
 async function changeCurrentYearStatus(year, boolean) {
     const csrftoken = getCookie('csrftoken')
-    console.log(`change funct: ${year}, ${year.current}`)
 
     return fetch('/api/company/years/' + year.id, {
         method: 'PUT',
@@ -61,9 +60,16 @@ async function changeCurrentYearStatus(year, boolean) {
         }),
         mode: "same-origin"
     })
-    .then(response => response.json())
-    .then(result => console.log(result))
-    .catch(error => ('Error:', error))
+    .then(response => {
+        if (response.ok && boolean === true) {
+            console.log('Year changed successfully.');
+        }
+        else if (!response.ok) {
+            const errorMessage = response.json();
+            throw new Error(errorMessage.detail);
+        }
+    })
+
 }
 
 function getCookie(name) {

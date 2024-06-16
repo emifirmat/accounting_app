@@ -11,6 +11,6 @@ class CompanyYearAPI(generics.ListAPIView):
     
 
 class DetailCompanyYearAPI(generics.RetrieveUpdateDestroyAPIView):
-    """Show list of created years"""
+    """CRUD API of specific year"""
     queryset = FinancialYear.objects.all()
     serializer_class = FinancialYearSerializer

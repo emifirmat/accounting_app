@@ -1,4 +1,4 @@
-"""TEsts for company api"""
+"""Tests for company api"""
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -7,7 +7,7 @@ from .models import FinancialYear
 
 
 class APICompanyTests(APITestCase):
-    """Test copmany's app API"""
+    """Test company's app API"""
     @classmethod
     def setUpTestData(cls):
         cls.year = FinancialYear.objects.create(year = "2023")
