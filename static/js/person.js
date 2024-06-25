@@ -1,32 +1,33 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Add click event to each client
-    document.querySelectorAll('.specific-client').forEach(function (element) {
+    // Add click event to each client or supplier
+    document.querySelectorAll('.specific-person').forEach(function (element) {
         element.addEventListener('click', (event) => showDetail(event))
     });
 });
 
 async function showDetail(event) {
-    const clientId = event.target.dataset['clientId'];
-    const clientCRUD = document.querySelector('#client-list').dataset['clientSection'];
-    let detailSection = document.querySelector('#client-details');
-    if (clientCRUD === 'edit') {
-        var formSection = document.querySelector('#client-edit-form');
+    const personId = event.target.dataset['personId'];
+    const personCRUD = document.querySelector('#person-list').dataset['personSection'];
+    let detailSection = document.querySelector('#person-details');
+    if (personCRUD === 'edit') {
+        var formSection = document.querySelector('#person-edit-form');
         formSection.style.display = 'none';
     }
     
     detailSection.style.display = 'block';
     
 
-    // Get client details
-    const clientDetails = await getClientDetails(clientId);
+    // Get client or supplier details
+    const personDetails = await getPersonDetails(personId);
 
     // Show details
-    showClientDetails(clientDetails, detailSection, formSection)
+    showPersonDetails(personDetails, detailSection, formSection)
 };
 
-async function getClientDetails(clientId) {
+async function getPersonDetails(personId) {
     // Get details from API
-    return fetch(`/erp/api/clients/${clientId}`)
+    const person = document.querySelector('#title').dataset.title
+    return fetch(`/erp/api/${person}s/${personId}`)
     .then(response => {
         if (!response.ok) {
             throw new Error('Not response from api');
@@ -35,65 +36,66 @@ async function getClientDetails(clientId) {
     })
 }
 
-function showClientDetails(clientDetails, detailSection, formSection=null) {
+function showPersonDetails(personDetails, detailSection, formSection=null) {
     // Reset detailSection
     detailSection.innerHTML = '';
 
-    // Add client details in section
+    // Add client or supplier details in section
     const divElement = document.createElement('div');
     const buttonElement = document.createElement('button');
     
-    // Client details
+    // Client or supplier details
     divElement.innerHTML = `
-    <p>Client number: ${clientDetails.id}</p>
-    <p>Name: ${clientDetails.name}</p>
-    <p>Address: ${clientDetails.address}</p>
-    <p>Email: ${clientDetails.email}</p>
-    <p>Phone: ${clientDetails.phone}</p>
-    <p>Tax_number: ${clientDetails.tax_number}</p>
+    <p>Number: ${personDetails.id}</p>
+    <p>Name: ${personDetails.name}</p>
+    <p>Address: ${personDetails.address}</p>
+    <p>Email: ${personDetails.email}</p>
+    <p>Phone: ${personDetails.phone}</p>
+    <p>Tax_number: ${personDetails.tax_number}</p>
     `;
     
     // Button element
     if (formSection) {
         buttonElement.innerHTML = 'Edit';
         buttonElement.addEventListener('click', () => {
-            editClientForm(clientDetails, detailSection, formSection);
+            editPersonForm(personDetails, detailSection, formSection);
         })
     } else {
         buttonElement.innerHTML = 'Delete';
         buttonElement.addEventListener('click', () => {
-            deleteClient(clientDetails.id, detailSection);
+            deletePerson(personDetails.id, detailSection);
         })
     }
 
     detailSection.append(divElement, buttonElement);
 }
 
-function editClientForm(clientDetails, detailSection, formSection) {
+function editPersonForm(personDetails, detailSection, formSection) {
     detailSection.style.display = 'none';
     formSection.style.display = 'block';
 
     // Prefill the form
     let form = formSection.children[1];
-    form.elements['name'].value = clientDetails.name;
-    form.elements['address'].value = clientDetails.address;
-    form.elements['email'].value = clientDetails.email;
-    form.elements['phone'].value = clientDetails.phone;
-    form.elements['tax_number'].value = clientDetails.tax_number;
+    form.elements['name'].value = personDetails.name;
+    form.elements['address'].value = personDetails.address;
+    form.elements['email'].value = personDetails.email;
+    form.elements['phone'].value = personDetails.phone;
+    form.elements['tax_number'].value = personDetails.tax_number;
 
     let submitButton = formSection.querySelector('button');
     submitButton.addEventListener('click', (event) => {
         event.preventDefault();
-        confirmEdition(clientDetails.id, form);
+        confirmEdition(personDetails.id, form);
     })
 }
 
-function confirmEdition(clientId, form) { 
+function confirmEdition(personId, form) { 
     const csrftoken = getCookie('csrftoken');
     const messageElement = document.querySelector('#edit-message')
+    let person = document.querySelector('#title').dataset.title
 
     // modify data
-    fetch(`/erp/api/clients/${clientId}`, {
+    fetch(`/erp/api/${person}s/${personId}`, {
         method: 'PUT',
         headers: {
             'X-CSRFToken': csrftoken,
@@ -127,19 +129,21 @@ function confirmEdition(clientId, form) {
                 have invalid characters.`;
             }
         } else {
-            messageElement.innerHTML = `Client number ${clientId} edited 
-            succesfully.`;
+            messageElement.innerHTML = `${person.charAt(0).toUpperCase() + person.slice(1)}
+            number ${personId} edited succesfully.`;
             setTimeout(() => location.reload(), 1000);
         }
     })
 }
 
-function deleteClient(clientId, detailSection) {
+function deletePerson(personId, detailSection) {
+    let person = document.querySelector('#title').dataset.title
+    const personCamel = person.charAt(0).toUpperCase() + person.slice(1)
     const confirmDelete = 
-        confirm(`Are you sure that you want to delete client number ${clientId}?`);
+        confirm(`Are you sure that you want to delete ${person} number ${personId}?`);
 
     if (confirmDelete === true) {
-        fetch(`/erp/api/clients/${clientId}`, {
+        fetch(`/erp/api/${person}s/${personId}`, {
             method: 'DELETE'
         })
         .then(response => ({
@@ -148,13 +152,13 @@ function deleteClient(clientId, detailSection) {
         }))
         .then(result => {
             if (result.ok) {
-                console.log('Client deleted successfully.');
+                console.log(`${personCamel} deleted successfully.`);
                 detailSection.style.display = 'none';
                 document.querySelector('#delete-message').innerHTML = 
-                    'Client deleted successfully.';
+                    `${personCamel} deleted successfully.`;
                 setTimeout(() => location.reload(), 1000);
             } else {
-                console.error(`Failed to delete client. ${result.json}`);
+                console.error(`Failed to delete ${person}. ${result.json}`);
             }
         })
     }

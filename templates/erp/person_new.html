@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+
+{% block title %}New {{ person_type|capfirst }}{% endblock title %}
+
+{% block body %}
+
+    <h2>New {{ person_type|capfirst }}</h2>
+    <form action="{% url 'erp:person_new' person_type %}" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Add">
+    </form>
+
+{% endblock body %}

@@ -5,16 +5,22 @@ from . import views, views_api
 
 app_name = "erp"
 urlpatterns = [
-    # Client index page
+    # Client index webpage
     path("client", views.client_index, name="client_index"),
-    # New client page
-    path("client/new", views.client_new, name="client_new"),
-    # Edit client page
-    path("client/edit", views.client_edit, name="client_edit"),
-    # Delete client page
-    path("client/delete", views.client_delete, name="client_delete"),
+    # Suppliers webpage
+    path("supplier", views.supplier_index, name="supplier_index"),
+    # Add a new client or supplier web page
+    path("<str:person_type>/new", views.person_new, name="person_new"),
+    # Edit existing client or supplier web page
+    path("<str:person_type>/edit", views.person_edit, name="person_edit"),
+    # Delete a client or supplier web page
+    path("<str:person_type>/delete", views.person_delete, name="person_delete"),
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
     path("api/clients/<int:pk>", views_api.DetailCompanyClientAPI.as_view(), 
         name="client_api"),
+    # Suppliers APIS
+    path("api/suppliers", views_api.SupplierAPI.as_view(), name="suppliers_api"),
+    path("api/suppliers/<int:pk>", views_api.DetailSupplierAPI.as_view(), 
+        name="supplier_api"),
 ]

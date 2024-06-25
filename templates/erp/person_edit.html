@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Edit {{ person_type|capfirst }}{% endblock title %}
+
+{% block body %}
+    
+    <h2 id="title" data-title="{{ person_type }}">Edit {{ person_type|capfirst }}</h2>
+    <div id="person-list" data-person-section="edit">
+        {% for person in person_list %}
+            <p><button class="specific-person" data-person-id="{{ person.id }}">
+            {{ person.id }} | {{ person }}</button></p>
+        {% empty %}
+            <p>First you have to add a {{ person_type }}.</p>
+        {% endfor %}
+    </div>
+    <div id="person-details"></div>
+    <div id="person-edit-form">
+        <p id="edit-message"></p>
+        <form>
+            {{ form.as_p }}
+            <button>Confirm</button>
+        </form>
+    </div>
+
+{% endblock body %}
+
+{% block script %}
+    <script src="{% static 'js/person.js' %}"></script>
+{% endblock script %}

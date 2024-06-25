@@ -1,11 +1,13 @@
 """API tests for ERP app"""
 from django.urls import reverse
+from django.test import tag
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Company_client
+from .models import Company_client, Supplier
 
 
+@tag("erp_api")
 class APIErpTests(APITestCase):
     """Test ERP's apis"""
     @classmethod
@@ -25,6 +27,22 @@ class APIErpTests(APITestCase):
             email = "client2@email.com",
             phone = "0987654321",
         )
+
+        cls.supplier1 = Supplier.objects.create(
+            tax_number = "20361382482",
+            name = "Supplier1 SA",
+            address = "Supplier street, Supplier city, Chile",
+            email = "Supplier1@email.com",
+            phone = "0987654321",
+        )
+        cls.supplier2 = Supplier.objects.create(
+            tax_number = "20202020202",
+            name = "Supplier2 SRL",
+            address = "Supplier street 2, Supplier city, Chile",
+            email = "supplier2@email.com",
+            phone = "22222222222",
+        )
+
     
     def test_company_client_api(self):
         response = self.client.get(reverse("erp:clients_api"))
@@ -38,3 +56,16 @@ class APIErpTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "Client street 2, Client city, Chile")
         self.assertNotContains(response, "20361382481")
+
+    def test_supplier_api(self):
+        response = self.client.get(reverse("erp:suppliers_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Supplier.objects.count(), 2)
+        self.assertContains(response, "Supplier2 SRL")
+
+    def test_detail_supplier_api(self):
+        response = self.client.get(reverse("erp:supplier_api",
+            kwargs={"pk": self.supplier1.pk}), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "Supplier street, Supplier city, Chile")
+        self.assertNotContains(response, "22222222222")

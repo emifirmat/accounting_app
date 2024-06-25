@@ -34,26 +34,39 @@
                           Financial Year</a></li>
                         </ul>
                       </li>
-                        <li class="nav-item dropdown">
+                      <li class="nav-item dropdown">
                           <a class="nav-link dropdown-toggle" id="client-menu-link" 
                           role="button" aria-current="page" href="#" 
                           data-bs-toggle="dropdown" aria-expanded="false">Clients</a>
                           <ul class="dropdown-menu" id="client-menu">
                             <li><a class="dropdown-item" href="{% url 'erp:client_index' %}">
                             Overview</a></li>
-                            <li><a class="dropdown-item" href="{% url 'erp:client_new' %}">
+                            <li><a class="dropdown-item" href="{% url 'erp:person_new' 'client' %}">
                             New</a></li>
-                            <li><a class="dropdown-item" href="{% url 'erp:client_edit' %}">
+                            <li><a class="dropdown-item" href="{% url 'erp:person_edit' 'client' %}">
                             Edit</a></li>
-                            <li><a class="dropdown-item" href="{% url 'erp:client_delete' %}">
+                            <li><a class="dropdown-item" href="{% url 'erp:person_delete' 'client' %}">
                             Delete</a></li>
                             <li><a class="dropdown-item" href="#">
                             Current Account</a></li>
                           </ul>
                         </li>
-                        <li class="nav-item">
-                          <a class="nav-link disabled" href="#" aria-disabled="true">
-                              Suppliers</a>
+                        <li class="nav-item dropdown">
+                          <a class="nav-link dropdown-toggle" id="supplier-menu-link" 
+                          role="button" aria-current="page" href="#" 
+                          data-bs-toggle="dropdown" aria-expanded="false">Suppliers</a>
+                          <ul class="dropdown-menu" id="supplier-menu">
+                            <li><a class="dropdown-item" href="{% url 'erp:supplier_index' %}">
+                            Overview</a></li>
+                            <li><a class="dropdown-item" href="{% url 'erp:person_new' 'supplier' %}">
+                            New</a></li>
+                            <li><a class="dropdown-item" href="{% url 'erp:person_edit' 'supplier' %}">
+                            Edit</a></li>
+                            <li><a class="dropdown-item" href="{% url 'erp:person_delete' 'supplier' %}">
+                            Delete</a></li>
+                            <li><a class="dropdown-item" href="#">
+                            Current Account</a></li>
+                          </ul>
                         </li>
                     </ul>
                     <form class="d-flex" role="search">
