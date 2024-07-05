@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block title %}Sales{% endblock title %}
+
+{% block body %}
+
+    <h2>Sales Overview</h2>
+
+    <p>Amount to collect in {{ financial_year.year }}: --To do--</p>
+    <p>Invoices to collect: <ul>{% for invoice in sale_invoices %}<li>{{ invoice }}</li>
+    {% empty %}No invoice has been issued yet.{% endfor %}</ul>--filter to uncollected only--</p>
+    <p>Last invoices: <ul>{% for invoice in sale_invoices %}<li>{{ invoice }}</li>
+    {% empty %}No invoice has been issued yet.{% endfor %}</ul>--Set order to cronological--</p></p>
+    <p>Oldest uncollected invoices: <ul>{% for invoice in sale_invoices %}<li>{{ invoice }}</li>
+    {% empty %}No invoice has been issued yet.{% endfor %}</ul>--Filter to uncollected only and set order to oldest first--</p>
+
+{% endblock body %}

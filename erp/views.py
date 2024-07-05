@@ -5,17 +5,23 @@ from django.urls import reverse
 
 
 from company.models import FinancialYear
-from .forms import CclientForm, SupplierForm
-from .models import Company, Company_client, Supplier
+from .forms import CclientForm, SupplierForm, SaleInvoiceForm
+from .models import (Company, Company_client, Supplier, Sale_invoice, 
+    Payment_method, Payment_term)
 
 
 # Create your views here.
-def client_index(request):
-    """Client's overview page"""
+def current_year():
+    """Define current financial year"""
     try:
         financial_year = FinancialYear.objects.get(current=True)
     except ObjectDoesNotExist:
         financial_year = None
+    return financial_year
+
+def client_index(request):
+    """Client's overview page"""
+    financial_year = current_year()
     clients = Company_client.objects.all()
     return render(request, "erp/client_index.html", {
         "financial_year": financial_year,
@@ -82,13 +88,34 @@ def person_delete(request, person_type):
 
 def supplier_index(request):
     """Supplier's overview page"""
-    try:
-        financial_year = FinancialYear.objects.get(current=True)
-    except ObjectDoesNotExist:
-        financial_year = None
+    financial_year = current_year()
     suppliers = Supplier.objects.all()
     return render(request, "erp/supplier_index.html", {
         "financial_year": financial_year,
         "suppliers": suppliers,
     })
 
+def sales_index(request):
+    """Sales overview webpage"""
+    financial_year = current_year()
+    sale_invoices = Sale_invoice.objects.all()
+    return render(request, "erp/sales_index.html", {
+        "financial_year": financial_year,
+        "sale_invoices": sale_invoices,
+    })
+
+def sales_new(request):
+    """New sale invoices webpage"""
+    form = SaleInvoiceForm
+    return render(request, "erp/sales_new.html", {
+        "form": form,
+    })
+
+def payment_conditions(request):
+    """Payment conditions webpage"""
+    payment_methods = Payment_method.objects.all()
+    payment_terms = Payment_term.objects.all()
+    return render(request, "company/payment_conditions.html", {
+        "payment_methods": payment_methods,
+        "payment_terms": payment_terms,
+    })

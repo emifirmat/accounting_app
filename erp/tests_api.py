@@ -4,7 +4,7 @@ from django.test import tag
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Company_client, Supplier
+from .models import Company_client, Supplier, Payment_method, Payment_term
 
 
 @tag("erp_api")
@@ -42,6 +42,12 @@ class APIErpTests(APITestCase):
             email = "supplier2@email.com",
             phone = "22222222222",
         )
+        cls.pay_method1 = Payment_method.objects.create(
+            pay_method = "Cash",
+        )
+        cls.pay_term1 = Payment_term.objects.create(
+            pay_term = "30",
+        )
 
     
     def test_company_client_api(self):
@@ -69,3 +75,15 @@ class APIErpTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "Supplier street, Supplier city, Chile")
         self.assertNotContains(response, "22222222222")
+
+    def test_payment_method_api(self):
+        response = self.client.get(reverse("erp:payment_method_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Payment_method.objects.count(), 1)
+        self.assertContains(response, "Cash")
+
+    def test_payment_term_api(self):
+        response = self.client.get(reverse("erp:payment_term_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Payment_term.objects.count(), 1)
+        self.assertContains(response, 30)

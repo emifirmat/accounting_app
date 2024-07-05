@@ -2,7 +2,8 @@
 from rest_framework import serializers
 
 from company.models import Company
-from .models import Company_client, Supplier
+from .models import Company_client, Supplier, Payment_method, Payment_term
+
 
 class CClientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,3 +32,14 @@ class SupplierSerializer(serializers.ModelSerializer):
                 "The tax number you're trying to add belongs to the company."
             )
         return value
+    
+class PaymentMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment_method
+        fields = "__all__"
+
+
+class PaymentTermSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment_term
+        fields = "__all__"

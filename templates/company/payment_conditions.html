@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Payment Conditions{% endblock title %}
+
+{% block body %}
+
+    <h2>Payment Conditions</h2>
+
+    <div id="message-section"></div>
+
+    <h3>Payment Terms</h3>
+    <div data-section="term">
+        {% if not payment_terms %}
+            <form>
+                {% csrf_token %}
+                <button class="default-button">Add default</button>
+            </form>
+        {% endif %}
+            <form>
+                {% csrf_token %}
+                <button class="add-button">New payment term</button>
+            </form>
+        {% if payment_terms%}
+            <button class="view-button">View all payment terms</button>
+        {% endif %}
+    </div>
+
+    <h3>Payment Methods</h3>
+    <div data-section="method">
+        {% if not payment_methods %}
+            <form>
+                {% csrf_token %}
+                <button class="default-button">Add default</button>
+            </form>
+        {% endif %}
+            <form>
+                {% csrf_token %}
+                <button class="add-button">New payment term</button>
+            </form>
+        {% if payment_methods %}
+        <form>
+            {% csrf_token %}    
+            <button class="view-button">View all payment terms</button>
+        </form>
+        {% endif %}
+    </div>
+
+{% endblock body %}
+{% block script %}
+    <script src="{% static 'js/payment_conditions.js' %}"></script>
+{% endblock script %}

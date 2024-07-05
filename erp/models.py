@@ -66,7 +66,7 @@ class Supplier_current_account(CurrentAccountModel):
 
 class Payment_method(models.Model):
     """Establish payment methods for invoices"""
-    pay_method = models.CharField(max_length=50)
+    pay_method = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
         return f"{self.pay_method}"
@@ -74,7 +74,7 @@ class Payment_method(models.Model):
 
 class Payment_term(models.Model):
     """Establish payment terms for invoices"""
-    pay_term = models.CharField(max_length=3, validators=[
+    pay_term = models.CharField(max_length=3, unique=True, validators=[
         validate_is_digit
     ])
 

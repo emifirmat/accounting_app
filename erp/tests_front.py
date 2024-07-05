@@ -73,7 +73,7 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         self.driver.get(f"{self.live_server_url}")
 
     def test_client_edit(self):
-        # Get to edit client page
+        # Go to edit client page
         self.assertEqual(self.driver.title, "Index")
         self.driver.find_element(By.ID, "client-menu-link").click()
         path = self.driver.find_element(By.ID, "client-menu")
@@ -122,7 +122,7 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         )
        
     def test_client_delete(self):
-        # Get to delete client page
+        # Go to delete client page
         self.driver.find_element(By.ID, "client-menu-link").click()
         path = self.driver.find_element(By.ID, "client-menu")
         path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
@@ -160,7 +160,7 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         self.assertNotIn("20361382480", path[0].text)
         
     def test_supplier_edit(self):
-        # Get to edit supplier page
+        # Go to edit supplier page
         self.driver.find_element(By.ID, "supplier-menu-link").click()
         path = self.driver.find_element(By.ID, "supplier-menu")
         path.find_elements(By.CLASS_NAME, "dropdown-item")[2].click()
@@ -208,7 +208,7 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         )
        
     def test_supplier_delete(self):
-        # Get to delete supplier page
+        # Go to delete supplier page
         self.driver.find_element(By.ID, "supplier-menu-link").click()
         path = self.driver.find_element(By.ID, "supplier-menu")
         path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
@@ -245,3 +245,43 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
         self.assertNotIn("30361382485", path[0].text)
         self.assertEqual(len(path), 1)
+
+    @tag("erp_payment_term")
+    def test_payment_conditions_term_default(self):
+        # Go to Payment Conditions page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
+        self.assertEqual(self.driver.title, "Payment Conditions")
+
+        # Click on default
+        path = self.driver.find_elements(By.CLASS_NAME, "default-button")
+        path[0].click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "message-section"),
+                "Default for term loaded successfully."
+            )
+        )
+
+    @tag("erp_payment_method")
+    def test_payment_conditions_method_default(self):
+        # Go to Payment Conditions page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
+        self.assertEqual(self.driver.title, "Payment Conditions")
+
+        # Click on default
+        path = self.driver.find_elements(By.CLASS_NAME, "default-button")
+        path[1].click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "message-section"),
+                "Default for method loaded successfully."
+            )
+        )

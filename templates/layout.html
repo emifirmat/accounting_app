@@ -32,6 +32,10 @@
                           Settings</a></li>
                           <li><a class="dropdown-item" href="{% url 'company:year' %}">
                           Financial Year</a></li>
+                          <li><a class="dropdown-item" href="#">
+                          Point of Sells</a></li>
+                          <li><a class="dropdown-item" href="{% url 'erp:payment_conditions' %}">
+                          Payment Conditions</a></li>
                         </ul>
                       </li>
                       <li class="nav-item dropdown">
@@ -66,6 +70,28 @@
                             Delete</a></li>
                             <li><a class="dropdown-item" href="#">
                             Current Account</a></li>
+                          </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                          <a class="nav-link dropdown-toggle" id="sales-menu-link" 
+                          role="button" aria-current="page" href="#" 
+                          data-bs-toggle="dropdown" aria-expanded="false">Sales</a>
+                          <ul class="dropdown-menu" id="sales-menu">
+                            <li><a class="dropdown-item" href="{% url 'erp:sales_index' %}">
+                            Overview</a></li>
+                            <li><a class="dropdown-item" href="{% url 'erp:sales_new' %}">
+                            New Invoice</a></li>
+                          </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                          <a class="nav-link dropdown-toggle" id="billings-menu-link" 
+                          role="button" aria-current="page" href="#" 
+                          data-bs-toggle="dropdown" aria-expanded="false">Billings</a>
+                          <ul class="dropdown-menu" id="billings-menu">
+                            <li><a class="dropdown-item" href="#">
+                            Overview</a></li>
+                            <li><a class="dropdown-item" href="#">
+                            New Receipt</a></li>
                           </ul>
                         </li>
                     </ul>
