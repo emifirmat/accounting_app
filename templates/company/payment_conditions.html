@@ -17,10 +17,14 @@
                 <button class="default-button">Add default</button>
             </form>
         {% endif %}
-            <form>
-                {% csrf_token %}
-                <button class="add-button">New payment term</button>
-            </form>
+            <button class="add-button">New payment term</button>
+            <div id="new-term">
+                <form>
+                    {% csrf_token %}
+                    {{ term_form.as_p }}
+                    <button>Add</button>
+                </form>
+            </div>
         {% if payment_terms%}
             <button class="view-button">View all payment terms</button>
         {% endif %}
@@ -34,15 +38,16 @@
                 <button class="default-button">Add default</button>
             </form>
         {% endif %}
-            <form>
-                {% csrf_token %}
-                <button class="add-button">New payment term</button>
-            </form>
+            <button class="add-button">New payment method</button>
+            <div id="new-method">
+                <form>
+                    {% csrf_token %}
+                    {{ method_form.as_p }}
+                    <button>Add</button>
+                </form>
+            </div>
         {% if payment_methods %}
-        <form>
-            {% csrf_token %}    
-            <button class="view-button">View all payment terms</button>
-        </form>
+            <button class="view-button">View all payment methods</button>
         {% endif %}
     </div>
 

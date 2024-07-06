@@ -5,7 +5,8 @@ from django.urls import reverse
 
 
 from company.models import FinancialYear
-from .forms import CclientForm, SupplierForm, SaleInvoiceForm
+from .forms import (CclientForm, SupplierForm, SaleInvoiceForm, PaymentMethodForm,
+    PaymentTermForm)
 from .models import (Company, Company_client, Supplier, Sale_invoice, 
     Payment_method, Payment_term)
 
@@ -115,7 +116,11 @@ def payment_conditions(request):
     """Payment conditions webpage"""
     payment_methods = Payment_method.objects.all()
     payment_terms = Payment_term.objects.all()
+    term_form = PaymentTermForm()
+    method_form = PaymentMethodForm()
     return render(request, "company/payment_conditions.html", {
         "payment_methods": payment_methods,
         "payment_terms": payment_terms,
+        "term_form": term_form,
+        "method_form": method_form,
     })

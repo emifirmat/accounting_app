@@ -246,7 +246,7 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         self.assertNotIn("30361382485", path[0].text)
         self.assertEqual(len(path), 1)
 
-    @tag("erp_payment_term")
+    @tag("erp_payment_term_d")
     def test_payment_conditions_term_default(self):
         # Go to Payment Conditions page.
         self.driver.find_element(By.ID, "company-menu-link").click()
@@ -266,7 +266,7 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
             )
         )
 
-    @tag("erp_payment_method")
+    @tag("erp_payment_method_d")
     def test_payment_conditions_method_default(self):
         # Go to Payment Conditions page.
         self.driver.find_element(By.ID, "company-menu-link").click()
@@ -283,5 +283,67 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
             EC.text_to_be_present_in_element(
                 (By.ID, "message-section"),
                 "Default for method loaded successfully."
+            )
+        )
+
+
+    @tag("erp_payment_term_n")
+    def test_payment_conditions_term_new(self):
+        # Go to Payment Conditions page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
+
+        # Click on new
+        path = self.driver.find_elements(By.CLASS_NAME, "add-button")
+        path[0].click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "new-term"),
+                "New payment term"
+            )
+        )
+        path = self.driver.find_element(By.ID, "new-term")
+        field_pay_term = path.find_element(By.NAME, "pay_term")
+        field_pay_term.send_keys("180")
+        self.assertEqual(field_pay_term.get_attribute("value"), "180")
+        path.find_element(By.TAG_NAME, "button").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "message-section"),
+                "New term added successfully"
+            )
+        )
+
+
+    @tag("erp_payment_method_n")
+    def test_payment_conditions_method_new(self):
+        # Go to Payment Conditions page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
+
+        # Click on new
+        path = self.driver.find_elements(By.CLASS_NAME, "add-button")
+        path[1].click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "new-method"),
+                "New payment method"
+            )
+        )
+        path = self.driver.find_element(By.ID, "new-method")
+        field_pay_term = path.find_element(By.NAME, "pay_method")
+        field_pay_term.send_keys("Hand")
+        self.assertEqual(field_pay_term.get_attribute("value"), "Hand")
+        path.find_element(By.TAG_NAME, "button").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "message-section"),
+                "New method added successfully"
             )
         )

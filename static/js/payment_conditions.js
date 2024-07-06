@@ -1,7 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
+
     // Add functinoality to buttoms
     document.querySelectorAll('.default-button').forEach(function (element) {
         element.addEventListener('click', () => addDefault());
+    });
+    document.querySelectorAll('.add-button').forEach(function (element) {
+        element.addEventListener('click', () => newCondition());
     });
 });
 
@@ -56,6 +60,65 @@ function addDefault() {
                 setTimeout(() => location.reload(), 1000);
             } else {
                 console.error("Default couldn't load");
+            }
+        })
+    }
+}
+
+function newCondition() {
+    // Show form and add functionality
+    const pCondition = event.target.parentNode.dataset.section;
+    console.log(pCondition)
+    let newSection = document.querySelector(`#new-${pCondition}`)
+    
+    newSection.style.display = 'block';
+    newSection.querySelector('button').addEventListener('click', () =>
+        confirmNewCondition(newSection, pCondition))
+}
+
+function confirmNewCondition(newSection, pCondition) {
+    // Add new entry to db
+    event.preventDefault()
+    
+    const confirmNew = confirm(`Add new ${pCondition}?`);
+    
+    if (confirmNew) {
+        let data;
+        const form = newSection.children[0];
+        if (pCondition === 'method') {
+            data = {'pay_method': form.elements[`pay_${pCondition}`].value};
+            console.log(data)
+        } else if (pCondition === 'term') {
+            data = {'pay_term': form.elements[`pay_${pCondition}`].value};
+            console.log(data)
+        } else {
+            console.error('Check dataset');
+            return;
+        }
+
+        // Create api point a pass it through fetch
+        const csrftoken = getCookie('csrftoken');
+        fetch(`/erp/api/payment_conditions/${pCondition}s`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data),
+            mode: "same-origin"
+        })
+        .then(response => ({
+            status: response.status,
+            ok: response.ok,
+        }))
+        .then(result => {
+            if (result.ok) {
+                console.log(`New ${pCondition} added successfully.`);
+                document.querySelector('#message-section').innerHTML = `<p>New 
+                ${pCondition} added successfully.</p>`;
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                console.error(`Error while adding a new ${pCondition}`);
             }
         })
     }

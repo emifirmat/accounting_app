@@ -3,7 +3,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from company.models import Company
-from .models import Company_client, Supplier, Sale_invoice
+from .models import (Company_client, Supplier, Sale_invoice, Payment_method,
+    Payment_term)
 
 
 
@@ -72,4 +73,20 @@ class SaleInvoiceForm(forms.ModelForm):
         } 
 
 
+class PaymentTermForm(forms.ModelForm):
+    class Meta:
+        model = Payment_term
+        fields = "__all__"
+        labels = {
+            "pay_term": "New payment term",
+        }
+
+
+class PaymentMethodForm(forms.ModelForm):
+    class Meta:
+        model = Payment_method
+        fields = "__all__"
+        labels = {
+            "pay_method": "New payment method",
+        }
         
