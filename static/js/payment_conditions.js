@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.add-button').forEach(function (element) {
         element.addEventListener('click', () => newCondition());
     });
+    document.querySelectorAll('.view-button').forEach(function (element) {
+        element.addEventListener('click', () => showCondition());
+    });
 });
 
 function addDefault() {
@@ -122,6 +125,78 @@ function confirmNewCondition(newSection, pCondition) {
             }
         })
     }
+}
+
+
+function showCondition(pCondition = '') {
+    // Get payment term or method list
+    if (!pCondition) {
+        var pCondition = event.target.parentNode.dataset.section;
+    }
+
+    // Get list through fetch
+    fetch(`/erp/api/payment_conditions/${pCondition}s`)
+    .then(response => {
+        if (!response) {
+            throw new Error("Couldn't get the list");
+        } else {
+            return response.json();
+        }
+    })
+    .then(result => {   
+        // Refresh page if there aren't any values
+        if(!result.length) {
+           location.reload();
+        } else {
+            // Add title
+            const sectionTitle = document.querySelector('#view-title');
+            sectionTitle.innerHTML = `Payment ${pCondition}s:`;
+            
+            // Add all elements of the list
+            const sectionList = document.querySelector('#view-list');
+            sectionList.innerHTML = '';
+
+            result.forEach(item => {
+                const listItem = document.createElement('li');
+                let deleteButton = document.createElement('button');
+                
+                // Customize item
+                if (pCondition === "method") {
+                    listItem.innerHTML = item.pay_method;
+                } else if (pCondition === "term") {
+                    listItem.innerHTML = item.pay_term;
+                }
+
+                // Customize delete button
+                deleteButton.className = 'delete-item';
+                deleteButton.innerHTML = 'Delete';
+                deleteButton.addEventListener('click', () => {
+                    // Ask for confirmation in the button
+                    deleteButton.innerHTML = "Confirm";
+                    deleteButton.addEventListener('click', () => deleteItem(item.id,
+                        pCondition));
+                })
+                
+                sectionList.append(listItem, deleteButton);
+            })
+        }
+    }) 
+}
+
+function deleteItem(itemId, pCondition) {
+    
+    // Delete an item of the list
+    fetch(`/erp/api/payment_conditions/${pCondition}s/${itemId}`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Couldn't delete list");
+        } else {
+           return response.text()
+        }
+    })
+    .then(result => showCondition(pCondition))
 }
 
 function getCookie(name) {

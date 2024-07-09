@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from company.models import Company
-from .models import Company_client, Supplier
+from .models import Company_client, Supplier, Payment_method, Payment_term
 
 
 @tag("erp_front")
@@ -303,6 +303,8 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
                 "New payment term"
             )
         )
+        
+        # Add and submit data in form
         path = self.driver.find_element(By.ID, "new-term")
         field_pay_term = path.find_element(By.NAME, "pay_term")
         field_pay_term.send_keys("180")
@@ -334,6 +336,7 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
                 "New payment method"
             )
         )
+        # Add and submit data in form
         path = self.driver.find_element(By.ID, "new-method")
         field_pay_term = path.find_element(By.NAME, "pay_method")
         field_pay_term.send_keys("Hand")
@@ -347,3 +350,91 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
                 "New method added successfully"
             )
         )
+
+    @tag("erp_payment_term_v")
+    def test_payment_terms_view_and_delete_list(self):
+        # Create data
+        Payment_term.objects.bulk_create([
+            Payment_term(pay_term="0"),
+            Payment_term(pay_term="90"),
+            Payment_term(pay_term="180"),
+            Payment_term(pay_term="360"),
+        ])
+        self.assertTrue(Payment_term.objects.all().count(), 4)
+        self.driver.implicitly_wait(5)
+
+        # Go to Payment Conditions page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
+
+        # Click on show methods
+        path = self.driver.find_elements(By.CLASS_NAME, "view-button")
+        path[0].click()
+
+        # Check title and list
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "view-title"),
+                "Payment terms"
+            )
+        )
+        path = self.driver.find_element(By.ID, "view-list")
+        self.assertIn("360", path.text)
+
+        # Delete an entry
+        delete_button = path.find_elements(By.CLASS_NAME, "delete-item")[-1]
+        delete_button.click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "view-list"),
+                "Confirm"
+            )
+        )
+        # Click in confirm
+        delete_button.click()
+        WebDriverWait(self.driver, 10).until(EC.staleness_of(delete_button))
+
+
+    @tag("erp_payment_method_v")
+    def test_payment_methods_view_list(self):
+        # Create data
+        Payment_method.objects.bulk_create([
+            Payment_method(pay_method="Cash"),
+            Payment_method(pay_method="Transfer"),
+            Payment_method(pay_method="Check"),
+        ])
+        self.assertTrue(Payment_method.objects.all().count(), 3)
+        self.driver.implicitly_wait(5)
+
+        # Go to Payment Conditions page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
+
+        # Click on show methods
+        path = self.driver.find_elements(By.CLASS_NAME, "view-button")
+        path[0].click()
+
+        # Check title and list
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "view-title"),
+                "Payment methods"
+            )
+        )
+        path = self.driver.find_element(By.ID, "view-list")
+        self.assertIn("Transfer", path.text)
+
+        # Delete an entry
+        delete_button = path.find_elements(By.CLASS_NAME, "delete-item")[1]
+        delete_button.click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "view-list"),
+                "Confirm"
+            )
+        )
+        # Click in confirm
+        delete_button.click()
+        WebDriverWait(self.driver, 10).until(EC.staleness_of(delete_button))
