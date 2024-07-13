@@ -2,7 +2,8 @@
 from rest_framework import serializers
 
 from company.models import Company
-from .models import Company_client, Supplier, Payment_method, Payment_term
+from .models import (Company_client, Supplier, Payment_method, Payment_term,
+    Point_of_sell)
 
 
 class CClientSerializer(serializers.ModelSerializer):
@@ -42,4 +43,10 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
 class PaymentTermSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment_term
+        fields = "__all__"
+
+
+class PointOfSellSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Point_of_sell
         fields = "__all__"

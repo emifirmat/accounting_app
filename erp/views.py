@@ -6,9 +6,9 @@ from django.urls import reverse
 
 from company.models import FinancialYear
 from .forms import (CclientForm, SupplierForm, SaleInvoiceForm, PaymentMethodForm,
-    PaymentTermForm)
+    PaymentTermForm, PointOfSellForm)
 from .models import (Company, Company_client, Supplier, Sale_invoice, 
-    Payment_method, Payment_term)
+    Payment_method, Payment_term, Point_of_sell)
 
 
 # Create your views here.
@@ -123,4 +123,14 @@ def payment_conditions(request):
         "payment_terms": payment_terms,
         "term_form": term_form,
         "method_form": method_form,
+    })
+
+def point_of_sell(request):
+    """POS webpage"""
+    form = PointOfSellForm()
+    pos_list = Point_of_sell.objects.filter(disabled=False)
+    
+    return render(request, "company/points_of_sell.html", {
+        "form": form,
+        "pos_list": pos_list,
     })

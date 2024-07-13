@@ -21,6 +21,8 @@ urlpatterns = [
     path("sales/new_invoice", views.sales_new, name="sales_new"),
     # Payment conditions
     path("payment_conditions", views.payment_conditions, name="payment_conditions"),
+    # Point of sells
+    path("points_of_sell", views.point_of_sell, name="points_of_sell"),
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
@@ -39,4 +41,8 @@ urlpatterns = [
         name="payment_terms_api"),
     path("api/payment_conditions/terms/<int:pk>", views_api.DetailPaymentTermAPI.as_view(),
         name="payment_term_api"),
+    path("api/points_of_sell", views_api.PointOfSellAPI.as_view(), 
+        name="pos_api"),
+    path("api/points_of_sell/<int:pk>", views_api.DetailPointOfSellAPI.as_view(), 
+        name="detail_pos_api")
 ]

@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Points of Sell{% endblock title %}
+
+{% block body %}
+
+    <h2>Points of Sell</h2>
+    <p>The Point of Sell (POS) is the first five numbers of your invoice or receipt. 
+    Please, use the same as the one provided by the tax authorities.</p>
+    <br>
+    <div id="message-section"></div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-7">
+                <form id="new-pos-form" method="post">
+                    <h6>Add a new POS</h6>
+                    {% csrf_token %}
+                    {{ form.as_p}}
+                    <button id="new-pos">Add</button>
+                </form>
+                {% if pos_list %}
+                    <button id="show-pos-button">Show all POS</button>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" 
+                        data-bs-toggle="dropdown" aria-expanded="false" id="dropdown-disable-menu">
+                            Disable a Point of Sell
+                        </button>
+                        <ul class="dropdown-menu">
+                            {% for pos in pos_list %}
+                                <li><a href="#" class="dropdown-item pos">{{ pos }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <br>
+                    <h6 id="no-pos">No Point of Sell has been created yet.</h6>
+                {% endif %}
+            </div>
+            <div class="col-5">
+                <div id="show-pos-section">
+                    <h3 id="show-pos-title"></h3>
+                    <ul id="pos-list"></ul>
+                </div>
+
+
+
+{% endblock body %}
+
+{% block script %}
+    <script src="{% static 'js/points_of_sell.js' %}"></script>
+{% endblock script %}

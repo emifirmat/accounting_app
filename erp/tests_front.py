@@ -8,7 +8,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from company.models import Company
-from .models import Company_client, Supplier, Payment_method, Payment_term
+from .models import (Company_client, Supplier, Payment_method, Payment_term,
+    Point_of_sell)
 
 
 @tag("erp_front")
@@ -68,6 +69,10 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
             address = "Supplier2 street, Supplier city, Chile",
             email = "supplier2@email.com",
             phone = "987654321",
+        )
+
+        self.pos1 = Point_of_sell.objects.create(
+            pos_number = "00001",
         )
 
         self.driver.get(f"{self.live_server_url}")
@@ -438,3 +443,71 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         # Click in confirm
         delete_button.click()
         WebDriverWait(self.driver, 10).until(EC.staleness_of(delete_button))
+
+    @tag("erp_pos_n")
+    def test_pos_new(self):
+        # Go to POS page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[2].click()
+        self.assertEqual(self.driver.title, "Points of Sell")
+        # Write new pos in form
+        path = self.driver.find_element(By.ID, "new-pos-form")
+        pos_number_field = path.find_element(By.NAME, "pos_number")
+        pos_number_field.send_keys("00003")
+        self.assertEqual(pos_number_field.get_attribute("value"), "00003")
+        # Click on add, and confirm 
+        self.driver.find_element(By.ID, "new-pos").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        # Check it was added
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "message-section"),
+                "Point of Sell added succesfully."
+            )
+        )
+
+    @tag("erp_pos_v")
+    def test_pos_view(self):
+        # Go to POS page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[2].click()
+        # click on show all POS
+        self.driver.find_element(By.ID, "show-pos-button").click()
+        # Check that list appears
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "show-pos-title"),
+                "Points of Sell"
+            )
+        )
+        path = self.driver.find_element(By.ID, "pos-list")
+        self.assertIn("00001", path.text)
+    
+    @tag("erp_pos_d")
+    def test_pos_disable(self):
+        # Go to POS page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[2].click()
+        # click on disable a pos
+        path = self.driver.find_element(By.ID, "dropdown-disable-menu")
+        path.click()
+        self.driver.find_elements(By.CSS_SELECTOR, ".dropdown-item.pos")[0].click()
+        # Confirm
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        # Check it was disabled
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "message-section"),
+                "Point of Sell 00001 disabled."
+            )
+        )
+        # Check new page with no pos
+        path = self.driver.find_element(By.ID, "no-pos")
+        self.assertIn("No Point of Sell has been created yet.", path.text)
+
+    

@@ -4,7 +4,8 @@ from django.test import tag
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Company_client, Supplier, Payment_method, Payment_term
+from .models import (Company_client, Supplier, Payment_method, Payment_term,
+    Point_of_sell)
 
 
 @tag("erp_api")
@@ -45,10 +46,24 @@ class APIErpTests(APITestCase):
         cls.pay_method1 = Payment_method.objects.create(
             pay_method = "Cash",
         )
+        cls.pay_method2 = Payment_method.objects.create(
+            pay_method = "Transfer",
+        )
         cls.pay_term1 = Payment_term.objects.create(
             pay_term = "30",
         )
-
+        cls.pay_term2 = Payment_term.objects.create(
+            pay_term = "0",
+        )
+        cls.pos1 = Point_of_sell.objects.create(
+            pos_number = "00001",
+        )
+        cls.pos2 = Point_of_sell.objects.create(
+            pos_number = "00002",
+        )
+        cls.pos3 = Point_of_sell.objects.create(
+            pos_number = "00003",
+        )
     
     def test_company_client_api(self):
         response = self.client.get(reverse("erp:clients_api"))
@@ -76,14 +91,41 @@ class APIErpTests(APITestCase):
         self.assertContains(response, "Supplier street, Supplier city, Chile")
         self.assertNotContains(response, "22222222222")
 
-    def test_payment_method_api(self):
-        response = self.client.get(reverse("erp:payment_method_api"))
+    def test_payment_methods_api(self):
+        response = self.client.get(reverse("erp:payment_methods_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Payment_method.objects.count(), 1)
+        self.assertEqual(Payment_method.objects.count(), 2)
+        self.assertContains(response, "Transfer")
+    
+    def test_payment_method_api(self):
+        response = self.client.get(reverse("erp:payment_method_api",
+            kwargs={"pk": self.pay_method1.pk}), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "Cash")
+        self.assertNotContains(response, "Transfer")
+
+    def test_payment_terms_api(self):
+        response = self.client.get(reverse("erp:payment_terms_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Payment_term.objects.count(), 2)
+        self.assertContains(response, "30")
 
     def test_payment_term_api(self):
-        response = self.client.get(reverse("erp:payment_term_api"))
+        response = self.client.get(reverse("erp:payment_term_api",
+            kwargs={"pk": self.pay_term2.pk}), format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Payment_term.objects.count(), 1)
-        self.assertContains(response, 30)
+        self.assertContains(response, "0")
+        self.assertNotContains(response, "30")
+
+    def test_points_of_sell_api(self):
+        response = self.client.get(reverse("erp:pos_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Point_of_sell.objects.count(), 3)
+        self.assertContains(response, "00003")
+
+    def test_point_of_sell_api(self):
+        response = self.client.get(reverse("erp:detail_pos_api",
+            kwargs={"pk": self.pos3.pk}), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "00003")
+        self.assertNotContains(response, "00002")

@@ -2,9 +2,10 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from .models import Company_client, Supplier, Payment_method, Payment_term
+from .models import (Company_client, Supplier, Payment_method, Payment_term,
+    Point_of_sell)
 from .serializers import (CClientSerializer, SupplierSerializer, 
-    PaymentMethodSerializer, PaymentTermSerializer)
+    PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer)
 
 
 class CompanyClientAPI(generics.ListAPIView):
@@ -85,3 +86,15 @@ class DetailPaymentTermAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific payment term"""
     queryset = Payment_term.objects.all()
     serializer_class = PaymentTermSerializer
+
+
+class PointOfSellAPI(generics.ListCreateAPIView):
+    """CRUD API of Point of sells"""
+    queryset = Point_of_sell.objects.all()
+    serializer_class = PointOfSellSerializer
+
+
+class DetailPointOfSellAPI(generics.RetrieveUpdateAPIView):
+    """CRUD API of specific POS"""
+    queryset = Point_of_sell.objects.all()
+    serializer_class = PointOfSellSerializer

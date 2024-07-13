@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 from company.models import Company
 from .models import (Company_client, Supplier, Sale_invoice, Payment_method,
-    Payment_term)
+    Payment_term, Point_of_sell)
 
 
 
@@ -74,6 +74,7 @@ class SaleInvoiceForm(forms.ModelForm):
 
 
 class PaymentTermForm(forms.ModelForm):
+    """Add a new payment term"""
     class Meta:
         model = Payment_term
         fields = "__all__"
@@ -83,6 +84,7 @@ class PaymentTermForm(forms.ModelForm):
 
 
 class PaymentMethodForm(forms.ModelForm):
+    "Add a new payment method"
     class Meta:
         model = Payment_method
         fields = "__all__"
@@ -90,3 +92,15 @@ class PaymentMethodForm(forms.ModelForm):
             "pay_method": "New payment method",
         }
         
+
+class PointOfSellForm(forms.ModelForm):
+    """Add a new company's point of sell"""
+    class Meta:
+        model = Point_of_sell
+        fields = ["pos_number",]
+        labels = {
+            "pos_number": "Point of sell",
+        }
+        help_texts = {
+            "pos_number": "I.E. 00001",
+        }

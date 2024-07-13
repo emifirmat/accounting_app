@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// Ver si tengo que cambiar la clase y ponerla en li.
+
 async function makeCurrentYear(event, currentYear) {
     const newYear = event.target.innerHTML.trim()
 
@@ -58,7 +58,7 @@ async function changeCurrentYearStatus(year, boolean) {
             year: year.year,
             current: boolean
         }),
-        mode: "same-origin"
+        mode: 'same-origin'
     })
     .then(response => {
         if (response.ok && boolean === true) {
