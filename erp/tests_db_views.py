@@ -7,7 +7,8 @@ from django.urls import reverse
 # Create your tests here.
 from .models import (Company_client, Supplier, Client_current_account,
     Supplier_current_account, Payment_method, Payment_term, Sale_invoice,
-    Sale_receipt, Purchase_invoice, Purchase_receipt, Point_of_sell)
+    Sale_receipt, Purchase_invoice, Purchase_receipt, Point_of_sell, 
+    Document_type)
 from company.models import Company, Calendar
 
 
@@ -59,6 +60,19 @@ class ErpTestCase(TestCase):
         cls.pos1 = Point_of_sell.objects.create(pos_number="1")
         cls.pos2 = Point_of_sell.objects.create(pos_number="2")
 
+        cls.doc_type1 = Document_type.objects.create(
+            type = "A",
+            code = "001",
+            type_description = "Invoice A",
+            hide = False,
+        )
+        cls.doc_type2 = Document_type.objects.create(
+            type = "B",
+            code = "2",
+            type_description = "Invoice B",
+            hide = False,
+        )
+
         cls.payment_method = Payment_method.objects.create(
             pay_method = "cash",
         )
@@ -76,7 +90,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.sale_invoice = Sale_invoice.objects.create(
-            type = "A",
+            type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
             description = "Test sale invoice",
@@ -90,7 +104,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.sale_receipt = Sale_receipt.objects.create(
-            type = "A",
+            type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
             description = "Test sale receipt",
@@ -101,7 +115,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.purchase_invoice = Purchase_invoice.objects.create(
-            type = "B",
+            type = cls.doc_type2,
             point_of_sell = "00231",
             number = "00083051",
             description = "Test purchase invoice",
@@ -115,7 +129,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.purchase_receipt = Purchase_receipt.objects.create(
-            type = "B",
+            type = cls.doc_type2,
             point_of_sell = "00231",
             number = "00000023",
             description = "Test purchase receipt",
@@ -163,6 +177,23 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.pos1.pos_number, "00001")
         self.assertEqual(str(self.pos1), "00001")
     
+    def test_document_type_content(self):
+        doc_type_all = Document_type.objects.all()
+        self.assertEqual(doc_type_all.count(), 2)
+        self.assertEqual(self.doc_type1.type, "A")
+        self.assertEqual(self.doc_type1.code, "001")
+        self.assertEqual(self.doc_type1.type_description, "Invoice A")
+        self.assertEqual(self.doc_type1.hide, False)
+        self.assertEqual(str(self.doc_type1), "001 | A")
+
+    def test_document_type_validator(self):
+        with self.assertRaises(ValidationError):
+            doc_3 = Document_type.objects.create(
+                type = "3",
+                code = "003",
+                type_description = "Invoice C",
+            )
+            doc_3.full_clean()
     
     def test_payment_method_content(self):
         payment_methods = Payment_method.objects.all()
@@ -179,7 +210,7 @@ class ErpTestCase(TestCase):
     def test_sale_invoice_content(self):
         invoices = Sale_invoice.objects.all()
         self.assertEqual(invoices.count(), 1)
-        self.assertEqual(self.sale_invoice.type, "A")
+        self.assertEqual(self.sale_invoice.type, self.doc_type1)
         self.assertEqual(self.sale_invoice.point_of_sell.pos_number, "00001")
         self.assertEqual(self.sale_invoice.number, "00000001")
         self.assertEqual(self.sale_invoice.description, "Test sale invoice")
@@ -197,7 +228,7 @@ class ErpTestCase(TestCase):
 
     def test_sale_invoice_constraint(self):
         sale_invoice2 = Sale_invoice.objects.create(
-            type = "A",
+            type = self.doc_type1,
             point_of_sell = self.pos1,
             number = "2",
             description = "Test 2 sale invoice",
@@ -215,7 +246,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             sale_invoice3 = Sale_invoice.objects.create(
-                type = "A",
+                type = self.doc_type1,
                 point_of_sell = self.pos1,
                 number = "00000002",
                 description = "Test 2 sale invoice",
@@ -241,7 +272,7 @@ class ErpTestCase(TestCase):
     def test_sale_receipt_content(self):
         sale_receipts = Sale_receipt.objects.all()
         self.assertEqual(sale_receipts.count(), 1)
-        self.assertEqual(self.sale_receipt.type, "A")
+        self.assertEqual(self.sale_receipt.type, self.doc_type1)
         self.assertEqual(self.sale_receipt.point_of_sell.pos_number, "00001")
         self.assertEqual(self.sale_receipt.number, "00000001")
         self.assertEqual(self.sale_receipt.description, "Test sale receipt")
@@ -257,7 +288,7 @@ class ErpTestCase(TestCase):
 
     def test_sale_receipt_constraint(self):
         sale_receipt2 = Sale_receipt.objects.create(
-            type = "A",
+            type = self.doc_type1,
             point_of_sell = self.pos1,
             number = "2",
             description = "Test 2 sale receipt",
@@ -273,7 +304,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             sale_receipt3 = Sale_receipt.objects.create(
-                type = "A",
+                type = self.doc_type1,
                 point_of_sell = self.pos1,
                 number = "00000001",
                 description = "Test 3 sale receipt",
@@ -287,7 +318,7 @@ class ErpTestCase(TestCase):
     def test_purchase_invoice_content(self):
         invoices = Purchase_invoice.objects.all()
         self.assertEqual(invoices.count(), 1)
-        self.assertEqual(self.purchase_invoice.type, "B")
+        self.assertEqual(self.purchase_invoice.type, self.doc_type2)
         self.assertEqual(self.purchase_invoice.point_of_sell, "00231")
         self.assertEqual(self.purchase_invoice.number, "00083051")
         self.assertEqual(self.purchase_invoice.description, "Test purchase invoice")
@@ -305,7 +336,7 @@ class ErpTestCase(TestCase):
 
     def test_purchase_invoice_constraint(self):
         purchase_invoice2 = Purchase_invoice.objects.create(
-            type = "B",
+            type = self.doc_type2,
             point_of_sell = "231",
             number = "99992",
             description = "Test 2 purchase invoice",
@@ -323,7 +354,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             purhcase_invoice3 = Purchase_invoice.objects.create(
-                type = "B",
+                type = self.doc_type2,
                 point_of_sell = "00231",
                 number = "00083051",
                 description = "Test 3 purchase invoice",
@@ -339,7 +370,7 @@ class ErpTestCase(TestCase):
     def test_purchase_receipt_content(self):
         purchase_receipts = Purchase_receipt.objects.all()
         self.assertEqual(purchase_receipts.count(), 1)
-        self.assertEqual(self.purchase_receipt.type, "B")
+        self.assertEqual(self.purchase_receipt.type, self.doc_type2)
         self.assertEqual(self.purchase_receipt.point_of_sell, "00231")
         self.assertEqual(self.purchase_receipt.number, "00000023")
         self.assertEqual(self.purchase_receipt.description, "Test purchase receipt")
@@ -354,7 +385,7 @@ class ErpTestCase(TestCase):
     
     def test_purchase_receipt_constraint(self):
         purchase_receipt2 = Purchase_receipt.objects.create(
-            type = "B",
+            type = self.doc_type2,
             point_of_sell = "231",
             number = "2",
             description = "Test 2 purchase receipt",
@@ -369,7 +400,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             purchase_receipt3 = Purchase_receipt.objects.create(
-                type = "B",
+                type = self.doc_type2,
                 point_of_sell = "00231",
                 number = "00000023",
                 description = "Test 3 purchase receipt",
@@ -496,3 +527,10 @@ class ErpTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "company/points_of_sell.html")
         self.assertContains(response, "Points of Sell")
+
+    def test_doc_types_webpage(self):
+        response = self.client.get("/erp/document_types")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "company/doc_types.html")
+        self.assertContains(response, "Document Types")
+        

@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell)
+    Point_of_sell, Document_type)
 
 
 @tag("erp_api")
@@ -64,6 +64,18 @@ class APIErpTests(APITestCase):
         cls.pos3 = Point_of_sell.objects.create(
             pos_number = "00003",
         )
+        cls.doc_type1 = Document_type.objects.create(
+            code = "1",
+            type = "FA",
+            type_description = "FACTURAS A",
+            hide = False,
+        )
+        cls.doc_type2 = Document_type.objects.create(
+            code = "2",
+            type = "FB",
+            type_description = "FACTURAS B",
+        )
+
     
     def test_company_client_api(self):
         response = self.client.get(reverse("erp:clients_api"))
@@ -129,3 +141,16 @@ class APIErpTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "00003")
         self.assertNotContains(response, "00002")
+
+    def test_doc_types_api(self):
+        response = self.client.get(reverse("erp:doc_types_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Document_type.objects.count(), 2)
+        self.assertContains(response, "FACTURAS A")
+
+    def test_doc_type_api(self):
+        response = self.client.get(reverse("erp:doc_type_api",
+            kwargs={"pk": self.doc_type2.pk}), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "FACTURAS B")
+        self.assertNotContains(response, "FACTURAS A")

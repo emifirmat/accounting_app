@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Document Types{% endblock %}
+
+{% block body %}
+
+    <h2>Document Types</h2>
+    <p>Customize which types of document you want to see while creating or adding 
+    a document. Can't see the type you need? Talk to the administrator.</p>
+
+    <div class="container">
+        <div class="row">
+            <div class="col md-6" id="visible-section">
+                <h5>Visible types</h5>
+                <ul id="visible-list">
+                </ul>
+            </div>
+            <div class="col md-6" id="invisible-section">
+                <h5>Invisible types</h5>
+                <ul id="invisible-list">
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+{% block script %}
+    <script src="{% static 'js/doc_types.js' %}"></script>
+{% endblock script %}

@@ -23,6 +23,8 @@ urlpatterns = [
     path("payment_conditions", views.payment_conditions, name="payment_conditions"),
     # Point of sells
     path("points_of_sell", views.point_of_sell, name="points_of_sell"),
+    # Document types
+    path("document_types", views.doc_types, name="doc_types"),
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
@@ -41,8 +43,14 @@ urlpatterns = [
         name="payment_terms_api"),
     path("api/payment_conditions/terms/<int:pk>", views_api.DetailPaymentTermAPI.as_view(),
         name="payment_term_api"),
+    # POS APIS
     path("api/points_of_sell", views_api.PointOfSellAPI.as_view(), 
         name="pos_api"),
     path("api/points_of_sell/<int:pk>", views_api.DetailPointOfSellAPI.as_view(), 
-        name="detail_pos_api")
+        name="detail_pos_api"),
+    # Doc Types APIS
+    path("api/document_types", views_api.DocTypesAPI.as_view(), 
+        name="doc_types_api"),
+    path("api/document_types/<int:pk>", views_api.DocTypeAPI.as_view(), 
+        name="doc_type_api"),
 ]

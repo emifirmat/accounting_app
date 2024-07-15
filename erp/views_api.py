@@ -3,9 +3,10 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell)
+    Point_of_sell, Document_type)
 from .serializers import (CClientSerializer, SupplierSerializer, 
-    PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer)
+    PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer,
+    DocTypesSerializer)
 
 
 class CompanyClientAPI(generics.ListAPIView):
@@ -98,3 +99,15 @@ class DetailPointOfSellAPI(generics.RetrieveUpdateAPIView):
     """CRUD API of specific POS"""
     queryset = Point_of_sell.objects.all()
     serializer_class = PointOfSellSerializer
+
+
+class DocTypesAPI(generics.ListAPIView):
+    """View API of doc types"""
+    queryset = Document_type.objects.all()
+    serializer_class = DocTypesSerializer
+
+
+class DocTypeAPI(generics.RetrieveUpdateAPIView):
+    """Vies API of especific doc type"""
+    queryset = Document_type.objects.all()
+    serializer_class = DocTypesSerializer

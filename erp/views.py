@@ -1,4 +1,7 @@
+import csv, os
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -8,7 +11,7 @@ from company.models import FinancialYear
 from .forms import (CclientForm, SupplierForm, SaleInvoiceForm, PaymentMethodForm,
     PaymentTermForm, PointOfSellForm)
 from .models import (Company, Company_client, Supplier, Sale_invoice, 
-    Payment_method, Payment_term, Point_of_sell)
+    Payment_method, Payment_term, Point_of_sell, Document_type)
 
 
 # Create your views here.
@@ -125,6 +128,7 @@ def payment_conditions(request):
         "method_form": method_form,
     })
 
+
 def point_of_sell(request):
     """POS webpage"""
     form = PointOfSellForm()
@@ -134,3 +138,35 @@ def point_of_sell(request):
         "form": form,
         "pos_list": pos_list,
     })
+
+
+def doc_types(request):
+    """Customize available doc types webpage"""
+    if not Document_type.objects.exists():
+        # Add all types
+        load_doc_types()
+    return render(request, "company/doc_types.html")
+
+
+def load_doc_types():
+    """Import all doc types according to Argentinian regulations"""
+    file_path = os.path.join(settings.STATICFILES_DIRS[0], "data", "doc_types.csv")
+    try:
+        with open(file_path, 'r', encoding="utf-8") as file:
+            # Load all data or none
+            with transaction.atomic():
+                # Remove bom
+                first_char = file.read(1)
+                if first_char != '\ufeff':
+                    first_char = file.seek(0)
+                
+                # Read file
+                reader = csv.DictReader(file)
+                for row in reader:
+                    Document_type.objects.create(
+                        code = row['code'],
+                        type = row['initials'],
+                        type_description = row['description'],
+                    )
+    except FileNotFoundError:
+        print(f"Couldn't load file")

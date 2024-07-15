@@ -510,4 +510,43 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         path = self.driver.find_element(By.ID, "no-pos")
         self.assertIn("No Point of Sell has been created yet.", path.text)
 
-    
+    @tag("erp_doc_types")
+    def test_doc_types_visibility(self):
+        # Go to Document Types page.
+        self.driver.find_element(By.ID, "company-menu-link").click()
+        path = self.driver.find_element(By.ID, "company-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[4].click()
+        self.assertEqual(self.driver.title, "Document Types")
+        
+        # Click on unhide on docs 001 and 002
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element((By.ID, "invisible-list"), "002")
+        )
+        path = self.driver.find_element(By.ID, "invisible-list")
+        unhide_buttons = path.find_elements(By.TAG_NAME, "button")
+        unhide_buttons[1].click()
+        unhide_buttons[0].click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "visible-list"),
+                "001"
+            )
+        )
+        # Check that docs are not in invisible list
+        self.assertNotIn("002", path.text)
+        self.assertNotIn("001", path.text)
+        # Check that doc 001 is in visible list
+        path = self.driver.find_element(By.ID, "visible-list")
+        self.assertIn("001", path.text)
+        
+        # Move back doc 002 to invisible list
+        hide_buttons = path.find_elements(By.TAG_NAME, "button")
+        hide_buttons[1].click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "invisible-list"),
+                "NOTAS DE DEBITO A"
+            )
+        )
+        # Check that doc 002 is not in visible list
+        self.assertNotIn("NOTAS DE DEBITO A", path.text)

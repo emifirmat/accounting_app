@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from company.models import Company
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell)
+    Point_of_sell, Document_type)
 
 
 class CClientSerializer(serializers.ModelSerializer):
@@ -49,4 +49,10 @@ class PaymentTermSerializer(serializers.ModelSerializer):
 class PointOfSellSerializer(serializers.ModelSerializer):
     class Meta:
         model = Point_of_sell
+        fields = "__all__"
+
+
+class DocTypesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document_type
         fields = "__all__"

@@ -1,3 +1,4 @@
+from django.core.validators import RegexValidator
 from django.db import models
 
 from .validators import validate_is_digit
@@ -17,7 +18,7 @@ class CurrentAccountModel(models.Model):
 class CommercialDocumentModel(models.Model):
     """Base model for commercial documents"""
     issue_date = models.DateTimeField(auto_now_add=True)
-    type = models.CharField(max_length=2)
+    type = models.ForeignKey('Document_type', on_delete=models.PROTECT)
     number = models.CharField(max_length=8, validators=[
         validate_is_digit
     ]) 
@@ -27,7 +28,7 @@ class CommercialDocumentModel(models.Model):
         abstract = True
 
     def __str__(self):
-        return f"{self.point_of_sell}-{self.number} | {self.type} | {self.issue_date}"
+        return f"{self.point_of_sell}-{self.number} | {self.type.type} | {self.issue_date}"
     
     def save(self, *args, **kwargs):
         # Complete numbers with 0
@@ -75,7 +76,31 @@ class Point_of_sell(models.Model):
     
     def __str__(self):
         return f"{self.pos_number}"
+
+
+class Document_type(models.Model):
+    """Type of the document"""
+    code = models.CharField(max_length=3, unique=True, validators=[
+        validate_is_digit,
+    ])
+    type = models.CharField(max_length=5, validators= [
+            RegexValidator(
+                regex=r'[a-zA-Z]',
+                message="Insert letters only",
+                code="Invalid doc type"
+            )
+    ])
+    type_description = models.CharField(max_length=20)
+    hide = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.code} | {self.type}"
     
+    def save(self, *args, **kwargs):
+        # Complete numbers with 0
+        self.code = self.code.zfill(3)
+        return super(Document_type, self).save(*args, **kwargs)
+
 
 class Payment_method(models.Model):
     """Establish payment methods for invoices"""
