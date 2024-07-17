@@ -1,11 +1,15 @@
 {% extends "layout.html" %}
+{% load static %}
 
 {% block title %}New Sale{% endblock title %} 
 
 {% block body %}
 
     <h2>Create a new invoice</h2>
-
+    <p>ATENTION: The invoices created in this section aren't official. You still
+    have to issue them on the tax authorities webpage. 
+    </p>
+    <br>
     <form action="#" method="post">
         {% csrf_token %}
         {{ form.as_p }}
@@ -13,3 +17,6 @@
     </form>
 
 {% endblock body %}
+{% block script %}
+    <script src="{% static 'js/new_invoice.js' %}"></script>
+{% endblock script %}

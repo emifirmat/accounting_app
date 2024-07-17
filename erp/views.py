@@ -99,21 +99,6 @@ def supplier_index(request):
         "suppliers": suppliers,
     })
 
-def sales_index(request):
-    """Sales overview webpage"""
-    financial_year = current_year()
-    sale_invoices = Sale_invoice.objects.all()
-    return render(request, "erp/sales_index.html", {
-        "financial_year": financial_year,
-        "sale_invoices": sale_invoices,
-    })
-
-def sales_new(request):
-    """New sale invoices webpage"""
-    form = SaleInvoiceForm
-    return render(request, "erp/sales_new.html", {
-        "form": form,
-    })
 
 def payment_conditions(request):
     """Payment conditions webpage"""
@@ -170,3 +155,39 @@ def load_doc_types():
                     )
     except FileNotFoundError:
         print(f"Couldn't load file")
+
+
+def sales_index(request):
+    """Sales overview webpage"""
+    financial_year = current_year()
+    sale_invoices = Sale_invoice.objects.all()
+    return render(request, "erp/sales_index.html", {
+        "financial_year": financial_year,
+        "sale_invoices": sale_invoices,
+    })
+
+def sales_new(request):
+    """New sale invoices webpage"""
+    if request.method == "POST":
+        form = SaleInvoiceForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(reverse("erp:sales_invoice", 
+                args=[form["id"]]
+            ))
+
+    elif request.method == "GET":
+        form = SaleInvoiceForm()
+
+    return render(request, "erp/sales_new.html", {
+        "form": form,
+    })
+
+
+def sales_invoice(request, inv_pk):
+    """Especific invoice webpage"""
+    invoice = Sale_invoice.objects.get(pk=inv_pk)
+
+    return render(request, "erp/sales_invoice.html", {
+        "invoice": invoice,
+    })

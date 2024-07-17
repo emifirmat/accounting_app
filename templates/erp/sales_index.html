@@ -7,7 +7,8 @@
     <h2>Sales Overview</h2>
 
     <p>Amount to collect in {{ financial_year.year }}: --To do--</p>
-    <p>Invoices to collect: <ul>{% for invoice in sale_invoices %}<li>{{ invoice }}</li>
+    <p>Invoices to collect: <ul>{% for invoice in sale_invoices %}<li>
+        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a></li>
     {% empty %}No invoice has been issued yet.{% endfor %}</ul>--filter to uncollected only--</p>
     <p>Last invoices: <ul>{% for invoice in sale_invoices %}<li>{{ invoice }}</li>
     {% empty %}No invoice has been issued yet.{% endfor %}</ul>--Set order to cronological--</p></p>

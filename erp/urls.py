@@ -15,16 +15,18 @@ urlpatterns = [
     path("<str:person_type>/edit", views.person_edit, name="person_edit"),
     # Delete a client or supplier web page
     path("<str:person_type>/delete", views.person_delete, name="person_delete"),
-    # Sales index webpage
-    path("sales", views.sales_index, name="sales_index"),
-    # Create new sale invoice webpage
-    path("sales/new_invoice", views.sales_new, name="sales_new"),
     # Payment conditions
     path("payment_conditions", views.payment_conditions, name="payment_conditions"),
     # Point of sells
     path("points_of_sell", views.point_of_sell, name="points_of_sell"),
     # Document types
     path("document_types", views.doc_types, name="doc_types"),
+    # Sales index webpage
+    path("sales", views.sales_index, name="sales_index"),
+    # Create new sale invoice webpage
+    path("sales/new_invoice", views.sales_new, name="sales_new"),
+    # Especific sale invoice webpage
+    path("sales/invoice/<int:inv_pk>", views.sales_invoice, name="sales_invoice"),
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
@@ -53,4 +55,9 @@ urlpatterns = [
         name="doc_types_api"),
     path("api/document_types/<int:pk>", views_api.DocTypeAPI.as_view(), 
         name="doc_type_api"),
+    # Sale invoices APIs
+    path("api/sale_invoices", views_api.SaleInvoicesAPI.as_view(), 
+        name="sale_invoices_api"),
+    path("api/sale_invoices/<int:pk>", views_api.SaleInvoiceAPI.as_view(), 
+        name="sale_invoice_api"),
 ]

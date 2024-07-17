@@ -1,11 +1,13 @@
 """API tests for ERP app"""
+import datetime
 from django.urls import reverse
 from django.test import tag
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from company.models import Company
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type)
+    Point_of_sell, Document_type, Sale_invoice)
 
 
 @tag("erp_api")
@@ -14,6 +16,15 @@ class APIErpTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """Populate DB"""
+        cls.company = Company.objects.create(
+            tax_number = "20361382480",
+            name = "Test Company SRL",
+            address = "fake street 123, fakycity, Argentina",
+            email = "testcompany@email.com",
+            phone = "5493465406182",
+            creation_date = datetime.date(1991, 3, 10),
+            closing_date = datetime.date(2024, 6, 30),
+        )
         cls.client1 = Company_client.objects.create(
             tax_number = "20361382481",
             name = "Client1 SRL",
@@ -74,6 +85,32 @@ class APIErpTests(APITestCase):
             code = "2",
             type = "FB",
             type_description = "FACTURAS B",
+        )
+        cls.sale_invoice = Sale_invoice.objects.create(
+            type = cls.doc_type1,
+            point_of_sell = cls.pos1,
+            number = "00000001",
+            description = "Test sale invoice",
+            sender = cls.company,
+            recipient = cls.client1,
+            payment_method = cls.pay_method1,
+            payment_term = cls.pay_term1,
+            taxable_amount = "1000",
+            not_taxable_amount = "90.01",
+            VAT_amount = "210",
+        )
+        cls.sale_invoice2 = Sale_invoice.objects.create(
+            type = cls.doc_type1,
+            point_of_sell = cls.pos1,
+            number = "2",
+            description = "Some products",
+            sender = cls.company,
+            recipient = cls.client2,
+            payment_method = cls.pay_method2,
+            payment_term = cls.pay_term2,
+            taxable_amount = "2000",
+            not_taxable_amount = "180.02",
+            VAT_amount = "420",
         )
 
     
@@ -154,3 +191,17 @@ class APIErpTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "FACTURAS B")
         self.assertNotContains(response, "FACTURAS A")
+
+    def test_sale_invoices_api(self):
+        response = self.client.get(reverse("erp:sale_invoices_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Sale_invoice.objects.count(), 2)
+        self.assertContains(response, "90.01")
+        self.assertContains(response, "00000002")
+
+    def test_sale_invoice_api(self):
+        response = self.client.get(reverse("erp:sale_invoice_api",
+            kwargs={"pk": self.sale_invoice.pk}), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "00000001")
+        self.assertNotContains(response, "Some products")

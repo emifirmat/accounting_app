@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 from company.models import Company
 from .models import (Company_client, Supplier, Sale_invoice, Payment_method,
-    Payment_term, Point_of_sell)
+    Payment_term, Point_of_sell, Document_type)
 
 
 
@@ -64,6 +64,9 @@ class SaleInvoiceForm(forms.ModelForm):
             "payment_method", "payment_term", "description", "not_taxable_amount",
             "taxable_amount", "VAT_amount"]
         help_texts = {
+            "type": "Can't find the type you need? <a href=\"/erp/document_types\">Click Here</a>",
+            "number": "The number you see is the next in sequence after the last invoice created in the system.",
+            "point_of_sell": "Can't find the point of sell you need? <a href=\"/erp/points_of_sell\">Click Here</a>",
             "payment_method": "How will you collect the sale?",
             "payment_term": "In how many days will you collect the sale?",
             "description": "Description of the product or service you are selling.",
@@ -71,6 +74,21 @@ class SaleInvoiceForm(forms.ModelForm):
             "taxable_amount": "Total amount.",
             "VAT_amount": "Total amount.",
         } 
+        widgets = {
+            "number": forms.NumberInput(attrs={"placeholder": "XXXXXXXX"}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        """Customize intitial fields"""
+        super().__init__(*args, **kwargs)
+        # Define sender as the company
+        sender = Company.objects.first()
+        if sender:
+            self.fields["sender"].initial = sender
+            self.fields["sender"].disabled = True
+
+        # In type field, show only visible types
+        self.fields["type"].queryset = Document_type.objects.filter(hide=False)
 
 
 class PaymentTermForm(forms.ModelForm):

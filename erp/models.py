@@ -1,5 +1,6 @@
 from django.core.validators import RegexValidator
 from django.db import models
+from django.urls import reverse
 
 from .validators import validate_is_digit
 from company.models import PersonModel, Company
@@ -136,6 +137,13 @@ class Sale_invoice(CommercialDocumentModel):
             models.UniqueConstraint(fields=["point_of_sell", "number", "type"],
                 name="unique_sale_invoice_complete_number")
         ]
+
+    def get_absolute_url(self):
+        """Get object webpage"""
+        return reverse("erp:sales_invoice", kwargs={"pk": self.pk})
+    
+    def total_amount(self):
+        return self.taxable_amount + self.not_taxable_amount + self.VAT_amount
 
 
 class Sale_receipt(CommercialDocumentModel):

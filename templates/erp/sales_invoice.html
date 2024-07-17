@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Invoice {{ invoice.point_of_sell }}-{{ invoice.number }}
+{% endblock title %}
+
+{% block body %}
+
+    <h2>Invoice N° {{ invoice.point_of_sell }}-{{ invoice.number }}</h2>
+    <br>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-4"> 
+                <h3>{{ invoice.sender.name }}</h3>
+                <p><b>Sender:</b> {{ invoice.sender.name }}</p>
+                <p><b>Address:</b> {{ invoice.sender.address }}</p>  
+            </div>
+            <div class="col-2">
+                <h1>{{ invoice.type.type }}</h1>
+                <p>{{ invoice.type.code }}</p>
+            </div>
+            <div class="col-4">
+                <h3>{{ invoice.type.type_description }}</h3>
+                <p><b>Point of Sell:</b> {{ invoice.point_of_sell }} <b>Invoice Number:</b> 
+                {{ invoice.number }}
+                </p>
+                <p><b>Issue Date:</b> {{ invoice.issue_date|date:"d/m/Y" }}</p>
+                <p><b>Tax Number:</b> {{ invoice.sender.tax_number }}</p>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-6"> 
+                <p><b>Tax number:</b> {{ invoice.recipient.tax_number }}</p>
+                <p><b>Payment Method:</b> {{ invoice.payment_method }}</p>
+            </div>
+            <div class="col-6">
+                <p><b>Name:</b> {{ invoice.recipient.name }}</p>
+                <p><b>Address:</b> {{ invoice.recipient.address }}</p>
+                <p><b>Payment Term:</b> {{ invoice.payment_term }}</p>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-4">
+                <p><b>Description</b></p>
+                <p> {{ invoice.description }} </p>
+            </div>
+            <div class="col-2">
+                <p><b>Not Taxable</b></p>
+                <p>{{ invoice.not_taxable_amount }}</p>
+            </div>
+            <div class="col-2">
+                <p><b>Taxable</b></p>
+                <p>{{ invoice.taxable_amount }}</p>
+            </div>
+            <div class="col-2">
+                <p><b>VAT</b></p>
+                <p>{{ invoice.VAT_amount }}</p>
+            </div>
+            <div class="col-2">
+                <p><b>Subtotal</b></p>
+                <p>{{ invoice.total_amount }}</p>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-8"></div>
+            <div class="col-2">
+                <p><b>TOTAL</b></p>
+            </div>
+            <div class="col-2">
+                <p>{{ invoice.total_amount }}</p>
+            </div>
+        </div>
+
+    </div>
+
+{% endblock body %}
