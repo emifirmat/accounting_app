@@ -10,7 +10,7 @@
     have to issue them on the tax authorities webpage. 
     </p>
     <br>
-    <form action="#" method="post">
+    <form id="invoice-form" action="#" method="post">
         {% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Create">

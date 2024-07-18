@@ -26,7 +26,7 @@ urlpatterns = [
     # Create new sale invoice webpage
     path("sales/new_invoice", views.sales_new, name="sales_new"),
     # Especific sale invoice webpage
-    path("sales/invoice/<int:inv_pk>", views.sales_invoice, name="sales_invoice"),
+    path("sales/invoices/<int:inv_pk>", views.sales_invoice, name="sales_invoice"),
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),

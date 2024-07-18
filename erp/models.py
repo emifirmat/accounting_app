@@ -140,7 +140,7 @@ class Sale_invoice(CommercialDocumentModel):
 
     def get_absolute_url(self):
         """Get object webpage"""
-        return reverse("erp:sales_invoice", kwargs={"pk": self.pk})
+        return reverse("erp:sales_invoice", args=[self.pk])
     
     def total_amount(self):
         return self.taxable_amount + self.not_taxable_amount + self.VAT_amount

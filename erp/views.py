@@ -171,9 +171,9 @@ def sales_new(request):
     if request.method == "POST":
         form = SaleInvoiceForm(request.POST)
         if form.is_valid():
-            form.save()
+            sale_invoice = form.save()
             return HttpResponseRedirect(reverse("erp:sales_invoice", 
-                args=[form["id"]]
+                args=[sale_invoice.id]
             ))
 
     elif request.method == "GET":

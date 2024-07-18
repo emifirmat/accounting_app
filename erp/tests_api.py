@@ -1,5 +1,6 @@
 """API tests for ERP app"""
 import datetime
+from decimal import Decimal
 from django.urls import reverse
 from django.test import tag
 from rest_framework import status
@@ -95,9 +96,9 @@ class APIErpTests(APITestCase):
             recipient = cls.client1,
             payment_method = cls.pay_method1,
             payment_term = cls.pay_term1,
-            taxable_amount = "1000",
-            not_taxable_amount = "90.01",
-            VAT_amount = "210",
+            taxable_amount = Decimal("1000"),
+            not_taxable_amount = Decimal("90.01"),
+            VAT_amount = Decimal("210"),
         )
         cls.sale_invoice2 = Sale_invoice.objects.create(
             type = cls.doc_type1,
@@ -108,9 +109,9 @@ class APIErpTests(APITestCase):
             recipient = cls.client2,
             payment_method = cls.pay_method2,
             payment_term = cls.pay_term2,
-            taxable_amount = "2000",
-            not_taxable_amount = "180.02",
-            VAT_amount = "420",
+            taxable_amount = Decimal("2000"),
+            not_taxable_amount = Decimal("180.02"),
+            VAT_amount = Decimal("420"),
         )
 
     

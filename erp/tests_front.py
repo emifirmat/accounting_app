@@ -1,18 +1,33 @@
 """Selenium tests for erp app"""
 import datetime
+from decimal import Decimal
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import tag
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 
 from company.models import Company
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell)
+    Point_of_sell, Document_type, Sale_invoice)
 
 
-@tag("erp_front")
+"""Selenium custom functions"""
+def element_has_selected_option(locator, option_text):
+    def _predicate(driver):
+        # Search and add class to select element
+        select_element = Select(driver.find_element(*locator))
+        # Pick selected option
+        selected_option = select_element.first_selected_option
+        # Return True if text is in selected option
+        return selected_option.text == option_text
+        # Return function to be used by webdriver
+    return _predicate
+
+
+"""Tests"""
+@tag("erp_front_simple_models")
 class ErpFrontTestCase(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
@@ -291,7 +306,6 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
             )
         )
 
-
     @tag("erp_payment_term_n")
     def test_payment_conditions_term_new(self):
         # Go to Payment Conditions page.
@@ -360,7 +374,6 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
     def test_payment_terms_view_and_delete_list(self):
         # Create data
         Payment_term.objects.bulk_create([
-            Payment_term(pay_term="0"),
             Payment_term(pay_term="90"),
             Payment_term(pay_term="180"),
             Payment_term(pay_term="360"),
@@ -405,7 +418,6 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
     def test_payment_methods_view_list(self):
         # Create data
         Payment_method.objects.bulk_create([
-            Payment_method(pay_method="Cash"),
             Payment_method(pay_method="Transfer"),
             Payment_method(pay_method="Check"),
         ])
@@ -550,3 +562,208 @@ class ErpFrontTestCase(StaticLiveServerTestCase):
         )
         # Check that doc 002 is not in visible list
         self.assertNotIn("NOTAS DE DEBITO A", path.text)
+
+@tag("erp_front_documents")
+class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Start Selenium webdriver"""
+        super().setUpClass()
+        cls.driver = WebDriver()
+        cls.driver.implicitly_wait(5)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Close selenium webdriver"""
+        cls.driver.quit()
+        super().tearDownClass()
+
+    def setUp(self):
+        """Populate db and load index page"""
+        self.company = Company.objects.create(
+            tax_number = "20361382480",
+            name = "Test Company SRL",
+            address = "fake street 123, fakycity, Argentina",
+            email = "testcompany@email.com",
+            phone = "5493465406182",
+            creation_date = datetime.date(1991, 3, 10),
+            closing_date = datetime.date(2024, 6, 30),
+        )
+        
+        self.client1 = Company_client.objects.create(
+            tax_number = "20361382481",
+            name = "Client1 SRL",
+            address = "Client street, Client city, Chile",
+            email = "client1@email.com",
+            phone = "1234567890",
+        )
+
+        self.client2 = Company_client.objects.create(
+            tax_number = "99999999999",
+            name = "Client2 SA",
+            address = "Client2 street, Client city, Chile",
+            email = "client2@email.com",
+            phone = "0987654321",
+        )
+
+        self.supplier1 = Supplier.objects.create(
+            tax_number = "20361382482",
+            name = "Supplier1 SA",
+            address = "Supplier street, Supplier city, Chile",
+            email = "Supplier1@email.com",
+            phone = "0987654321",
+        )
+
+        self.supplier2 = Supplier.objects.create(
+            tax_number = "30361382485",
+            name = "Supplier2 SRL",
+            address = "Supplier2 street, Supplier city, Chile",
+            email = "supplier2@email.com",
+            phone = "987654321",
+        )
+
+        self.pos1 = Point_of_sell.objects.create(
+            pos_number = "00001",
+        )
+
+        self.pos2 = Point_of_sell.objects.create(
+            pos_number = "00002",
+        )
+
+        self.doc_type1 = Document_type.objects.create(
+            type = "A",
+            code = "001",
+            type_description = "Invoice A",
+            hide = False,
+        )
+        
+        self.doc_type2 = Document_type.objects.create(
+            type = "B",
+            code = "002",
+            type_description = "Invoice B",
+            hide = False,
+        )
+
+        self.pay_method = Payment_method.objects.create(
+            pay_method = "Cash",
+        )
+        self.pay_method2 = Payment_method.objects.create(
+            pay_method = "Transfer",
+        )
+
+        self.pay_term = Payment_term.objects.create(
+            pay_term = "0",
+        )
+        self.pay_term2 = Payment_term.objects.create(
+            pay_term = "30",
+        )
+
+        self.sale_invoice1 = Sale_invoice.objects.create(
+            type = self.doc_type1,
+            point_of_sell = self.pos1,
+            number = "00000001",
+            description = "Test sale invoice",
+            sender = self.company,
+            recipient = self.client1,
+            payment_method = self.pay_method,
+            payment_term = self.pay_term,
+            taxable_amount = Decimal("1000"),
+            not_taxable_amount = Decimal("90.01"),
+            VAT_amount = Decimal("210"),
+        )
+
+        self.sale_invoice2 = Sale_invoice.objects.create(
+            type = self.doc_type2,
+            point_of_sell = self.pos1,
+            number = "00000001",
+            description = "Second sale invoice",
+            sender = self.company,
+            recipient = self.client1,
+            payment_method = self.pay_method2,
+            payment_term = self.pay_term2,
+            taxable_amount = Decimal("999.99"),
+            not_taxable_amount = Decimal("0.02"),
+            VAT_amount = Decimal("209.09"),
+        )
+
+        self.driver.get(f"{self.live_server_url}")
+
+    def test_sales_overview(self):
+        # Go to Sales overview page.
+        self.driver.find_element(By.ID, "sales-menu-link").click()
+        path = self.driver.find_element(By.ID, "sales-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[0].click()
+        self.assertEqual(self.driver.title, "Sales")
+
+    def test_sales_new_invoice_numbers(self):
+        # Go to Sales new invoice page.
+        self.driver.find_element(By.ID, "sales-menu-link").click()
+        path = self.driver.find_element(By.ID, "sales-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[1].click()
+        self.assertEqual(self.driver.title, "New Sale")
+
+        # Check sender field is the company
+        sender_field = Select(self.driver.find_element(By.ID, "id_sender"))
+        selected_option = sender_field.first_selected_option
+        self.assertIn("Test Company SRL", selected_option.text)
+        
+        # Check number field is ""
+        number_field = self.driver.find_element(By.ID, "id_number")
+        self.assertEqual(number_field.get_attribute('value'), "")
+
+        # Pick type and check number field doesn't change
+        type_field = Select(self.driver.find_element(By.ID, "id_type"))
+        selected_option = type_field.select_by_index(1)
+        WebDriverWait(self.driver, 10).until(
+            element_has_selected_option((By.ID, "id_type"), "001 | A")
+        )
+        self.assertEqual(number_field.get_attribute('value'), "")
+        
+        # Pick pos and check number field changes
+        pos_field = Select(self.driver.find_element(By.ID, "id_point_of_sell"))
+        selected_option = pos_field.select_by_index(1)
+        WebDriverWait(self.driver, 10).until(
+            element_has_selected_option((By.ID, "id_point_of_sell"), "00001")
+        )
+        self.assertEqual(number_field.get_attribute('value'), "2")
+
+        # Pick another pos and check number field changes again
+        pos_field.select_by_index(2)
+        WebDriverWait(self.driver, 10).until(
+            element_has_selected_option((By.ID, "id_point_of_sell"), "00002")
+        )        
+        self.assertEqual(number_field.get_attribute("value"), "1")
+
+    def test_sales_new_invoice_link_type(self):
+        # Go to Sales new invoice page.
+        self.driver.find_element(By.ID, "sales-menu-link").click()
+        path = self.driver.find_element(By.ID, "sales-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[1].click()
+
+        # Click on Go to type link
+        path = self.driver.find_element(By.ID, "invoice-form")
+        type_link = path.find_elements(By.TAG_NAME, "a")[0]
+        type_link.click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "visible-list"),
+                "Invoice A"
+            )
+        )
+
+    def test_sales_new_invoice_link_pos(self):
+        # Go to Sales new invoice page.
+        self.driver.find_element(By.ID, "sales-menu-link").click()
+        path = self.driver.find_element(By.ID, "sales-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[1].click()
+
+        # Click on Go to type link
+        path = self.driver.find_element(By.ID, "invoice-form")
+        type_link = path.find_elements(By.TAG_NAME, "a")[1]
+        type_link.click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "new-pos"),
+                "Add"
+            )
+        )
