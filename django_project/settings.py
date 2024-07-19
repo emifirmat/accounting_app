@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     "accounts",
     "company",
     "erp",
-    "bookkeeping",
 ]
 
 MIDDLEWARE = [
