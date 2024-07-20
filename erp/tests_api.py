@@ -91,27 +91,19 @@ class APIErpTests(APITestCase):
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
-            description = "Test sale invoice",
             sender = cls.company,
             recipient = cls.client1,
             payment_method = cls.pay_method1,
             payment_term = cls.pay_term1,
-            taxable_amount = Decimal("1000"),
-            not_taxable_amount = Decimal("90.01"),
-            VAT_amount = Decimal("210"),
         )
         cls.sale_invoice2 = Sale_invoice.objects.create(
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "2",
-            description = "Some products",
             sender = cls.company,
             recipient = cls.client2,
             payment_method = cls.pay_method2,
             payment_term = cls.pay_term2,
-            taxable_amount = Decimal("2000"),
-            not_taxable_amount = Decimal("180.02"),
-            VAT_amount = Decimal("420"),
         )
 
     
@@ -197,7 +189,7 @@ class APIErpTests(APITestCase):
         response = self.client.get(reverse("erp:sale_invoices_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Sale_invoice.objects.count(), 2)
-        self.assertContains(response, "90.01")
+        self.assertContains(response, "00000001")
         self.assertContains(response, "00000002")
 
     def test_sale_invoice_api(self):
@@ -205,4 +197,4 @@ class APIErpTests(APITestCase):
             kwargs={"pk": self.sale_invoice.pk}), format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "00000001")
-        self.assertNotContains(response, "Some products")
+        self.assertNotContains(response, "00000002")

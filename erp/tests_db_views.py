@@ -8,8 +8,8 @@ from django.urls import reverse
 # Create your tests here.
 from .models import (Company_client, Supplier, Client_current_account,
     Supplier_current_account, Payment_method, Payment_term, Sale_invoice,
-    Sale_receipt, Purchase_invoice, Purchase_receipt, Point_of_sell, 
-    Document_type)
+    Sale_invoice_line, Sale_receipt, Purchase_invoice, Purchase_invoice_line,
+    Purchase_receipt, Point_of_sell, Document_type)
 from company.models import Company, Calendar
 
 
@@ -99,14 +99,25 @@ class ErpTestCase(TestCase):
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
-            description = "Test sale invoice",
             sender = cls.company,
             recipient = cls.company_client,
             payment_method = cls.payment_method,
             payment_term = cls.payment_term,
+        )
+
+        cls.sale_invoice_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = cls.sale_invoice,
+            description = "Test sale invoice",
             taxable_amount = Decimal("1000"),
             not_taxable_amount = Decimal("90.01"),
             VAT_amount = Decimal("210"),
+        )
+        cls.sale_invoice_line2 = Sale_invoice_line.objects.create(
+            sale_invoice = cls.sale_invoice,
+            description = "Other products",
+            taxable_amount = Decimal("999"),
+            not_taxable_amount = Decimal("00.01"),
+            VAT_amount = Decimal("209.99"),
         )
 
         cls.sale_receipt = Sale_receipt.objects.create(
@@ -124,11 +135,15 @@ class ErpTestCase(TestCase):
             type = cls.doc_type2,
             point_of_sell = "00231",
             number = "00083051",
-            description = "Test purchase invoice",
             sender = cls.supplier,
             recipient = cls.company,
             payment_method = cls.payment_method2,
             payment_term = cls.payment_term2,
+        )
+
+        cls.purchase_invoice_line1 = Purchase_invoice_line.objects.create(
+            purchase_invoice = cls.purchase_invoice,
+            description = "Test purchase invoice",
             taxable_amount = Decimal("200"),
             not_taxable_amount = Decimal("0"),
             VAT_amount = Decimal("42"),
@@ -219,39 +234,32 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_invoice.type, self.doc_type1)
         self.assertEqual(self.sale_invoice.point_of_sell.pos_number, "00001")
         self.assertEqual(self.sale_invoice.number, "00000001")
-        self.assertEqual(self.sale_invoice.description, "Test sale invoice")
         self.assertEqual(self.sale_invoice.sender, self.company)
         self.assertEqual(self.sale_invoice.recipient, self.company_client)
         self.assertEqual(self.sale_invoice.payment_method, self.payment_method)
         self.assertEqual(self.sale_invoice.payment_term, self.payment_term)
-        self.assertEqual(self.sale_invoice.taxable_amount, Decimal("1000"))
-        self.assertEqual(self.sale_invoice.not_taxable_amount, Decimal("90.01"))
-        self.assertEqual(self.sale_invoice.VAT_amount, Decimal("210"))
         self.assertEqual(
             str(self.sale_invoice),
             f"00001-00000001 | A | {self.sale_invoice.issue_date}"
         )
 
-    def test_sale_invoice_total_amount(self):
-        self.assertEqual(self.sale_invoice.total_amount(), Decimal("1300.01"))
-
-    def test_sales_get_abosulte_url(self):
+    def test_sale_invoice_get_abosulte_url(self):
         response = self.client.get(self.sale_invoice.get_absolute_url())
         self.assertEqual(response.status_code, 200)
+
+    def test_sale_invoice_total_sum(self):
+        self.assertAlmostEqual(self.sale_invoice.total_lines_sum(),
+            Decimal(2509.01))
 
     def test_sale_invoice_constraint(self):
         sale_invoice2 = Sale_invoice.objects.create(
             type = self.doc_type1,
             point_of_sell = self.pos1,
             number = "2",
-            description = "Test 2 sale invoice",
             sender = self.company,
             recipient = self.company_client,
             payment_method = self.payment_method2,
             payment_term = self.payment_term2,
-            taxable_amount = "1010",
-            not_taxable_amount = "90.01",
-            VAT_amount = "212.10",
         )
 
         invoices = Sale_invoice.objects.all()
@@ -262,25 +270,35 @@ class ErpTestCase(TestCase):
                 type = self.doc_type1,
                 point_of_sell = self.pos1,
                 number = "00000002",
-                description = "Test 2 sale invoice",
                 sender = self.company,
                 recipient = self.company_client,
                 payment_method = self.payment_method2,
                 payment_term = self.payment_term2,
-                taxable_amount = "1010",
-                not_taxable_amount = "90.01",
-                VAT_amount = "212.10",
             )
 
-    def test_sale_invoice_decimal_places(self):
+    def test_sale_invoice_line_content(self):
+        invoice_lines = Sale_invoice_line.objects.all()
+        self.assertEqual(invoice_lines.count(), 2)
+        self.assertEqual(self.sale_invoice_line1.sale_invoice, self.sale_invoice)
+        self.assertEqual(self.sale_invoice_line1.description, "Test sale invoice")
+        self.assertEqual(self.sale_invoice_line1.taxable_amount, Decimal("1000"))
+        self.assertEqual(self.sale_invoice_line1.not_taxable_amount, 
+            Decimal("90.01"))
+        self.assertEqual(self.sale_invoice_line1.VAT_amount, Decimal("210"))
+        self.assertEqual(self.sale_invoice_line1.total_amount, Decimal("1300.01"))
+        self.assertEqual(
+            str(self.sale_invoice_line1), f"Test sale invoice | $ 1300.01"
+        )
+
+    def test_sale_invoice_line_decimal_places(self):
         # 1 digit
-        self.sale_invoice.taxable_amount = "1.1"
-        self.sale_invoice.save()
-        self.assertEqual(self.sale_invoice.taxable_amount, "1.1")
+        self.sale_invoice_line1.taxable_amount = Decimal("1.1")
+        self.sale_invoice_line1.save()
+        self.assertEqual(self.sale_invoice_line1.taxable_amount, Decimal("1.1"))
         # 3 digits
         with self.assertRaises(ValidationError):
-            self.sale_invoice.VAT_amount = "0.564"
-            self.sale_invoice.full_clean()
+            self.sale_invoice_line1.VAT_amount = Decimal("0.564")
+            self.sale_invoice_line1.full_clean()
 
     def test_sale_receipt_content(self):
         sale_receipts = Sale_receipt.objects.all()
@@ -334,14 +352,10 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.purchase_invoice.type, self.doc_type2)
         self.assertEqual(self.purchase_invoice.point_of_sell, "00231")
         self.assertEqual(self.purchase_invoice.number, "00083051")
-        self.assertEqual(self.purchase_invoice.description, "Test purchase invoice")
         self.assertEqual(self.purchase_invoice.sender, self.supplier)
         self.assertEqual(self.purchase_invoice.recipient, self.company)
         self.assertEqual(self.purchase_invoice.payment_method, self.payment_method2)
         self.assertEqual(self.purchase_invoice.payment_term, self.payment_term2)
-        self.assertEqual(self.purchase_invoice.taxable_amount, Decimal("200"))
-        self.assertEqual(self.purchase_invoice.not_taxable_amount, Decimal("0"))
-        self.assertEqual(self.purchase_invoice.VAT_amount, Decimal("42"))
         self.assertEqual(
             str(self.purchase_invoice),
             f"00231-00083051 | B | {self.purchase_invoice.issue_date}"
@@ -352,14 +366,10 @@ class ErpTestCase(TestCase):
             type = self.doc_type2,
             point_of_sell = "231",
             number = "99992",
-            description = "Test 2 purchase invoice",
             sender = self.supplier,
             recipient = self.company,
             payment_method = self.payment_method2,
             payment_term = self.payment_term2,
-            taxable_amount = Decimal("1010"),
-            not_taxable_amount = Decimal("90.01"),
-            VAT_amount = Decimal("212.10"),
         )
 
         invoices = Purchase_invoice.objects.all()
@@ -370,15 +380,28 @@ class ErpTestCase(TestCase):
                 type = self.doc_type2,
                 point_of_sell = "00231",
                 number = "00083051",
-                description = "Test 3 purchase invoice",
                 sender = self.supplier,
                 recipient = self.company,
                 payment_method = self.payment_method,
                 payment_term = self.payment_term,
-                taxable_amount = Decimal("1010"),
-                not_taxable_amount = Decimal("90.01"),
-                VAT_amount = Decimal("212.10"),
             )
+
+    def test_purchase_invoice_line_content(self):
+        invoice_lines = Purchase_invoice.objects.all()
+        self.assertEqual(invoice_lines.count(), 1)
+        self.assertEqual(self.purchase_invoice_line1.purchase_invoice, 
+            self.purchase_invoice)
+        self.assertEqual(self.purchase_invoice_line1.description, 
+            "Test purchase invoice")
+        self.assertEqual(self.purchase_invoice_line1.taxable_amount, 
+            Decimal("200"))
+        self.assertEqual(self.purchase_invoice_line1.not_taxable_amount, 
+            Decimal("0"))
+        self.assertEqual(self.purchase_invoice_line1.VAT_amount, Decimal("42"))
+        self.assertEqual(self.purchase_invoice_line1.total_amount, 242)
+        self.assertEqual(
+            str(self.purchase_invoice_line1), f"Test purchase invoice | $ 242"
+        )
 
     def test_purchase_receipt_content(self):
         purchase_receipts = Purchase_receipt.objects.all()
@@ -562,28 +585,70 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "002 | B")
         self.assertNotContains(response, "019 | E")
 
-    def test_sales_new_invoice_post_webpage(self):
+    def test_sales_new_invoice_post_single_line_webpage(self):
         response = self.client.post(reverse("erp:sales_new"), {
+            # Invoice form
             "type": self.doc_type2.id,
             "point_of_sell": self.pos2.id,
             "number": "1",
-            "description": "Random products",
             "sender": self.company.id,
             "recipient": self.company_client.id,
             "payment_method": self.payment_method.id,
             "payment_term": self.payment_term2.id,
-            "taxable_amount": Decimal("2000"),
-            "not_taxable_amount": Decimal("180.02"),
-            "VAT_amount": Decimal("420"),
-        })
+            # line-setform 
+            "s_invoice_lines-0-description": "Random products",
+            "s_invoice_lines-0-taxable_amount": Decimal("2000"),
+            "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
+            "s_invoice_lines-0-VAT_amount": Decimal("420"),
+            # line-setform-management
+            "s_invoice_lines-TOTAL_FORMS": "1",
+            "s_invoice_lines-INITIAL_FORMS": "0",
+            "s_invoice_lines-MIN_NUM_FORMS": "0",
+            "s_invoice_lines-MAX_NUM_FORMS": "1000",
+        })       
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Sale_invoice.objects.all().count(), 2)
 
-    def test_sales_invoices_webpage(self):
+    def test_sales_new_invoice_post_triple_line_webpage(self):
+        response = self.client.post(reverse("erp:sales_new"), {
+            # Invoice form
+            "type": self.doc_type2.id,
+            "point_of_sell": self.pos2.id,
+            "number": "1",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "payment_method": self.payment_method.id,
+            "payment_term": self.payment_term2.id,
+            # line-setform-management
+            "s_invoice_lines-TOTAL_FORMS": "3",
+            "s_invoice_lines-INITIAL_FORMS": "0",
+            "s_invoice_lines-MIN_NUM_FORMS": "0",
+            "s_invoice_lines-MAX_NUM_FORMS": "1000",
+            # line-1-setform 
+            "s_invoice_lines-0-description": "Random products",
+            "s_invoice_lines-0-taxable_amount": Decimal("2000"),
+            "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
+            "s_invoice_lines-0-VAT_amount": Decimal("420"),
+            # line-2-setform 
+            "s_invoice_lines-1-description": "Custom products",
+            "s_invoice_lines-1-taxable_amount": Decimal("1000"),
+            "s_invoice_lines-1-not_taxable_amount": Decimal("80.02"),
+            "s_invoice_lines-1-VAT_amount": Decimal("20"),
+            # line-3-setform 
+            "s_invoice_lines-2-description": "A few products",
+            "s_invoice_lines-2-taxable_amount": Decimal("333"),
+            "s_invoice_lines-2-not_taxable_amount": Decimal("33.32"),
+            "s_invoice_lines-2-VAT_amount": Decimal("33"),
+        })       
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Sale_invoice.objects.all().count(), 2)
+
+    def test_sales_invoice_multiline_webpage(self):
         response = self.client.get("/erp/sales/invoices/1")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/sales_invoice.html")
         self.assertContains(response, "Invoice N° 00001-00000001")
         self.assertContains(response, "$ 1300.01")
+        self.assertContains(response, "$ 2509.01")
         
         

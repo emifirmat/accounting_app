@@ -4,13 +4,15 @@ from decimal import Decimal
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import tag
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
+
 from company.models import Company
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice)
+    Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
 
 
 """Selenium custom functions"""
@@ -661,12 +663,16 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         self.sale_invoice1 = Sale_invoice.objects.create(
             type = self.doc_type1,
             point_of_sell = self.pos1,
-            number = "00000001",
-            description = "Test sale invoice",
+            number = "00000001",         
             sender = self.company,
             recipient = self.client1,
             payment_method = self.pay_method,
             payment_term = self.pay_term,
+        )
+
+        self.sale_invoice1_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice1,
+            description = "Test sale invoice",
             taxable_amount = Decimal("1000"),
             not_taxable_amount = Decimal("90.01"),
             VAT_amount = Decimal("210"),
@@ -676,11 +682,15 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             type = self.doc_type2,
             point_of_sell = self.pos1,
             number = "00000001",
-            description = "Second sale invoice",
             sender = self.company,
             recipient = self.client1,
             payment_method = self.pay_method2,
             payment_term = self.pay_term2,
+        )
+
+        self.sale_invoice2_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice2,
+            description = "Second sale invoice",
             taxable_amount = Decimal("999.99"),
             not_taxable_amount = Decimal("0.02"),
             VAT_amount = Decimal("209.09"),
@@ -765,5 +775,30 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             EC.text_to_be_present_in_element(
                 (By.ID, "new-pos"),
                 "Add"
+            )
+        )
+        
+    def test_sales_new_invoice_add_line(self):
+        # Go to Sales new invoice page.
+        self.driver.find_element(By.ID, "sales-menu-link").click()
+        path = self.driver.find_element(By.ID, "sales-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[1].click()
+
+        # Click on New line
+        path = self.driver.find_element(By.ID, "invoice-form")
+        button = path.find_element(By.ID, "new-line")
+        # Regular click doesn't work, use action chains        
+        ActionChains(self.driver).move_to_element(button).click(button).perform()
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(
+                (By.ID, "id_s_invoice_lines-1-description")
+            )
+        )
+
+        # Click again (Regular click doesn't work, use action chains.)       
+        ActionChains(self.driver).move_to_element(button).click(button).perform()
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(
+                (By.ID, "id_s_invoice_lines-2-description")
             )
         )

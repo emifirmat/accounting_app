@@ -21,7 +21,7 @@
                         </form>
                     {% endif %}
                         <button class="add-button">New payment term</button>
-                        <div id="new-term">
+                        <div id="new-term" class="hidden">
                             <form>
                                 {% csrf_token %}
                                 {{ term_form.as_p }}
@@ -41,7 +41,7 @@
                         </form>
                     {% endif %}
                         <button class="add-button">New payment method</button>
-                        <div id="new-method">
+                        <div id="new-method" class="hidden">
                             <form>
                                 {% csrf_token %}
                                 {{ method_form.as_p }}

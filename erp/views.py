@@ -8,10 +8,10 @@ from django.urls import reverse
 
 
 from company.models import FinancialYear
-from .forms import (CclientForm, SupplierForm, SaleInvoiceForm, PaymentMethodForm,
-    PaymentTermForm, PointOfSellForm)
-from .models import (Company, Company_client, Supplier, Sale_invoice, 
-    Payment_method, Payment_term, Point_of_sell, Document_type)
+from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
+    PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet)
+from .models import (Company, Company_client, Supplier, Payment_method, 
+    Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
 
 
 # Create your views here.
@@ -169,18 +169,26 @@ def sales_index(request):
 def sales_new(request):
     """New sale invoices webpage"""
     if request.method == "POST":
-        form = SaleInvoiceForm(request.POST)
-        if form.is_valid():
-            sale_invoice = form.save()
-            return HttpResponseRedirect(reverse("erp:sales_invoice", 
-                args=[sale_invoice.id]
-            ))
+        invoice_form = SaleInvoiceForm(request.POST)
+        line_formset = SaleInvoiceLineFormSet(request.POST)
+        if invoice_form.is_valid() and line_formset.is_valid():
+            with transaction.atomic():
+                sale_invoice = invoice_form.save()
+                sale_lines = line_formset.save(commit=False)
+                for sale_line in sale_lines:
+                    sale_line.sale_invoice = sale_invoice
+                    sale_line.save() 
+                return HttpResponseRedirect(reverse("erp:sales_invoice", 
+                    args=[sale_invoice.id]
+                ))
 
     elif request.method == "GET":
-        form = SaleInvoiceForm()
+        invoice_form = SaleInvoiceForm()
+        line_formset = SaleInvoiceLineFormSet()
 
     return render(request, "erp/sales_new.html", {
-        "form": form,
+        "invoice_form": invoice_form,
+        "line_formset": line_formset,
     })
 
 

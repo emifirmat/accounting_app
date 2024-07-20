@@ -1,5 +1,6 @@
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Sum, Q
 from django.urls import reverse
 
 from .validators import validate_is_digit
@@ -23,7 +24,6 @@ class CommercialDocumentModel(models.Model):
     number = models.CharField(max_length=8, validators=[
         validate_is_digit
     ]) 
-    description = models.TextField()
 
     class Meta:
         abstract = True
@@ -35,6 +35,27 @@ class CommercialDocumentModel(models.Model):
         # Complete numbers with 0
         self.number = self.number.zfill(8)
         return super(CommercialDocumentModel, self).save(*args, **kwargs)
+    
+
+class CommercialDocumentLineModel(models.Model):
+    """Base model for commercial documents lines"""
+    description = models.CharField(max_length=280)
+    taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    not_taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    VAT_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return f"{self.description} | $ {self.total_amount}"
+    
+    def save(self, *args, **kwargs):
+        # Get total amount field
+        self.total_amount = (self.taxable_amount + self.not_taxable_amount +
+            self.VAT_amount)
+        return super(CommercialDocumentLineModel, self).save(*args, **kwargs)
 
 
 class Company_client(PersonModel):
@@ -128,9 +149,6 @@ class Sale_invoice(CommercialDocumentModel):
     recipient = models.ForeignKey(Company_client, on_delete=models.PROTECT)
     payment_method = models.ForeignKey(Payment_method, on_delete=models.PROTECT)
     payment_term = models.ForeignKey(Payment_term, on_delete=models.PROTECT)
-    taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
-    not_taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
-    VAT_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
     class Meta:
         constraints = [
@@ -142,9 +160,17 @@ class Sale_invoice(CommercialDocumentModel):
         """Get object webpage"""
         return reverse("erp:sales_invoice", args=[self.pk])
     
-    def total_amount(self):
-        return self.taxable_amount + self.not_taxable_amount + self.VAT_amount
-
+    def total_lines_sum(self):
+        """Get the sum of all invoice's line"""
+        total_sum = self.s_invoice_lines.aggregate(
+            lines_sum=Sum("total_amount")
+        )["lines_sum"]
+        return round(total_sum, 2)
+    
+class Sale_invoice_line(CommercialDocumentLineModel):
+    """Product/service detail of the sale invoice"""
+    sale_invoice = models.ForeignKey(Sale_invoice, on_delete=models.CASCADE,
+        related_name="s_invoice_lines")
 
 class Sale_receipt(CommercialDocumentModel):
     """Create a sale receipt"""
@@ -152,6 +178,7 @@ class Sale_receipt(CommercialDocumentModel):
     related_invoice = models.ForeignKey(Sale_invoice, on_delete=models.RESTRICT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
     recipient = models.ForeignKey(Company_client, on_delete=models.PROTECT)
+    description = models.CharField(max_length=280)
     total_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
     class Meta:
@@ -170,15 +197,17 @@ class Purchase_invoice(CommercialDocumentModel):
     recipient = models.ForeignKey(Company, on_delete=models.PROTECT)
     payment_method = models.ForeignKey(Payment_method, on_delete=models.PROTECT)
     payment_term = models.ForeignKey(Payment_term, on_delete=models.PROTECT)
-    taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
-    not_taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
-    VAT_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["sender", "point_of_sell", "number",
                 "type"], name="unique_purchase_invoice_per_supplier")
         ]
+
+class Purchase_invoice_line(CommercialDocumentLineModel):
+    """Product/service detail of the purchase invoice"""
+    purchase_invoice = models.ForeignKey(Purchase_invoice, on_delete=models.CASCADE,
+        related_name="p_invoice_lines")
 
 
 class Purchase_receipt(CommercialDocumentModel):
@@ -190,6 +219,7 @@ class Purchase_receipt(CommercialDocumentModel):
     related_invoice = models.ForeignKey(Purchase_invoice, on_delete=models.RESTRICT)
     sender = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     recipient = models.ForeignKey(Company, on_delete=models.PROTECT)
+    description = models.CharField(max_length=280)
     total_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
     class Meta:
