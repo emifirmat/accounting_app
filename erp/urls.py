@@ -24,9 +24,14 @@ urlpatterns = [
     # Sales index webpage
     path("sales", views.sales_index, name="sales_index"),
     # Create new sale invoice webpage
-    path("sales/new_invoice", views.sales_new, name="sales_new"),
-    # Especific sale invoice webpage
+    path("sales/invoices/new", views.sales_new, name="sales_new"),
+    # Specific sale invoice webpage
     path("sales/invoices/<int:inv_pk>", views.sales_invoice, name="sales_invoice"),
+    # Search an invoice webpage
+    path("sales/invoices/search", views.sales_search, name="sales_search"),
+    # Edit an invoices webpage
+    path("sales/invoices/<int:inv_pk>/edit", views.sales_edit, name="sales_edit"),
+
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),

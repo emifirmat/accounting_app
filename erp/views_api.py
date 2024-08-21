@@ -119,7 +119,7 @@ class SaleInvoicesAPI(generics.ListCreateAPIView):
     serializer_class = SaleInvoicesSerializer
 
 
-class SaleInvoiceAPI(generics.RetrieveUpdateAPIView):
+class SaleInvoiceAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale invoice"""
     queryset = Sale_invoice.objects.all()
     serializer_class = SaleInvoicesSerializer

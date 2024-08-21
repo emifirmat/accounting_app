@@ -1,3 +1,39 @@
+@keyframes fadeIn {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+
 .hidden {
     display: none;
 }
+
+/* Popup container */
+.popup {
+    display: inline-block;
+    cursor: pointer;
+  }
+
+/* The actual popup (appears on top) */
+.popup .popuptext {
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 10px 5px;
+    position: fixed;
+    z-index: 1;
+    top: 50%;
+    left: 50%;
+    animation-name: fadeIn;
+    animation-duration: 4s;
+  }

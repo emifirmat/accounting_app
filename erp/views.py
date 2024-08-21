@@ -9,7 +9,7 @@ from django.urls import reverse
 
 from company.models import FinancialYear
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
-    PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet)
+    PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm)
 from .models import (Company, Company_client, Supplier, Payment_method, 
     Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
 
@@ -193,9 +193,44 @@ def sales_new(request):
 
 
 def sales_invoice(request, inv_pk):
-    """Especific invoice webpage"""
+    """Specific invoice webpage"""
     invoice = Sale_invoice.objects.get(pk=inv_pk)
 
     return render(request, "erp/sales_invoice.html", {
         "invoice": invoice,
+    })
+
+
+def sales_search(request):
+    """Edit or delete invoices webpage"""
+    form = SearchInvoiceForm()
+    return render(request, "erp/sales_search.html", {
+        "form": form,
+    })
+
+def sales_edit(request, inv_pk):
+    """Edit Specific invoice webpage"""
+    invoice = Sale_invoice.objects.get(id=inv_pk)
+
+    if request.method == "POST":
+        invoice_form = SaleInvoiceForm(instance=invoice, data=request.POST)
+        line_formset = SaleInvoiceLineFormSet(instance=invoice, data=request.POST)
+
+        if invoice_form.is_valid() and line_formset.is_valid():
+            with transaction.atomic():
+                invoice_form.save()
+                line_formset.save()
+
+            return HttpResponseRedirect(reverse("erp:sales_invoice", 
+                args=[invoice.id]
+            ))
+
+    else:
+        invoice_form = SaleInvoiceForm(instance=invoice)
+        line_formset = SaleInvoiceLineFormSet(instance=invoice)
+
+    return render(request, "erp/sales_edit.html", {
+        "invoice": invoice,
+        "invoice_form": invoice_form,
+        "line_formset": line_formset,
     })

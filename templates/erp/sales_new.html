@@ -5,26 +5,32 @@
 
 {% block body %}
 
-    <h2>Create a new invoice</h2>
-    <p>ATENTION: The invoices created in this section aren't official. You still
-    have to issue them on the tax authorities webpage. 
+    {% block edit_title %}
+        <h2>Create a new invoice</h2>
+        <p>ATENTION: The invoices created in this section aren't official. You still
+        have to issue them on the tax authorities webpage.
+    {% endblock edit_title %}
     </p>
     <br>
-    <form id="invoice-form" action="{% url 'erp:sales_new' %}" method="post">
+    <form id="invoice-form" action="{% block edit_form_action %}{%  url 'erp:sales_new' %}{% endblock edit_form_action %}" method="post">
         {% csrf_token %}
         {{ invoice_form.as_p }}
         <br>
         <div id="line-form-container">
             {{ line_formset.management_form }}
             <div id="line-form" class="invoice-line">
-                {{ line_formset.0.as_p }}
+                {% block edit_line_formset %}
+                    {{ line_formset.0.as_p }}
+                {% endblock edit_line_formset %}
             </div>
             <div id="line-form-template" class="hidden">
                 {{ line_formset.empty_form.as_p }}
             </div>     
         </div>
         <button type="button" id="new-line">Add line</button>
-        <input type="submit" value="Create">
+        {% block edit_input_submit %}
+            <input type="submit" value="Create">
+        {% endblock edit_input_submit %}    
     </form>
 
 {% endblock body %}

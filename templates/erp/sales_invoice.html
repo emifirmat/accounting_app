@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% load static %}
 
 {% block title %}
     Invoice {{ invoice.point_of_sell }}-{{ invoice.number }}
@@ -7,6 +8,9 @@
 {% block body %}
 
     <h2>Invoice N° {{ invoice.point_of_sell }}-{{ invoice.number }}</h2>
+    <a id="edit-button" href="{% url 'erp:sales_edit' invoice.pk %}">Edit</a>
+    <button id="delete-button" data-id="{{ invoice.id }}" data-type="{{ invoice.type.type }}"
+    data-pos="{{ invoice.point_of_sell }}" data-number="{{ invoice.number }}">Delete</button>
     <br>
     <div class="container-fluid">
         <div class="row">
@@ -83,7 +87,11 @@
                 <p>$ {{ invoice.total_lines_sum }}</p>
             </div>
         </div>
-
     </div>
 
 {% endblock body %}
+
+{% block script %}
+    <script src="{% static 'js/invoice_detail.js' %}"></script>
+    <script src="{% static 'js/delete_invoice.js' %}"></script>
+{% endblock script %}

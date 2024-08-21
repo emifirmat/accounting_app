@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from company.models import Company
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
     Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
+from .validators import validate_is_digit
 
 
 
@@ -138,3 +139,13 @@ SaleInvoiceLineFormSet = inlineformset_factory(
     Sale_invoice, Sale_invoice_line, form=SaleInvoiceLineForm, extra=1, 
     can_delete=True
 )
+
+class SearchInvoiceForm(forms.Form):
+    """Fields for the invoice search"""
+    type = forms.CharField(max_length=5)
+    pos = forms.CharField(max_length=5, label="Point of sell")
+    number = forms.CharField(max_length=8)
+    client_tax_number = forms.CharField(max_length=11)
+    client_name = forms.CharField(max_length=40)
+    year = forms.CharField(max_length=4)
+    month = forms.CharField(max_length=2, help_text="Only numbers.")

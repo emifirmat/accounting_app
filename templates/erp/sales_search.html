@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Search Invoice{% endblock title %}
+
+{% block body %}
+
+    <h3>Search Invoice</h3>
+    <p>Type on one or more fields to search for sale invoices.</p>
+    <br>
+    <div class="container">
+        <form>
+            {{ form.as_p }}
+        </form>
+    </div>
+    <br>
+    <div id="invoices-section" class="container hidden">
+        <h3>Search Results</h3>
+        <ul id="invoice-list">
+        </ul>
+    </div>
+    
+{% endblock body %}
+{% block script %}
+    <script src="{% static 'js/search_invoices.js' %}"></script>
+    <script src="{% static 'js/delete_invoice.js' %}"></script>
+{% endblock script %}

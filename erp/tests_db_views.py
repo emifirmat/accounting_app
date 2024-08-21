@@ -1,4 +1,5 @@
 import datetime
+import pprint
 from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
@@ -39,6 +40,13 @@ class ErpTestCase(TestCase):
             address = "Client street, Client city, Chile",
             email = "client1@email.com",
             phone = "1234567890",
+        )
+        cls.company_client2 = Company_client.objects.create(
+            tax_number = "20999999999",
+            name = "Client2 SA",
+            address = "Client2 street, Client city, Argentina",
+            email = "client2@email.com",
+            phone = "12443131241",
         )
 
         cls.supplier = Supplier.objects.create(
@@ -162,7 +170,7 @@ class ErpTestCase(TestCase):
 
     def test_company_client_content(self):
         company_clients = Company_client.objects.all()
-        self.assertEqual(company_clients.count(), 1)
+        self.assertEqual(company_clients.count(), 2)
         self.assertEqual(self.company_client.tax_number, "20361382481")
         self.assertEqual(self.company_client.name, "Client1 SRL")
         self.assertEqual(self.company_client.email, "client1@email.com")
@@ -469,7 +477,7 @@ class ErpTestCase(TestCase):
             "phone": "987654321",
         })
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(Company_client.objects.all().count(), 2)
+        self.assertEqual(Company_client.objects.all().count(), 3)
         
     def test_client_new_post_error(self):
         response = self.client.post(
@@ -578,11 +586,12 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "00001-00000001")
 
     def test_sales_new_invoice_get_webpage(self):
-        response = self.client.get("/erp/sales/new_invoice")
+        response = self.client.get("/erp/sales/invoices/new")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/sales_new.html")
         self.assertContains(response, "Create a new invoice")
         self.assertContains(response, "002 | B")
+        # Hidden invoice types are not in the webpage
         self.assertNotContains(response, "019 | E")
 
     def test_sales_new_invoice_post_single_line_webpage(self):
@@ -651,4 +660,55 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "$ 1300.01")
         self.assertContains(response, "$ 2509.01")
         
+    def test_sales_search_webpage(self):
+        response = self.client.get("/erp/sales/invoices/search")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/sales_search.html")
+        self.assertContains(response, "Search Invoice")
+        self.assertContains(response, "Year")
         
+    def test_sales_edit_invoice_get_webpage(self):
+        response = self.client.get("/erp/sales/invoices/1/edit")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/sales_edit.html")
+        self.assertContains(response, "Edit Invoice")
+        self.assertContains(response, "00000001")
+        self.assertContains(response, "209.99")
+
+    def test_sales_edit_invoice_post_webpage(self):
+        response = self.client.post(reverse("erp:sales_edit", 
+            args=[self.sale_invoice.pk]), {
+                # Invoice form
+                "type": self.doc_type1.id,
+                "point_of_sell": self.pos1.id,
+                "number": "1",
+                "sender": self.company.id,
+                "recipient": self.company_client2.id,
+                "payment_method": self.payment_method2.id,
+                "payment_term": self.payment_term2.id,
+                # line-setform-management. Modify 2 lines, add 1.
+                "s_invoice_lines-TOTAL_FORMS": "3",
+                "s_invoice_lines-INITIAL_FORMS": "2",
+                "s_invoice_lines-MIN_NUM_FORMS": "0",
+                "s_invoice_lines-MAX_NUM_FORMS": "1000",
+                # line-1-setform / Modify all fields
+                "s_invoice_lines-0-id": self.sale_invoice.id,
+                "s_invoice_lines-0-description": "Random products",
+                "s_invoice_lines-0-taxable_amount": Decimal("2000"),
+                "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
+                "s_invoice_lines-0-VAT_amount": Decimal("420"),
+                # line-2-setform / Modify all fields
+                "s_invoice_lines-1-id": self.sale_invoice.id,
+                "s_invoice_lines-1-description": "Custom products",
+                "s_invoice_lines-1-taxable_amount": Decimal("1000"),
+                "s_invoice_lines-1-not_taxable_amount": Decimal("80.02"),
+                "s_invoice_lines-1-VAT_amount": Decimal("20"),
+                # line-3-setform / New line added
+                "s_invoice_lines-2-id": self.sale_invoice.id,
+                "s_invoice_lines-2-description": "A few products",
+                "s_invoice_lines-2-taxable_amount": Decimal("333"),
+                "s_invoice_lines-2-not_taxable_amount": Decimal("33.32"),
+                "s_invoice_lines-2-VAT_amount": Decimal("33")
+            })   
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Sale_invoice.objects.all().count(), 1)

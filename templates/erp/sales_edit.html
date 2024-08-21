@@ -1,0 +1,22 @@
+{% extends "erp/sales_new.html" %}
+
+{% block title %}Edit Invoice {% endblock title %}
+
+{% block edit_title %}
+    <h3>Edit Invoice</h3>
+    <p><a id="invoice-link" href="{{ invoice.get_absolute_url }}">Go back</a> to invoice detail.</p>    
+{% endblock edit_title %}
+
+{% block edit_form_action %}{% url 'erp:sales_edit' invoice.pk %}{% endblock edit_form_action %}
+
+{% block edit_line_formset %}
+    {% for line_form in line_formset %}
+        {% if line_form.instance.pk %}
+            {{ line_form.as_p }}
+        {% endif %}
+    {% endfor %}
+{% endblock edit_line_formset %}
+
+{% block edit_input_submit %}
+    <input type="submit" value="Edit">
+{% endblock edit_input_submit %}
