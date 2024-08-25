@@ -11,6 +11,8 @@ urlpatterns = [
     path("supplier", views.supplier_index, name="supplier_index"),
     # Add a new client or supplier web page
     path("<str:person_type>/new", views.person_new, name="person_new"),
+    path("<str:person_type>/new_multiple", views.person_new_multiple, 
+        name="person_new_multiple"),
     # Edit existing client or supplier web page
     path("<str:person_type>/edit", views.person_edit, name="person_edit"),
     # Delete a client or supplier web page
@@ -25,6 +27,8 @@ urlpatterns = [
     path("sales", views.sales_index, name="sales_index"),
     # Create new sale invoice webpage
     path("sales/invoices/new", views.sales_new, name="sales_new"),
+    path("sales/invoices/new_massive", views.sales_new_massive, 
+        name="sales_new_massive"),
     # Specific sale invoice webpage
     path("sales/invoices/<int:inv_pk>", views.sales_invoice, name="sales_invoice"),
     # Search an invoice webpage

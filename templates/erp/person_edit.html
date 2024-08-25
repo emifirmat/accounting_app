@@ -6,21 +6,27 @@
 {% block body %}
     
     <h2 id="title" data-title="{{ person_type }}">Edit {{ person_type|capfirst }}</h2>
-    <div id="person-list" data-person-section="edit">
-        {% for person in person_list %}
-            <p><button class="specific-person" data-person-id="{{ person.id }}">
-            {{ person.id }} | {{ person }}</button></p>
-        {% empty %}
-            <p>First you have to add a {{ person_type }}.</p>
-        {% endfor %}
-    </div>
-    <div id="person-details"></div>
-    <div id="person-edit-form" class="hidden">
-        <p id="edit-message"></p>
-        <form>
-            {{ form.as_p }}
-            <button>Confirm</button>
-        </form>
+    <div class="row">
+        <div class="col-6">
+            <div id="person-list" data-person-section="edit">
+                {% for person in person_list %}
+                    <p><button class="specific-person" data-person-id="{{ person.id }}">
+                    {{ person.id }} | {{ person }}</button></p>
+                {% empty %}
+                    <p>First you have to add a {{ person_type }}.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-6">
+            <div id="person-details"></div>
+            <div id="person-edit-form" class="hidden">
+                <p id="edit-message"></p>
+                <form>
+                    {{ form.as_p }}
+                    <button>Confirm</button>
+                </form>
+            </div>
+        </div>
     </div>
 
 {% endblock body %}

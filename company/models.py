@@ -27,8 +27,9 @@ class SingletonModel(models.Model):
 class PersonModel(models.Model):
     """Create base information for Company, Client and Supplier"""
     tax_number = models.CharField(unique=True, max_length=11, validators=[
-        validate_is_digit
-    ])
+        validate_is_digit], error_messages={
+            "unique": "This tax number already exists."
+    })
     name = models.CharField(max_length=50)
     address = models.CharField(max_length=80)
     email = models.EmailField()

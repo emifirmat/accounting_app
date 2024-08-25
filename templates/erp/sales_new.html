@@ -8,9 +8,8 @@
     {% block edit_title %}
         <h2>Create a new invoice</h2>
         <p>ATENTION: The invoices created in this section aren't official. You still
-        have to issue them on the tax authorities webpage.
+        have to issue them on the tax authorities webpage.</p>
     {% endblock edit_title %}
-    </p>
     <br>
     <form id="invoice-form" action="{% block edit_form_action %}{%  url 'erp:sales_new' %}{% endblock edit_form_action %}" method="post">
         {% csrf_token %}

@@ -1,13 +1,14 @@
-import datetime
+import datetime, os
 import pprint
 from decimal import Decimal
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.test import TestCase, tag
 from django.urls import reverse
 
 # Create your tests here.
-from .models import (Company_client, Supplier, Client_current_account,
+from ..models import (Company_client, Supplier, Client_current_account,
     Supplier_current_account, Payment_method, Payment_term, Sale_invoice,
     Sale_invoice_line, Sale_receipt, Purchase_invoice, Purchase_invoice_line,
     Purchase_receipt, Point_of_sell, Document_type)
@@ -496,6 +497,91 @@ class ErpTestCase(TestCase):
             ["The tax number you're trying to add belongs to the company."]
         )
 
+    def test_client_new_multiple_post_csv(self):
+        # Get file dir to test
+        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
+            "clients.csv")
+        
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(), 
+            content_type="text/csv")
+            response = self.client.post(reverse(
+                "erp:person_new_multiple", kwargs={"person_type": "client"}
+            ), {"file": uploaded_file})
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(Company_client.objects.all().count(), 8)
+    
+    def test_client_new_multiple_post_xls(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
+            "clients.xls")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.ms-excel")
+            response = self.client.post(reverse(
+                "erp:person_new_multiple", kwargs={"person_type": "client"}
+            ), {"file": uploaded_file})
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(Company_client.objects.all().count(), 8)
+
+    def test_client_new_multiple_post_xlsx(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
+            "clients.xlsx")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse(
+                "erp:person_new_multiple", kwargs={"person_type": "client"}
+            ), {"file": uploaded_file})
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(Company_client.objects.all().count(), 8)
+
+    def test_client_new_multiple_post_pdf(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
+            "clients.pdf")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/pdf")
+            response = self.client.post(reverse(
+                "erp:person_new_multiple", kwargs={"person_type": "client"}
+            ), {"file": uploaded_file})
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Invalid file", response.content.decode("utf-8"))
+            self.assertEqual(Company_client.objects.all().count(), 2)
+
+    def test_client_new_multiple_post_repeated_client(self):
+        # Get file dir to test
+        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
+            "clientsbad2.csv")
+        
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(), 
+            content_type="text/csv")
+            response = self.client.post(reverse(
+                "erp:person_new_multiple", kwargs={"person_type": "client"}
+            ), {"file": uploaded_file})
+            
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("tax number already exists", response.content.decode("utf-8"))
+            self.assertEqual(Company_client.objects.all().count(), 2)
+
+    def test_client_new_multiple_post_wrong_data(self):
+        # Get file dir to test
+        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
+            "clientsbad.csv")
+        
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(), 
+            content_type="text/csv")
+            response = self.client.post(reverse(
+                "erp:person_new_multiple", kwargs={"person_type": "client"}
+            ), {"file": uploaded_file})
+            
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("must be only digits", response.content.decode("utf-8"))
+            self.assertIn("value has at most", response.content.decode("utf-8"))
+            self.assertIn("field cannot be blank", response.content.decode("utf-8"))
+            self.assertEqual(Company_client.objects.all().count(), 2)
+
     def test_client_edit_get(self):
         response = self.client.get("/erp/client/edit")
         self.assertEqual(response.status_code, 200)
@@ -547,6 +633,22 @@ class ErpTestCase(TestCase):
         self.assertEqual(form.errors["tax_number"],
             ["The tax number you're trying to add belongs to the company."]
         )
+
+    def test_supplier_new_multiple_post_csv(self):
+        # Note: As I use same view and template as clients, I only do one test to
+        # check that suppliers db is update correctly
+        # Get file dir to test
+        file_path = os.path.join(os.path.dirname(__file__), "files", "suppliers",
+            "suppliers.csv")
+        
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(), 
+            content_type="text/csv")
+            response = self.client.post(reverse(
+                "erp:person_new_multiple", kwargs={"person_type": "supplier"}
+            ), {"file": uploaded_file})
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(Supplier.objects.all().count(), 7)
 
     def test_supplier_edit_get(self):
         response = self.client.get("/erp/supplier/edit")

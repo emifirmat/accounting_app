@@ -1,15 +1,18 @@
 import csv, os
-from django.core.exceptions import ObjectDoesNotExist
+import pandas as pd
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.conf import settings
-from django.db import transaction
-from django.http import HttpResponseRedirect
+from django.db import transaction, IntegrityError
+from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
 
 
+
 from company.models import FinancialYear
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
-    PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm)
+    PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm,
+    AddPersonFileForm, AddSaleInvoicesFileForm)
 from .models import (Company, Company_client, Supplier, Payment_method, 
     Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
 
@@ -35,6 +38,8 @@ def client_index(request):
 
 def person_new(request, person_type):
     """Add a new client/supplier page"""
+    # File form post work in a dif view, so it can be always new in this view
+    file_form = AddPersonFileForm()
     if request.method == "POST":
         if person_type == "client":
             form = CclientForm(request.POST)
@@ -42,9 +47,7 @@ def person_new(request, person_type):
             form = SupplierForm(request.POST)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect(reverse("erp:person_new", kwargs={
-                "person_type": person_type,
-            }))
+            return HttpResponseRedirect(reverse(f"erp:{person_type}_index"))
     else:
         if person_type == "client":
             form = CclientForm()
@@ -53,12 +56,84 @@ def person_new(request, person_type):
 
     return render(request, "erp/person_new.html", {
         "form": form,
+        "file_form": file_form,
         "person_type": person_type,
     })
 
 
+def person_new_multiple(request, person_type):
+    """Add multiple clients/suppliers"""
+    if request.method == "POST":
+        file_form = AddPersonFileForm(request.POST, request.FILES)
+        # Read file according to the extension
+        if file_form.is_valid():
+            file = request.FILES["file"]
+            
+            if(file.name.endswith(".csv")):
+                df = pd.read_csv(file)
+            else :
+                df = pd.read_excel(file)
+            
+            # Standarize columns name to lower case and keep NaN cells blank
+            df.columns = [column.lower().strip() for column in df.columns]
+            df = df.where(pd.notnull(df), "")
+
+            # Check all columns exist
+            person_attributes = ["tax_number", "name", "address", "email", "phone"]
+            if len(df.columns) != 5:
+                return HttpResponseBadRequest("The number of columns must be 5.")
+            for attribute in person_attributes:
+                if attribute not in df.columns:
+                    return HttpResponseBadRequest(f"Column {attribute} not found.")
+
+            # Pass all values in model
+            with transaction.atomic():
+                for index, row in df.iterrows():
+                    # Convert number fields into string to allow me using
+                    # validators
+                    tax_num_data = str(row[person_attributes[0]])
+                    name_data = str(row[person_attributes[1]])
+                    address_data = str(row[person_attributes[2]])
+                    email_data = str(row[person_attributes[3]])
+                    phone_data = str(row[person_attributes[4]])
+                            
+                    if person_type == "client":
+                        new_person = Company_client(
+                            tax_number = tax_num_data,
+                            name = name_data,
+                            address = address_data,    
+                            email = email_data,
+                            phone = phone_data,
+                        )
+                    elif person_type == "supplier":
+                        new_person = Supplier(
+                            tax_number = tax_num_data,
+                            name = name_data,
+                            address = address_data,    
+                            email = email_data,
+                            phone = phone_data,
+                        )
+                    try:
+                        new_person.full_clean()
+                        new_person.save()
+                    except ValidationError as ve:
+                        errors = []
+                        for field, messages in ve.message_dict.items():
+                            for message in messages:
+                                errors.append(f"Row {index}, {field}: {message}")    
+                        return HttpResponseBadRequest(f"{"\n".join(errors)}")
+            # If everything is correct
+            return HttpResponseRedirect(reverse(f"erp:{person_type}_index"))
+        else:
+            # Raise an error of invalid form
+            return HttpResponseBadRequest("Invalid file.")
+    else:
+        return HttpResponseRedirect(reverse(f"erp:person_new", 
+            kwargs={"person_type": person_type}))
+
+
 def person_edit(request, person_type):
-    """Search and edit an existing client or suppleir"""
+    """Search and edit an existing client or supplier"""
     if request.method == "GET":
         if person_type == "client":
             person_list = Company_client.objects.all()
@@ -191,6 +266,12 @@ def sales_new(request):
         "line_formset": line_formset,
     })
 
+def sales_new_massive(request):
+    """New massive sale invoices webpage"""
+    invoices_file_form = AddSaleInvoicesFileForm()
+    return render(request, "erp/sales_new_massive.html", {
+        "invoices_file_form": invoices_file_form,
+    })
 
 def sales_invoice(request, inv_pk):
     """Specific invoice webpage"""

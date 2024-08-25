@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from company.models import Company
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
     Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
-from .validators import validate_is_digit
+from .validators import validate_is_digit, validate_file_extension
 
 
 
@@ -149,3 +149,21 @@ class SearchInvoiceForm(forms.Form):
     client_name = forms.CharField(max_length=40)
     year = forms.CharField(max_length=4)
     month = forms.CharField(max_length=2, help_text="Only numbers.")
+
+class AddPersonFileForm(forms.Form):
+    """Add file for new clients or suppliers"""
+    file = forms.FileField(label="", help_text=
+    """Format:
+    tax_number=number, 11 char;
+    name=text;
+    address=text;
+    email=xx@email.com;
+    phone=number, max 25 char;""",
+    validators=[validate_file_extension])
+
+class AddSaleInvoicesFileForm(forms.Form):
+    """Add file for new sale invoices"""
+    file = forms.FileField(label="", help_text=
+    """Format:
+    --TODO--""",
+    validators=[validate_file_extension])

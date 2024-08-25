@@ -4,11 +4,26 @@
 
 {% block body %}
 
-    <h2>New {{ person_type|capfirst }}</h2>
-    <form action="{% url 'erp:person_new' person_type %}" method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="Add">
-    </form>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-6">
+                <h2>New {{ person_type|capfirst }}</h2>
+                <form action="{% url 'erp:person_new' person_type %}" method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <input type="submit" value="Add">
+                </form>
+            </div>
+            <div class="col-6">
+                <h2>Add Multiple {{ person_type|capfirst }}s</h2>
+                <p>Available extensions: .xls, .xlsx, .csv.</p>
+                <form action="{% url 'erp:person_new_multiple' person_type %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ file_form.as_p }}
+                    <input type="submit" value="Upload">
+                </form>
+            </div>
+        </div>
+    </div>
 
 {% endblock body %}

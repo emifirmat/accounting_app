@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from company.models import Company
-from .models import (Company_client, Supplier, Payment_method, Payment_term,
+from ..models import (Company_client, Supplier, Payment_method, Payment_term,
     Point_of_sell, Document_type, Sale_invoice)
 
 

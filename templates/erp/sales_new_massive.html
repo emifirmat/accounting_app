@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}New Massive Sales{% endblock title %} 
+
+{% block body %}
+
+    <h2>Create massive new invoices</h2>
+    <p>ATENTION: The invoices created in this section aren't official. You still
+    have to issue them on the tax authorities webpage.</p>
+    <p>Available extensions: .xls, .xlsx, .csv.</p>
+
+    <br>
+    <form id="invoice-form" action="{%  url 'erp:sales_new_massive' %}" method="post">
+        {% csrf_token %}
+        {{ invoices_file_form.as_p }}
+        <input type="submit" value="Upload">  
+    </form>
+
+{% endblock body %}
