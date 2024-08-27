@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Q
 
 from erp.validators import validate_is_digit
-
+from .validators import validate_valid_year
 
 # Create your models here.
 class SingletonModel(models.Model):
@@ -56,7 +56,8 @@ class Company(PersonModel, SingletonModel):
 class FinancialYear(models.Model):
     """Financial year of the company"""
     year = models.CharField(unique=True, max_length=4, validators=[
-        validate_is_digit
+        validate_is_digit,
+        validate_valid_year,
     ])
     current = models.BooleanField(default=False)
 

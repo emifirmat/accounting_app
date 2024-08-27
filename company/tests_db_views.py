@@ -1,12 +1,13 @@
 import datetime
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.test import TestCase
+from django.test import TestCase, tag
 from django.urls import reverse
 
 from .models import Company, Calendar, FinancialYear
 
 # Create your tests here.
+@tag("company_db_views")
 class CompanyTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -194,3 +195,11 @@ class CompanyTestCase(TestCase):
         second_year = FinancialYear.objects.get(year="2026")
         self.assertEqual(second_year.year, "2026")
         self.assertEqual(second_year.current, False)
+
+    def test_company_year_wrong_year(self):
+        response = self.client.post(reverse("company:year"), {
+                "year": "1990",
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1990 is older than 1991")
+
