@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.apps import apps
 
 
-def validate_valid_year(value):
+def validate_in_creation_year(value):
     """Check that the year is not older that creation date"""
     company = apps.get_model("company", "Company")
     creation_date = company.objects.first().creation_date
@@ -15,3 +15,4 @@ def validate_valid_year(value):
         raise ValidationError(f"""The year {value} is older than {creation_year}. 
             If you need to add the year {value}, please modify the company's creation
             date.""")
+    

@@ -12,7 +12,7 @@ from ..models import (Company_client, Supplier, Client_current_account,
     Supplier_current_account, Payment_method, Payment_term, Sale_invoice,
     Sale_invoice_line, Sale_receipt, Purchase_invoice, Purchase_invoice_line,
     Purchase_receipt, Point_of_sell, Document_type)
-from company.models import Company, Calendar
+from company.models import Company, Calendar, FinancialYear
 
 
 # Create your tests here.
@@ -33,6 +33,11 @@ class ErpTestCase(TestCase):
 
         cls.calendar = Calendar.objects.create(
             starting_date = cls.company,
+        )
+
+        cls.current_year = FinancialYear.objects.create(
+            year = "2024",
+            current = True,
         )
 
         cls.company_client = Company_client.objects.create(
@@ -105,6 +110,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 21),
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
@@ -130,6 +136,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.sale_receipt = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 2, 21),
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
@@ -141,6 +148,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.purchase_invoice = Purchase_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 13),
             type = cls.doc_type2,
             point_of_sell = "00231",
             number = "00083051",
@@ -159,6 +167,7 @@ class ErpTestCase(TestCase):
         )
 
         cls.purchase_receipt = Purchase_receipt.objects.create(
+            issue_date = datetime.date(2024, 2, 13),
             type = cls.doc_type2,
             point_of_sell = "00231",
             number = "00000023",
@@ -240,6 +249,7 @@ class ErpTestCase(TestCase):
     def test_sale_invoice_content(self):
         invoices = Sale_invoice.objects.all()
         self.assertEqual(invoices.count(), 1)
+        self.assertEqual(self.sale_invoice.issue_date, datetime.date(2024, 1, 21))
         self.assertEqual(self.sale_invoice.type, self.doc_type1)
         self.assertEqual(self.sale_invoice.point_of_sell.pos_number, "00001")
         self.assertEqual(self.sale_invoice.number, "00000001")
@@ -249,7 +259,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_invoice.payment_term, self.payment_term)
         self.assertEqual(
             str(self.sale_invoice),
-            f"00001-00000001 | A | {self.sale_invoice.issue_date}"
+            f"00001-00000001 | A | 2024-01-21"
         )
 
     def test_sale_invoice_get_abosulte_url(self):
@@ -262,6 +272,7 @@ class ErpTestCase(TestCase):
 
     def test_sale_invoice_constraint(self):
         sale_invoice2 = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 21),
             type = self.doc_type1,
             point_of_sell = self.pos1,
             number = "2",
@@ -276,6 +287,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             sale_invoice3 = Sale_invoice.objects.create(
+                issue_date = datetime.date(2024, 1, 22),
                 type = self.doc_type1,
                 point_of_sell = self.pos1,
                 number = "00000002",
@@ -312,6 +324,7 @@ class ErpTestCase(TestCase):
     def test_sale_receipt_content(self):
         sale_receipts = Sale_receipt.objects.all()
         self.assertEqual(sale_receipts.count(), 1)
+        self.assertEqual(self.sale_receipt.issue_date, datetime.date(2024, 2, 21))
         self.assertEqual(self.sale_receipt.type, self.doc_type1)
         self.assertEqual(self.sale_receipt.point_of_sell.pos_number, "00001")
         self.assertEqual(self.sale_receipt.number, "00000001")
@@ -322,12 +335,13 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_receipt.total_amount, Decimal("1300.01"))
         self.assertEqual(
             str(self.sale_receipt),
-            f"00001-00000001 | A | {self.sale_receipt.issue_date}"
+            f"00001-00000001 | A | 2024-02-21"
         )
         
 
     def test_sale_receipt_constraint(self):
         sale_receipt2 = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 2, 21),
             type = self.doc_type1,
             point_of_sell = self.pos1,
             number = "2",
@@ -344,6 +358,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             sale_receipt3 = Sale_receipt.objects.create(
+                issue_date = datetime.date(2024, 2, 22),
                 type = self.doc_type1,
                 point_of_sell = self.pos1,
                 number = "00000001",
@@ -358,6 +373,7 @@ class ErpTestCase(TestCase):
     def test_purchase_invoice_content(self):
         invoices = Purchase_invoice.objects.all()
         self.assertEqual(invoices.count(), 1)
+        self.assertEqual(self.purchase_invoice.issue_date, datetime.date(2024, 1, 13))
         self.assertEqual(self.purchase_invoice.type, self.doc_type2)
         self.assertEqual(self.purchase_invoice.point_of_sell, "00231")
         self.assertEqual(self.purchase_invoice.number, "00083051")
@@ -367,11 +383,12 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.purchase_invoice.payment_term, self.payment_term2)
         self.assertEqual(
             str(self.purchase_invoice),
-            f"00231-00083051 | B | {self.purchase_invoice.issue_date}"
+            f"00231-00083051 | B | 2024-01-13"
         )
 
     def test_purchase_invoice_constraint(self):
         purchase_invoice2 = Purchase_invoice.objects.create(
+            issue_date=datetime.date(2024, 1, 13),
             type = self.doc_type2,
             point_of_sell = "231",
             number = "99992",
@@ -386,6 +403,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             purhcase_invoice3 = Purchase_invoice.objects.create(
+                issue_date=datetime.date(2024, 1, 14),
                 type = self.doc_type2,
                 point_of_sell = "00231",
                 number = "00083051",
@@ -415,6 +433,7 @@ class ErpTestCase(TestCase):
     def test_purchase_receipt_content(self):
         purchase_receipts = Purchase_receipt.objects.all()
         self.assertEqual(purchase_receipts.count(), 1)
+        self.assertEqual(self.purchase_receipt.issue_date, datetime.date(2024, 2, 13))
         self.assertEqual(self.purchase_receipt.type, self.doc_type2)
         self.assertEqual(self.purchase_receipt.point_of_sell, "00231")
         self.assertEqual(self.purchase_receipt.number, "00000023")
@@ -425,11 +444,12 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.purchase_receipt.total_amount, Decimal("242"))
         self.assertEqual(
             str(self.purchase_receipt),
-            f"00231-00000023 | B | {self.purchase_receipt.issue_date}"
+            f"00231-00000023 | B | 2024-02-13"
         )
     
     def test_purchase_receipt_constraint(self):
         purchase_receipt2 = Purchase_receipt.objects.create(
+            issue_date = datetime.date(2024, 2, 13),
             type = self.doc_type2,
             point_of_sell = "231",
             number = "2",
@@ -445,6 +465,7 @@ class ErpTestCase(TestCase):
 
         with self.assertRaises(IntegrityError):
             purchase_receipt3 = Purchase_receipt.objects.create(
+                issue_date = datetime.date(2024, 2, 14),
                 type = self.doc_type2,
                 point_of_sell = "00231",
                 number = "00000023",
@@ -699,6 +720,7 @@ class ErpTestCase(TestCase):
     def test_sales_new_invoice_post_single_line_webpage(self):
         response = self.client.post(reverse("erp:sales_new"), {
             # Invoice form
+            "issue_date": "29/01/2024",
             "type": self.doc_type2.id,
             "point_of_sell": self.pos2.id,
             "number": "1",
@@ -723,6 +745,7 @@ class ErpTestCase(TestCase):
     def test_sales_new_invoice_post_triple_line_webpage(self):
         response = self.client.post(reverse("erp:sales_new"), {
             # Invoice form
+            "issue_date": "29/01/2024",
             "type": self.doc_type2.id,
             "point_of_sell": self.pos2.id,
             "number": "1",
@@ -754,6 +777,57 @@ class ErpTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Sale_invoice.objects.all().count(), 2)
 
+    def test_sales_new_invoice_post_wrong_date_webpage(self):
+        response = self.client.post(reverse("erp:sales_new"), {
+            # Invoice form
+            "issue_date": "29/01/2025",
+            "type": self.doc_type2.id,
+            "point_of_sell": self.pos2.id,
+            "number": "1",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "payment_method": self.payment_method.id,
+            "payment_term": self.payment_term2.id,
+            # line-setform 
+            "s_invoice_lines-0-description": "Random products",
+            "s_invoice_lines-0-taxable_amount": Decimal("2000"),
+            "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
+            "s_invoice_lines-0-VAT_amount": Decimal("420"),
+            # line-setform-management
+            "s_invoice_lines-TOTAL_FORMS": "1",
+            "s_invoice_lines-INITIAL_FORMS": "0",
+            "s_invoice_lines-MIN_NUM_FORMS": "0",
+            "s_invoice_lines-MAX_NUM_FORMS": "1000",
+        })       
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Sale_invoice.objects.all().count(), 1)
+        self.assertContains(response, "The selected date is not within the current year.")
+
+    def test_sales_new_invoice_post_blank_line_webpage(self):
+        response = self.client.post(reverse("erp:sales_new"), {
+            # Invoice form
+            "issue_date": "29/01/2024",
+            "type": self.doc_type2.id,
+            "point_of_sell": self.pos2.id,
+            "number": "1",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "payment_method": self.payment_method.id,
+            "payment_term": self.payment_term2.id,
+            # line-setform 
+            "s_invoice_lines-0-description": "",
+            "s_invoice_lines-0-taxable_amount": "",
+            "s_invoice_lines-0-not_taxable_amount": "",
+            "s_invoice_lines-0-VAT_amount": "",
+            # line-setform-management
+            "s_invoice_lines-TOTAL_FORMS": "1",
+            "s_invoice_lines-INITIAL_FORMS": "0",
+            "s_invoice_lines-MIN_NUM_FORMS": "0",
+            "s_invoice_lines-MAX_NUM_FORMS": "1000",
+        })       
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Sale_invoice.objects.all().count(), 1)
+
     def test_sales_invoice_multiline_webpage(self):
         response = self.client.get("/erp/sales/invoices/1")
         self.assertEqual(response.status_code, 200)
@@ -781,6 +855,7 @@ class ErpTestCase(TestCase):
         response = self.client.post(reverse("erp:sales_edit", 
             args=[self.sale_invoice.pk]), {
                 # Invoice form
+                "issue_date": "21/01/2024",
                 "type": self.doc_type1.id,
                 "point_of_sell": self.pos1.id,
                 "number": "1",

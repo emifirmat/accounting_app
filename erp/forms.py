@@ -1,4 +1,5 @@
 """Forms for ERP app"""
+from datetime import datetime
 from django import forms
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
@@ -95,22 +96,32 @@ class SaleInvoiceForm(forms.ModelForm):
     """Create a new invoice"""
     class Meta:
         model = Sale_invoice
-        fields = ["type", "point_of_sell", "number", "sender", "recipient",
+        fields = ["issue_date", "type", "point_of_sell", "number", "sender", "recipient",
             "payment_method", "payment_term"]
         help_texts = {
+            "issue_date": "The date should be in the current financial year.",
             "type": "Can't find the type you need? <a href=\"/erp/document_types\">Click Here</a>",
             "number": "The number you see is the next in sequence after the last invoice created in the system.",
             "point_of_sell": "Can't find the point of sell you need? <a href=\"/erp/points_of_sell\">Click Here</a>",
             "payment_method": "How will you collect the sale?",
             "payment_term": "In how many days will you collect the sale?",
         } 
+        labels = {"issue_date": "Date"}
         widgets = {
+            "issue_date": forms.DateInput(format="%d/%m/%Y", attrs={
+                "class": "datepicker",
+            }),
             "number": forms.NumberInput(attrs={"placeholder": "XXXXXXXX"}),
         }
     
     def __init__(self, *args, **kwargs):
         """Customize intitial fields"""
         super().__init__(*args, **kwargs)
+        
+        # Customize issue_date field
+        self.fields["issue_date"].input_formats = ["%d/%m/%Y"]
+        self.fields["issue_date"].initial = datetime.now()
+        
         # Define sender as the company
         sender = Company.objects.first()
         if sender:
@@ -137,7 +148,7 @@ class SaleInvoiceLineForm(forms.ModelForm):
 
 SaleInvoiceLineFormSet = inlineformset_factory(
     Sale_invoice, Sale_invoice_line, form=SaleInvoiceLineForm, extra=1, 
-    can_delete=True
+    can_delete=True, min_num=1, validate_min=True
 )
 
 class SearchInvoiceForm(forms.Form):

@@ -666,6 +666,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         )
 
         self.sale_invoice1 = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 21),
             type = self.doc_type1,
             point_of_sell = self.pos1,
             number = "00000001",         
@@ -684,6 +685,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         )
 
         self.sale_invoice2 = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 22),
             type = self.doc_type2,
             point_of_sell = self.pos1,
             number = "00000001",
@@ -702,30 +704,38 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         )
 
         sale_invoices = [
-            Sale_invoice(type=self.doc_type1, point_of_sell=self.pos1, 
-                number="00000002", sender=self.company, recipient=self.client1,
-                payment_method=self.pay_method, payment_term=self.pay_term),
-            Sale_invoice(type=self.doc_type1, point_of_sell=self.pos1, 
-                number="00000003", sender=self.company, recipient=self.client2,
-                payment_method=self.pay_method2, payment_term=self.pay_term),
-            Sale_invoice(type=self.doc_type2, point_of_sell=self.pos1, 
-                number="00000002", sender=self.company, recipient=self.client1,
-                payment_method=self.pay_method, payment_term=self.pay_term),
-            Sale_invoice(type=self.doc_type2, point_of_sell=self.pos1, 
-                number="00000003", sender=self.company, recipient=self.client2,
-                payment_method=self.pay_method2, payment_term=self.pay_term),
-            Sale_invoice(type=self.doc_type1, point_of_sell=self.pos2, 
-                number="00000001", sender=self.company, recipient=self.client1,
-                payment_method=self.pay_method, payment_term=self.pay_term),
-            Sale_invoice(type=self.doc_type1, point_of_sell=self.pos2, 
-                number="00000002", sender=self.company, recipient=self.client1,
-                payment_method=self.pay_method2, payment_term=self.pay_term),
-            Sale_invoice(type=self.doc_type2, point_of_sell=self.pos2, 
-                number="00000001", sender=self.company, recipient=self.client2,
-                payment_method=self.pay_method, payment_term=self.pay_term),
-            Sale_invoice(type=self.doc_type2, point_of_sell=self.pos2, 
-                number="00000002", sender=self.company, recipient=self.client2,
-                payment_method=self.pay_method2, payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 23), type=self.doc_type1, 
+                point_of_sell=self.pos1, number="00000002", sender=self.company,
+                recipient=self.client1, payment_method=self.pay_method, 
+                payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 23), type=self.doc_type1,
+                point_of_sell=self.pos1, number="00000003", sender=self.company,
+                recipient=self.client2, payment_method=self.pay_method2, 
+                payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 24),type=self.doc_type2,
+                point_of_sell=self.pos1, number="00000002", sender=self.company,
+                recipient=self.client1, payment_method=self.pay_method, 
+                payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 24),type=self.doc_type2,
+                point_of_sell=self.pos1, number="00000003", sender=self.company,
+                recipient=self.client2, payment_method=self.pay_method2, 
+                payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 25), type=self.doc_type1,
+                point_of_sell=self.pos2, number="00000001", sender=self.company,
+                recipient=self.client1, payment_method=self.pay_method, 
+                payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 25), type=self.doc_type1,
+                point_of_sell=self.pos2, number="00000002", sender=self.company,
+                recipient=self.client1, payment_method=self.pay_method2,
+                payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 26), type=self.doc_type2,
+                point_of_sell=self.pos2, number="00000001", sender=self.company,
+                recipient=self.client2, payment_method=self.pay_method,
+                payment_term=self.pay_term),
+            Sale_invoice(issue_date=datetime.date(2024, 1, 26), type=self.doc_type2,
+                point_of_sell=self.pos2, number="00000002", sender=self.company,
+                recipient=self.client2, payment_method=self.pay_method2,
+                payment_term=self.pay_term),
         ]
         Sale_invoice.objects.bulk_create(sale_invoices)
 
@@ -861,7 +871,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         self.driver.get(f"{self.live_server_url}")
         self.driver.find_element(By.ID, "sales-menu-link").click()
         path = self.driver.find_element(By.ID, "sales-menu")
-        path.find_elements(By.CLASS_NAME, "dropdown-item")[2].click()
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
         self.assertEqual(self.driver.title, "Search Invoice")
 
         # Sleep 1.5 sec to prevent false errors

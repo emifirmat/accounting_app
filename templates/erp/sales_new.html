@@ -3,6 +3,10 @@
 
 {% block title %}New Sale{% endblock title %} 
 
+{% block link %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css">
+{% endblock link %}
+
 {% block body %}
 
     {% block edit_title %}
@@ -34,5 +38,7 @@
 
 {% endblock body %}
 {% block script %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="{% static 'js/calendar.js' %}"></script>
     <script src="{% static 'js/new_invoice.js' %}"></script>
 {% endblock script %}

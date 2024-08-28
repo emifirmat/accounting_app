@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Sum, Q
 from django.urls import reverse
 
-from .validators import validate_is_digit
+from .validators import validate_is_digit, validate_in_current_year
 from company.models import PersonModel, Company
 
 # Create your models here.
@@ -19,7 +19,9 @@ class CurrentAccountModel(models.Model):
 
 class CommercialDocumentModel(models.Model):
     """Base model for commercial documents"""
-    issue_date = models.DateTimeField(auto_now_add=True)
+    issue_date = models.DateField(validators=[
+        validate_in_current_year,
+    ])
     type = models.ForeignKey('Document_type', on_delete=models.PROTECT)
     number = models.CharField(max_length=8, validators=[
         validate_is_digit

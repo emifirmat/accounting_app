@@ -88,6 +88,7 @@ class APIErpTests(APITestCase):
             type_description = "FACTURAS B",
         )
         cls.sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 21),
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
@@ -97,6 +98,7 @@ class APIErpTests(APITestCase):
             payment_term = cls.pay_term1,
         )
         cls.sale_invoice2 = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 22),
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "2",
