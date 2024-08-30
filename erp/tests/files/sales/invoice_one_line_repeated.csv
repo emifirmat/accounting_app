@@ -1,0 +1,2 @@
+﻿issue_date,type,point_of_sell,number,sender,recipient,payment_method,payment_term,description,taxable_amount,not_taxable_amount,VAT_amount
+15-03-24,1,1,1,20361382480,20361382481,cash,30,A mouse,1000,50,105

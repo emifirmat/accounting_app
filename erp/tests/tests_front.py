@@ -681,7 +681,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             description = "Test sale invoice",
             taxable_amount = Decimal("1000"),
             not_taxable_amount = Decimal("90.01"),
-            VAT_amount = Decimal("210"),
+            vat_amount = Decimal("210"),
         )
 
         self.sale_invoice2 = Sale_invoice.objects.create(
@@ -700,7 +700,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             description = "Second sale invoice",
             taxable_amount = Decimal("999.99"),
             not_taxable_amount = Decimal("0.02"),
-            VAT_amount = Decimal("209.09"),
+            vat_amount = Decimal("209.09"),
         )
 
         sale_invoices = [
@@ -991,7 +991,9 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # Test month
         month_field = self.driver.find_element(By.ID, "id_month")
         action = ActionChains(self.driver).move_to_element(month_field).click(month_field)
-        action.send_keys('13').perform()
+        action.send_keys('1').perform()
+        time.sleep(0.1)
+        action.send_keys('3').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "invoice-list"),"Couldn't match any invoice.")
@@ -1093,7 +1095,9 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # type
         type_field = self.driver.find_element(By.ID, "id_type")
         action = ActionChains(self.driver).move_to_element(type_field).click(type_field)
-        action.send_keys('a').send_keys(' ').perform()
+        action.send_keys('a').perform()
+        time.sleep(0.1)
+        action.send_keys(' ').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "invoice-list"),"A | 00001 | 00000001")
@@ -1179,7 +1183,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # There are 2 lines, so it should be a third one
         WebDriverWait(self.driver, 10).until(
             EC.visibility_of_element_located(
-                (By.ID, "id_s_invoice_lines-2-description")
+                (By.ID, "id_s_invoice_lines-1-description")
             )
         )
 
@@ -1208,3 +1212,11 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         )
         self.assertEqual(self.driver.title, "Sales")
 
+    @tag("erp_front_massive_invoice")
+    def test_sales_new_massive_invoice(self):
+        # Go to new_massive page
+        self.driver.get(f"{self.live_server_url}")
+        self.driver.find_element(By.ID, "sales-menu-link").click()
+        path = self.driver.find_element(By.ID, "sales-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[2].click()
+        self.assertEqual(self.driver.title, "New Massive Sales")

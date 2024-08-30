@@ -8,9 +8,13 @@
     <p>ATENTION: The invoices created in this section aren't official. You still
     have to issue them on the tax authorities webpage.</p>
     <p>Available extensions: .xls, .xlsx, .csv.</p>
+    <p>If you have an invoice with multiple products, you have to add as many
+    lines as products you have, repeating the invoice information.
+    </p>
 
     <br>
-    <form id="invoice-form" action="{%  url 'erp:sales_new_massive' %}" method="post">
+    <form id="invoice-form" action="{%  url 'erp:sales_new_massive' %}" method="post"
+    enctype="multipart/form-data">
         {% csrf_token %}
         {{ invoices_file_form.as_p }}
         <input type="submit" value="Upload">  

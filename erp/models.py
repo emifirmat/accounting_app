@@ -44,7 +44,7 @@ class CommercialDocumentLineModel(models.Model):
     description = models.CharField(max_length=280)
     taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
     not_taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
-    VAT_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    vat_amount = models.DecimalField(max_digits=15, decimal_places=2)
     total_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
     class Meta:
@@ -56,7 +56,7 @@ class CommercialDocumentLineModel(models.Model):
     def save(self, *args, **kwargs):
         # Get total amount field
         self.total_amount = (self.taxable_amount + self.not_taxable_amount +
-            self.VAT_amount)
+            self.vat_amount)
         return super(CommercialDocumentLineModel, self).save(*args, **kwargs)
 
 
@@ -121,8 +121,9 @@ class Document_type(models.Model):
         return f"{self.code} | {self.type}"
     
     def save(self, *args, **kwargs):
-        # Complete numbers with 0
+        # Format fields
         self.code = self.code.zfill(3)
+        self.type = self.type.capitalize()
         return super(Document_type, self).save(*args, **kwargs)
 
 
@@ -132,6 +133,11 @@ class Payment_method(models.Model):
 
     def __str__(self):
         return f"{self.pay_method}"
+    
+    def save(self, *args, **kwargs):
+        # Format fields
+        self.type = self.pay_method.capitalize()
+        return super(Payment_method, self).save(*args, **kwargs)
     
 
 class Payment_term(models.Model):

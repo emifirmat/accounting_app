@@ -1,0 +1,2 @@
+﻿issue_date,type,point_of_sell,number,sender,recipient,payment_method,payment_term,description,taxable_amount,not_taxable_amount,VAT_amount
+15-03-24,1,2,a,Test Company SRL,20361382481,cash,30,,1000,50,105

@@ -94,11 +94,11 @@ class ErpTestCase(TestCase):
         )
 
         cls.payment_method = Payment_method.objects.create(
-            pay_method = "cash",
+            pay_method = "Cash",
         )
 
         cls.payment_method2 = Payment_method.objects.create(
-            pay_method = "transfer",
+            pay_method = "Transfer",
         )
 
         cls.payment_term = Payment_term.objects.create(
@@ -125,14 +125,14 @@ class ErpTestCase(TestCase):
             description = "Test sale invoice",
             taxable_amount = Decimal("1000"),
             not_taxable_amount = Decimal("90.01"),
-            VAT_amount = Decimal("210"),
+            vat_amount = Decimal("210"),
         )
         cls.sale_invoice_line2 = Sale_invoice_line.objects.create(
             sale_invoice = cls.sale_invoice,
             description = "Other products",
             taxable_amount = Decimal("999"),
             not_taxable_amount = Decimal("00.01"),
-            VAT_amount = Decimal("209.99"),
+            vat_amount = Decimal("209.99"),
         )
 
         cls.sale_receipt = Sale_receipt.objects.create(
@@ -163,7 +163,7 @@ class ErpTestCase(TestCase):
             description = "Test purchase invoice",
             taxable_amount = Decimal("200"),
             not_taxable_amount = Decimal("0"),
-            VAT_amount = Decimal("42"),
+            vat_amount = Decimal("42"),
         )
 
         cls.purchase_receipt = Purchase_receipt.objects.create(
@@ -237,8 +237,8 @@ class ErpTestCase(TestCase):
     def test_payment_method_content(self):
         payment_methods = Payment_method.objects.all()
         self.assertEqual(payment_methods.count(), 2)
-        self.assertEqual(self.payment_method2.pay_method, "transfer")
-        self.assertEqual(str(self.payment_method2), "transfer")
+        self.assertEqual(self.payment_method2.pay_method, "Transfer")
+        self.assertEqual(str(self.payment_method2), "Transfer")
 
     def test_payment_term_content(self):
         payment_terms = Payment_term.objects.all()
@@ -305,7 +305,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_invoice_line1.taxable_amount, Decimal("1000"))
         self.assertEqual(self.sale_invoice_line1.not_taxable_amount, 
             Decimal("90.01"))
-        self.assertEqual(self.sale_invoice_line1.VAT_amount, Decimal("210"))
+        self.assertEqual(self.sale_invoice_line1.vat_amount, Decimal("210"))
         self.assertEqual(self.sale_invoice_line1.total_amount, Decimal("1300.01"))
         self.assertEqual(
             str(self.sale_invoice_line1), f"Test sale invoice | $ 1300.01"
@@ -318,7 +318,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_invoice_line1.taxable_amount, Decimal("1.1"))
         # 3 digits
         with self.assertRaises(ValidationError):
-            self.sale_invoice_line1.VAT_amount = Decimal("0.564")
+            self.sale_invoice_line1.vat_amount = Decimal("0.564")
             self.sale_invoice_line1.full_clean()
 
     def test_sale_receipt_content(self):
@@ -350,7 +350,6 @@ class ErpTestCase(TestCase):
             recipient = self.company_client,
             related_invoice = self.sale_invoice,
             total_amount = "1312.11",
- 
         )
 
         receipts = Sale_receipt.objects.all()
@@ -424,7 +423,7 @@ class ErpTestCase(TestCase):
             Decimal("200"))
         self.assertEqual(self.purchase_invoice_line1.not_taxable_amount, 
             Decimal("0"))
-        self.assertEqual(self.purchase_invoice_line1.VAT_amount, Decimal("42"))
+        self.assertEqual(self.purchase_invoice_line1.vat_amount, Decimal("42"))
         self.assertEqual(self.purchase_invoice_line1.total_amount, 242)
         self.assertEqual(
             str(self.purchase_invoice_line1), f"Test purchase invoice | $ 242"
@@ -530,7 +529,15 @@ class ErpTestCase(TestCase):
                 "erp:person_new_multiple", kwargs={"person_type": "client"}
             ), {"file": uploaded_file})
             self.assertEqual(response.status_code, 302)
-            self.assertEqual(Company_client.objects.all().count(), 8)
+            
+        # Test DB was updated correctly
+        self.assertEqual(Company_client.objects.all().count(), 8)
+        client_great = Company_client.objects.get(tax_number="20123456780")
+        self.assertEqual(client_great.tax_number, "20123456780")
+        self.assertEqual(client_great.name, "Great Sugar SA")
+        self.assertEqual(client_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(client_great.email, "mclient1@email.com")
+        self.assertEqual(client_great.phone, "3412425841")
     
     def test_client_new_multiple_post_xls(self):
         file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
@@ -542,7 +549,15 @@ class ErpTestCase(TestCase):
                 "erp:person_new_multiple", kwargs={"person_type": "client"}
             ), {"file": uploaded_file})
             self.assertEqual(response.status_code, 302)
-            self.assertEqual(Company_client.objects.all().count(), 8)
+        
+        # Test DB was updated correctly
+        self.assertEqual(Company_client.objects.all().count(), 8)
+        client_great = Company_client.objects.get(tax_number="20123456780")
+        self.assertEqual(client_great.tax_number, "20123456780")
+        self.assertEqual(client_great.name, "Great Sugar SA")
+        self.assertEqual(client_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(client_great.email, "mclient1@email.com")
+        self.assertEqual(client_great.phone, "3412425841")
 
     def test_client_new_multiple_post_xlsx(self):
         file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
@@ -554,7 +569,15 @@ class ErpTestCase(TestCase):
                 "erp:person_new_multiple", kwargs={"person_type": "client"}
             ), {"file": uploaded_file})
             self.assertEqual(response.status_code, 302)
-            self.assertEqual(Company_client.objects.all().count(), 8)
+        
+        # Test DB was updated correctly
+        self.assertEqual(Company_client.objects.all().count(), 8)
+        client_great = Company_client.objects.get(tax_number="20123456780")
+        self.assertEqual(client_great.tax_number, "20123456780")
+        self.assertEqual(client_great.name, "Great Sugar SA")
+        self.assertEqual(client_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(client_great.email, "mclient1@email.com")
+        self.assertEqual(client_great.phone, "3412425841")
 
     def test_client_new_multiple_post_pdf(self):
         file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
@@ -669,7 +692,15 @@ class ErpTestCase(TestCase):
                 "erp:person_new_multiple", kwargs={"person_type": "supplier"}
             ), {"file": uploaded_file})
             self.assertEqual(response.status_code, 302)
-            self.assertEqual(Supplier.objects.all().count(), 7)
+
+        # Test DB was updated correctly
+        self.assertEqual(Supplier.objects.all().count(), 7)
+        supplier_great = Supplier.objects.get(tax_number="20123456780")
+        self.assertEqual(supplier_great.tax_number, "20123456780")
+        self.assertEqual(supplier_great.name, "Great Sugar SA")
+        self.assertEqual(supplier_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(supplier_great.email, "mclient1@email.com")
+        self.assertEqual(supplier_great.phone, "3412425841")
 
     def test_supplier_edit_get(self):
         response = self.client.get("/erp/supplier/edit")
@@ -732,7 +763,7 @@ class ErpTestCase(TestCase):
             "s_invoice_lines-0-description": "Random products",
             "s_invoice_lines-0-taxable_amount": Decimal("2000"),
             "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
-            "s_invoice_lines-0-VAT_amount": Decimal("420"),
+            "s_invoice_lines-0-vat_amount": Decimal("420"),
             # line-setform-management
             "s_invoice_lines-TOTAL_FORMS": "1",
             "s_invoice_lines-INITIAL_FORMS": "0",
@@ -741,6 +772,7 @@ class ErpTestCase(TestCase):
         })       
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Sale_invoice.objects.all().count(), 2)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
 
     def test_sales_new_invoice_post_triple_line_webpage(self):
         response = self.client.post(reverse("erp:sales_new"), {
@@ -762,20 +794,21 @@ class ErpTestCase(TestCase):
             "s_invoice_lines-0-description": "Random products",
             "s_invoice_lines-0-taxable_amount": Decimal("2000"),
             "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
-            "s_invoice_lines-0-VAT_amount": Decimal("420"),
+            "s_invoice_lines-0-vat_amount": Decimal("420"),
             # line-2-setform 
             "s_invoice_lines-1-description": "Custom products",
             "s_invoice_lines-1-taxable_amount": Decimal("1000"),
             "s_invoice_lines-1-not_taxable_amount": Decimal("80.02"),
-            "s_invoice_lines-1-VAT_amount": Decimal("20"),
+            "s_invoice_lines-1-vat_amount": Decimal("20"),
             # line-3-setform 
             "s_invoice_lines-2-description": "A few products",
             "s_invoice_lines-2-taxable_amount": Decimal("333"),
             "s_invoice_lines-2-not_taxable_amount": Decimal("33.32"),
-            "s_invoice_lines-2-VAT_amount": Decimal("33"),
+            "s_invoice_lines-2-vat_amount": Decimal("33"),
         })       
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Sale_invoice.objects.all().count(), 2)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 5)
 
     def test_sales_new_invoice_post_wrong_date_webpage(self):
         response = self.client.post(reverse("erp:sales_new"), {
@@ -792,7 +825,7 @@ class ErpTestCase(TestCase):
             "s_invoice_lines-0-description": "Random products",
             "s_invoice_lines-0-taxable_amount": Decimal("2000"),
             "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
-            "s_invoice_lines-0-VAT_amount": Decimal("420"),
+            "s_invoice_lines-0-vat_amount": Decimal("420"),
             # line-setform-management
             "s_invoice_lines-TOTAL_FORMS": "1",
             "s_invoice_lines-INITIAL_FORMS": "0",
@@ -801,6 +834,7 @@ class ErpTestCase(TestCase):
         })       
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Sale_invoice.objects.all().count(), 1)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
         self.assertContains(response, "The selected date is not within the current year.")
 
     def test_sales_new_invoice_post_blank_line_webpage(self):
@@ -818,7 +852,7 @@ class ErpTestCase(TestCase):
             "s_invoice_lines-0-description": "",
             "s_invoice_lines-0-taxable_amount": "",
             "s_invoice_lines-0-not_taxable_amount": "",
-            "s_invoice_lines-0-VAT_amount": "",
+            "s_invoice_lines-0-vat_amount": "",
             # line-setform-management
             "s_invoice_lines-TOTAL_FORMS": "1",
             "s_invoice_lines-INITIAL_FORMS": "0",
@@ -827,6 +861,247 @@ class ErpTestCase(TestCase):
         })       
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Sale_invoice.objects.all().count(), 1)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+
+    def test_sales_new_massive_invoice_get(self):
+        response = self.client.get("/erp/sales/invoices/new_massive")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/sales_new_massive.html")
+        self.assertContains(response, "Create massive new invoices")
+        self.assertContains(response, "Upload")
+
+    def test_sales_new_massive_invoice_post_csv(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line.csv")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+
+        # Test DB was updated correctly
+        self.assertEqual(Sale_invoice.objects.all().count(), 2)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
+        new_invoice = Sale_invoice.objects.get(
+            type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
+        invoice_line = Sale_invoice_line.objects.get(sale_invoice = new_invoice)
+        self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
+        self.assertEqual(new_invoice.type, self.doc_type1)
+        self.assertEqual(new_invoice.point_of_sell, self.pos2)
+        self.assertEqual(new_invoice.number, "00000001")
+        self.assertEqual(new_invoice.sender, self.company)
+        self.assertEqual(new_invoice.recipient, self.company_client)
+        self.assertEqual(new_invoice.payment_term, self.payment_term2)
+        self.assertEqual(new_invoice.payment_method, self.payment_method)
+        self.assertEqual(invoice_line.description, "A mouse")
+        self.assertEqual(invoice_line.taxable_amount, Decimal("1000"))
+        self.assertEqual(invoice_line.not_taxable_amount, Decimal("50"))
+        self.assertEqual(invoice_line.vat_amount, Decimal("105"))
+        self.assertEqual(invoice_line.total_amount, Decimal("1155"))
+
+    def test_sales_new_massive_invoice_post_xls(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line.xls")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.ms-excel")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+        # Test DB was updated correctly
+        self.assertEqual(Sale_invoice.objects.all().count(), 2)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
+        new_invoice = Sale_invoice.objects.get(
+        type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
+        invoice_line = Sale_invoice_line.objects.get(sale_invoice = new_invoice)
+        self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
+        self.assertEqual(new_invoice.type, self.doc_type1)
+        self.assertEqual(new_invoice.point_of_sell, self.pos2)
+        self.assertEqual(new_invoice.number, "00000001")
+        self.assertEqual(new_invoice.sender, self.company)
+        self.assertEqual(new_invoice.recipient, self.company_client)
+        self.assertEqual(new_invoice.payment_term, self.payment_term2)
+        self.assertEqual(new_invoice.payment_method, self.payment_method)
+        self.assertEqual(invoice_line.description, "A mouse")
+        self.assertEqual(invoice_line.taxable_amount, Decimal("1000"))
+        self.assertEqual(invoice_line.not_taxable_amount, Decimal("50"))
+        self.assertEqual(invoice_line.vat_amount, Decimal("105"))
+        self.assertEqual(invoice_line.total_amount, Decimal("1155"))
+
+    def test_sales_new_massive_invoice_post_xlsx(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line.xlsx")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+        # Test DB was updated correctly
+        self.assertEqual(Sale_invoice.objects.all().count(), 2)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
+        new_invoice = Sale_invoice.objects.get(
+        type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
+        invoice_line = Sale_invoice_line.objects.get(sale_invoice = new_invoice)
+        self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
+        self.assertEqual(new_invoice.type, self.doc_type1)
+        self.assertEqual(new_invoice.point_of_sell, self.pos2)
+        self.assertEqual(new_invoice.number, "00000001")
+        self.assertEqual(new_invoice.sender, self.company)
+        self.assertEqual(new_invoice.recipient, self.company_client)
+        self.assertEqual(new_invoice.payment_term, self.payment_term2)
+        self.assertEqual(new_invoice.payment_method, self.payment_method)
+        self.assertEqual(invoice_line.description, "A mouse")
+        self.assertEqual(invoice_line.taxable_amount, Decimal("1000"))
+        self.assertEqual(invoice_line.not_taxable_amount, Decimal("50"))
+        self.assertEqual(invoice_line.vat_amount, Decimal("105"))
+        self.assertEqual(invoice_line.total_amount, Decimal("1155"))
+
+    def test_sales_new_massive_invoice_pdf(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line.pdf")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/pdf")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Invalid file", response.content.decode("utf-8"))
+            self.assertEqual(Sale_invoice.objects.all().count(), 1)
+
+    def test_sales_new_massive_invoice_multiple_lines_post_xlsx(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_multiple_lines.xlsx")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+        # Test DB was updated correctly
+        self.assertEqual(Sale_invoice.objects.all().count(), 2)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 5)
+        new_invoice = Sale_invoice.objects.get(
+        type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
+        invoice_lines = Sale_invoice_line.objects.filter(sale_invoice=new_invoice)
+        self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
+        self.assertEqual(new_invoice.type, self.doc_type1)
+        self.assertEqual(new_invoice.point_of_sell, self.pos2)
+        self.assertEqual(new_invoice.number, "00000001")
+        self.assertEqual(new_invoice.sender, self.company)
+        self.assertEqual(new_invoice.recipient, self.company_client)
+        self.assertEqual(new_invoice.payment_term, self.payment_term2)
+        self.assertEqual(new_invoice.payment_method, self.payment_method)
+        self.assertEqual(invoice_lines[0].description, "A mouse")
+        self.assertEqual(invoice_lines[0].taxable_amount, Decimal("1000"))
+        self.assertEqual(invoice_lines[0].not_taxable_amount, Decimal("50"))
+        self.assertEqual(invoice_lines[0].vat_amount, Decimal("105"))
+        self.assertEqual(invoice_lines[0].total_amount, Decimal("1155"))
+        self.assertEqual(invoice_lines[1].description, "A monitor")
+        self.assertEqual(invoice_lines[1].taxable_amount, Decimal("100.22"))
+        self.assertEqual(invoice_lines[1].not_taxable_amount, Decimal("0"))
+        self.assertEqual(invoice_lines[1].vat_amount, Decimal("10.52"))
+        self.assertEqual(invoice_lines[1].total_amount, Decimal("110.74"))
+        self.assertEqual(invoice_lines[2].taxable_amount, Decimal("2000"))
+        self.assertEqual(invoice_lines[2].not_taxable_amount, Decimal("50.50"))
+        self.assertEqual(invoice_lines[2].vat_amount, Decimal("210"))
+        self.assertEqual(invoice_lines[2].total_amount, Decimal("2260.50"))
+
+    def test_sales_new_massive_invoices_multiple_lines_post_xlsx(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoices_mixed.xlsx")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+        # Test DB was updated correctly
+        self.assertEqual(Sale_invoice.objects.all().count(), 6)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 10)
+        new_invoice = Sale_invoice.objects.get(
+        type=self.doc_type1, point_of_sell=self.pos2, number="00000004")
+        invoice_lines = Sale_invoice_line.objects.filter(sale_invoice=new_invoice)
+        self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 16))
+        self.assertEqual(new_invoice.type, self.doc_type1)
+        self.assertEqual(new_invoice.point_of_sell, self.pos2)
+        self.assertEqual(new_invoice.number, "00000004")
+        self.assertEqual(new_invoice.sender, self.company)
+        self.assertEqual(new_invoice.recipient, self.company_client)
+        self.assertEqual(new_invoice.payment_term, self.payment_term2)
+        self.assertEqual(new_invoice.payment_method, self.payment_method)
+        self.assertEqual(invoice_lines[0].description, "A monitor")
+        self.assertEqual(invoice_lines[0].taxable_amount, Decimal("100.22"))
+        self.assertEqual(invoice_lines[0].not_taxable_amount, Decimal("0"))
+        self.assertEqual(invoice_lines[0].vat_amount, Decimal("10.52"))
+        self.assertEqual(invoice_lines[0].total_amount, Decimal("110.74"))
+
+    def test_sales_new_massive_invoice_post_repeated(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line_repeated.csv")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Invoice A 00001-00000001 already exists.",
+                response.content.decode("utf-8")
+            )
+            self.assertEqual(Sale_invoice.objects.all().count(), 1)
+            self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+    
+    def test_sales_new_massive_invoice_post_wrong_data(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line_wrong.csv")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("must be only digits", response.content.decode("utf-8"))
+            self.assertEqual(Sale_invoice.objects.all().count(), 1)
+            self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+
+    def test_sales_new_massive_invoice_post_wrong_data_2(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line_wrong2.csv")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("The input in row 2 and column sender doesn't exist",
+                response.content.decode("utf-8"))
+            self.assertEqual(Sale_invoice.objects.all().count(), 1)
+            self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+    
+    def test_sales_new_massive_invoice_post_wrong_data_3(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoice_one_line_wrong3.csv")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("must be a decimal number", response.content.decode("utf-8"))
+            self.assertIn("cannot be blank", response.content.decode("utf-8"))
+            self.assertEqual(Sale_invoice.objects.all().count(), 1)
+            self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
 
     def test_sales_invoice_multiline_webpage(self):
         response = self.client.get("/erp/sales/invoices/1")
@@ -873,19 +1148,20 @@ class ErpTestCase(TestCase):
                 "s_invoice_lines-0-description": "Random products",
                 "s_invoice_lines-0-taxable_amount": Decimal("2000"),
                 "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
-                "s_invoice_lines-0-VAT_amount": Decimal("420"),
+                "s_invoice_lines-0-vat_amount": Decimal("420"),
                 # line-2-setform / Modify all fields
                 "s_invoice_lines-1-id": self.sale_invoice.id,
                 "s_invoice_lines-1-description": "Custom products",
                 "s_invoice_lines-1-taxable_amount": Decimal("1000"),
                 "s_invoice_lines-1-not_taxable_amount": Decimal("80.02"),
-                "s_invoice_lines-1-VAT_amount": Decimal("20"),
+                "s_invoice_lines-1-vat_amount": Decimal("20"),
                 # line-3-setform / New line added
                 "s_invoice_lines-2-id": self.sale_invoice.id,
                 "s_invoice_lines-2-description": "A few products",
                 "s_invoice_lines-2-taxable_amount": Decimal("333"),
                 "s_invoice_lines-2-not_taxable_amount": Decimal("33.32"),
-                "s_invoice_lines-2-VAT_amount": Decimal("33")
+                "s_invoice_lines-2-vat_amount": Decimal("33")
             })   
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Sale_invoice.objects.all().count(), 1)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)

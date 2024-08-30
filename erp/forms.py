@@ -137,12 +137,12 @@ class SaleInvoiceLineForm(forms.ModelForm):
     class Meta:
         model = Sale_invoice_line
         fields = ["description", "not_taxable_amount", "taxable_amount",
-            "VAT_amount"]
+            "vat_amount"]
         help_texts = {
             "description": "Description of the product or service you are selling.",
             "not_taxable_amount": "Total amount.",
             "taxable_amount": "Total amount.",
-            "VAT_amount": "Total amount.",
+            "vat_amount": "Total amount.",
         }
 
 
@@ -176,5 +176,9 @@ class AddSaleInvoicesFileForm(forms.Form):
     """Add file for new sale invoices"""
     file = forms.FileField(label="", help_text=
     """Format:
-    --TODO--""",
+    issue_date=DD/MM/YYYY; type=code, number, max 3 char; point_of_sell=number,
+    max 5 char; number=number, max 8 char; sender=tax_number, max 11 char; 
+    recipient=tax_number, max 11 char; payment_method=text; payment_term=number,
+    max 3 char; description=text, max 280 char; taxable_amount=decimal(2); 
+    not_taxable_amount=decimal(2); VAT_amount=decimal(2);""",
     validators=[validate_file_extension])

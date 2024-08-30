@@ -1,5 +1,6 @@
 import csv, os
 import pandas as pd
+from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.conf import settings
 from django.db import transaction, IntegrityError
@@ -9,12 +10,14 @@ from django.urls import reverse
 
 
 
-from company.models import FinancialYear
+from company.models import FinancialYear, PersonModel
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
     PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm,
     AddPersonFileForm, AddSaleInvoicesFileForm)
 from .models import (Company, Company_client, Supplier, Payment_method, 
     Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
+from .utils import (read_uploaded_file, check_column_len, standarize_dataframe,
+check_column_names, list_file_errors, get_model_fields_name)
 
 
 # Create your views here.
@@ -65,67 +68,50 @@ def person_new_multiple(request, person_type):
     """Add multiple clients/suppliers"""
     if request.method == "POST":
         file_form = AddPersonFileForm(request.POST, request.FILES)
-        # Read file according to the extension
+        
         if file_form.is_valid():
             file = request.FILES["file"]
             
-            if(file.name.endswith(".csv")):
-                df = pd.read_csv(file)
-            else :
-                df = pd.read_excel(file)
+            # Read file according to the extension    
+            df = read_uploaded_file(file)
             
-            # Standarize columns name to lower case and keep NaN cells blank
-            df.columns = [column.lower().strip() for column in df.columns]
-            df = df.where(pd.notnull(df), "")
-
             # Check all columns exist
-            person_attributes = ["tax_number", "name", "address", "email", "phone"]
-            if len(df.columns) != 5:
-                return HttpResponseBadRequest("The number of columns must be 5.")
-            for attribute in person_attributes:
-                if attribute not in df.columns:
-                    return HttpResponseBadRequest(f"Column {attribute} not found.")
+            check_column_len(df, 5)
+
+            # Standarize and check all columns have the right name
+            df = standarize_dataframe(df)
+            person_fields = get_model_fields_name(PersonModel)
+            check_column_names(df, person_fields)
 
             # Pass all values in model
             with transaction.atomic():
                 for index, row in df.iterrows():
                     # Convert number fields into string to allow me using
                     # validators
-                    tax_num_data = str(row[person_attributes[0]])
-                    name_data = str(row[person_attributes[1]])
-                    address_data = str(row[person_attributes[2]])
-                    email_data = str(row[person_attributes[3]])
-                    phone_data = str(row[person_attributes[4]])
-                            
+                    person_fields_row = list(map(str, row[person_fields]))
+
                     if person_type == "client":
-                        new_person = Company_client(
-                            tax_number = tax_num_data,
-                            name = name_data,
-                            address = address_data,    
-                            email = email_data,
-                            phone = phone_data,
-                        )
+                        person_model = Company_client
                     elif person_type == "supplier":
-                        new_person = Supplier(
-                            tax_number = tax_num_data,
-                            name = name_data,
-                            address = address_data,    
-                            email = email_data,
-                            phone = phone_data,
-                        )
+                        person_model = Supplier
+                    new_person = person_model(
+                        tax_number = person_fields_row[0],
+                        name = person_fields_row[1],
+                        address = person_fields_row[2],    
+                        email = person_fields_row[3],
+                        phone = person_fields_row[4],
+                    )
+                    
+                    # Execute validators before saving, and show error if exists,
                     try:
                         new_person.full_clean()
                         new_person.save()
                     except ValidationError as ve:
-                        errors = []
-                        for field, messages in ve.message_dict.items():
-                            for message in messages:
-                                errors.append(f"Row {index}, {field}: {message}")    
-                        return HttpResponseBadRequest(f"{"\n".join(errors)}")
+                        errors = list_file_errors(ve, index)  
+                        return HttpResponseBadRequest(errors)
             # If everything is correct
             return HttpResponseRedirect(reverse(f"erp:{person_type}_index"))
         else:
-            # Raise an error of invalid form
             return HttpResponseBadRequest("Invalid file.")
     else:
         return HttpResponseRedirect(reverse(f"erp:person_new", 
@@ -268,10 +254,136 @@ def sales_new(request):
 
 def sales_new_massive(request):
     """New massive sale invoices webpage"""
-    invoices_file_form = AddSaleInvoicesFileForm()
-    return render(request, "erp/sales_new_massive.html", {
-        "invoices_file_form": invoices_file_form,
-    })
+    if request.method == "POST":
+        invoices_file_form = AddSaleInvoicesFileForm(request.POST, request.FILES)
+        if invoices_file_form.is_valid():
+            file = request.FILES["file"]
+                      
+            # Read file according to the extension
+            df = read_uploaded_file(file, "issue_date")
+           
+            # Check all columns exist   
+            check_column_len(df, 12)
+
+            # Standarize and check all columns have the right name
+            df = standarize_dataframe(df)
+            document_fields = get_model_fields_name(Sale_invoice)
+            line_fields = get_model_fields_name(Sale_invoice_line, "total_amount",
+                "sale_invoice"
+            )
+            total_fields = document_fields + line_fields
+            check_column_names(df, total_fields)
+     
+            # Pass all values in model
+            with transaction.atomic():
+                last_invoice = None
+                for index, row in df.iterrows():
+                    # Convert all fields into string to allow me using
+                    # validators.
+                    total_fields_row = list(map(str, row[total_fields]))
+                    current_invoice = (
+                        f"{total_fields_row[1].zfill(3)}"
+                        f"{total_fields_row[3].zfill(5)}"
+                        f"{total_fields_row[2].zfill(8)}"
+                    )
+                    
+                    # Control if it's new invoice or line
+                    if index == 0 or last_invoice != current_invoice:
+                        # Get objects from related fields                
+                        try:
+                            message_field = "type"
+                            type_field = Document_type.objects.get(
+                                    code=total_fields_row[1].zfill(3)
+                                )
+                            message_field = "point_of_sell"
+                            pos_number_field = Point_of_sell.objects.get(
+                                    pos_number=total_fields_row[3].zfill(5)
+                                )  
+                            message_field = "sender"
+                            sender_field = Company.objects.get(
+                                    tax_number=total_fields_row[4]
+                                )
+                            message_field = "recipient"
+                            recipient_field = Company_client.objects.get(
+                                    tax_number=total_fields_row[5]
+                                )
+                            message_field = "payment_method"
+                            pay_method_field = Payment_method.objects.get(
+                                    pay_method=total_fields_row[6].capitalize()
+                                )
+                            message_field = "payment_term"
+                            pay_term_field = Payment_term.objects.get(
+                                    pay_term=total_fields_row[7]
+                                )
+                        except ObjectDoesNotExist:
+                            error_message = (
+                                f"The input in row {index + 2} and column "
+                                f"{message_field} doesn't exist in the records."
+                            )
+                            return HttpResponseBadRequest(error_message)
+                    
+                        new_invoice = Sale_invoice(
+                            issue_date = total_fields_row[0][0:10],
+                            type = type_field,
+                            point_of_sell = pos_number_field,
+                            number = total_fields_row[2],
+                            sender = sender_field,
+                            recipient = recipient_field,
+                            payment_method = pay_method_field,
+                            payment_term = pay_term_field
+                        )
+                        
+                        # Execute validators before saving, and show error if exists,
+                        try:
+                            new_invoice.full_clean()
+                            new_invoice.save()
+                            # Save invoice data next row
+                            last_invoice = (
+                                f"{new_invoice.type.code}"
+                                f"{new_invoice.point_of_sell.pos_number}"
+                                f"{new_invoice.number}"
+                            )
+                        except ValidationError as ve:
+                            errors = list_file_errors(ve, index)
+                            return HttpResponseBadRequest(errors)
+                        except IntegrityError:
+                            error_message = (
+                                f"Invoice {new_invoice.type.type} "
+                                f"{new_invoice.point_of_sell.pos_number}-"
+                                f"{new_invoice.number} already exists."
+                            )
+                            return HttpResponseBadRequest(error_message)
+                    
+                    # Add invoice line form
+                    new_line = Sale_invoice_line(
+                        sale_invoice = new_invoice,
+                        description = total_fields_row[8],
+                        taxable_amount = total_fields_row[9],
+                        not_taxable_amount = total_fields_row[10],
+                        vat_amount = total_fields_row[11],
+                        # Hay add total amount to don't raise validation error
+                        # in full_clean(), then it's updated in saving.
+                        total_amount = "0",
+                    )
+                    try:
+                        new_line.full_clean()
+                        new_line.save()
+                    except ValidationError as ve:
+                        new_invoice.delete()
+                        errors = list_file_errors(ve, index)
+                        return HttpResponseBadRequest(errors)
+                    
+            # If everything is correct
+            return HttpResponseRedirect(reverse(f"erp:sales_index"))
+        else:
+            return HttpResponseBadRequest("Invalid file.")
+    # Get method
+    else:
+        invoices_file_form = AddSaleInvoicesFileForm()
+        return render(request, "erp/sales_new_massive.html", {
+            "invoices_file_form": invoices_file_form,
+        })
+
 
 def sales_invoice(request, inv_pk):
     """Specific invoice webpage"""
