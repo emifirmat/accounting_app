@@ -43,6 +43,11 @@ class PersonModel(models.Model):
     def __str__(self):
         return f"{self.name} | {self.tax_number}"
     
+    def save(self, *args, **kwargs):
+        self.name = self.name.upper()
+        self.address = self.address.title()
+        return super(PersonModel, self).save(*args, **kwargs)
+    
 
 class Company(PersonModel, SingletonModel):
     """Company information"""

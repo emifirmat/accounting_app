@@ -178,25 +178,100 @@ class ErpTestCase(TestCase):
             total_amount = Decimal("242"),
         )
 
+    def create_extra_invoices(self):
+        """Create extra invoices when a test demands it"""
+        new_sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 4, 23),
+            type = self.doc_type1,
+            point_of_sell = self.pos1,
+            number = "00000002",
+            sender = self.company,
+            recipient = self.company_client,
+            payment_method = self.payment_method,
+            payment_term = self.payment_term,
+        )
+        Sale_invoice_line.objects.create(
+            sale_invoice = new_sale_invoice,
+            description = "Test 2 sale invoice",
+            taxable_amount = Decimal("500"),
+            not_taxable_amount = Decimal("20.01"),
+            vat_amount = Decimal("80"),
+        )
+
+        new_sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 4, 23),
+            type = self.doc_type1,
+            point_of_sell = self.pos1,
+            number = "00000003",
+            sender = self.company,
+            recipient = self.company_client,
+            payment_method = self.payment_method,
+            payment_term = self.payment_term,
+        )
+        Sale_invoice_line.objects.create(
+            sale_invoice = new_sale_invoice,
+            description = "Test 2 sale invoice",
+            taxable_amount = Decimal("500"),
+            not_taxable_amount = Decimal("20.01"),
+            vat_amount = Decimal("80"),
+        )
+
+        new_sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 4, 24),
+            type = self.doc_type1,
+            point_of_sell = self.pos1,
+            number = "00000004",
+            sender = self.company,
+            recipient = self.company_client,
+            payment_method = self.payment_method,
+            payment_term = self.payment_term,
+        )
+        Sale_invoice_line.objects.create(
+            sale_invoice = new_sale_invoice,
+            description = "Test 2 sale invoice",
+            taxable_amount = Decimal("500"),
+            not_taxable_amount = Decimal("20.01"),
+            vat_amount = Decimal("80"),
+        )
+
+        new_sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2025, 6, 23),
+            type = self.doc_type1,
+            point_of_sell = self.pos1,
+            number = "00000005",
+            sender = self.company,
+            recipient = self.company_client,
+            payment_method = self.payment_method,
+            payment_term = self.payment_term,
+        )
+        Sale_invoice_line.objects.create(
+            sale_invoice = new_sale_invoice,
+            description = "Test 2 sale invoice",
+            taxable_amount = Decimal("500"),
+            not_taxable_amount = Decimal("20.01"),
+            vat_amount = Decimal("80"),
+        )
+
+
     def test_company_client_content(self):
         company_clients = Company_client.objects.all()
         self.assertEqual(company_clients.count(), 2)
         self.assertEqual(self.company_client.tax_number, "20361382481")
-        self.assertEqual(self.company_client.name, "Client1 SRL")
+        self.assertEqual(self.company_client.name, "CLIENT1 SRL")
         self.assertEqual(self.company_client.email, "client1@email.com")
         self.assertEqual(self.company_client.phone, "1234567890")
-        self.assertEqual(self.company_client.address, "Client street, Client city, Chile")
-        self.assertEqual(str(self.company_client), "Client1 SRL | 20361382481")
+        self.assertEqual(self.company_client.address, "Client Street, Client City, Chile")
+        self.assertEqual(str(self.company_client), "CLIENT1 SRL | 20361382481")
 
     def test_supplier_content(self):
         suppliers = Supplier.objects.all()
         self.assertEqual(suppliers.count(), 1)
         self.assertEqual(self.supplier.tax_number, "20361382482")
-        self.assertEqual(self.supplier.name, "Supplier1 SA")
+        self.assertEqual(self.supplier.name, "SUPPLIER1 SA")
         self.assertEqual(self.supplier.email, "Supplier1@email.com")
         self.assertEqual(self.supplier.phone, "0987654321")
-        self.assertEqual(self.supplier.address, "Supplier street, Supplier city, Chile")
-        self.assertEqual(str(self.supplier), "Supplier1 SA | 20361382482")
+        self.assertEqual(self.supplier.address, "Supplier Street, Supplier City, Chile")
+        self.assertEqual(str(self.supplier), "SUPPLIER1 SA | 20361382482")
 
     def test_client_current_account_content(self):
         client_ca_all = Client_current_account.objects.all()
@@ -534,8 +609,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(Company_client.objects.all().count(), 8)
         client_great = Company_client.objects.get(tax_number="20123456780")
         self.assertEqual(client_great.tax_number, "20123456780")
-        self.assertEqual(client_great.name, "Great Sugar SA")
-        self.assertEqual(client_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(client_great.name, "GREAT SUGAR SA")
+        self.assertEqual(client_great.address, "Mutiple Street 1, Dublin, Ireland")
         self.assertEqual(client_great.email, "mclient1@email.com")
         self.assertEqual(client_great.phone, "3412425841")
     
@@ -554,8 +629,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(Company_client.objects.all().count(), 8)
         client_great = Company_client.objects.get(tax_number="20123456780")
         self.assertEqual(client_great.tax_number, "20123456780")
-        self.assertEqual(client_great.name, "Great Sugar SA")
-        self.assertEqual(client_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(client_great.name, "GREAT SUGAR SA")
+        self.assertEqual(client_great.address, "Mutiple Street 1, Dublin, Ireland")
         self.assertEqual(client_great.email, "mclient1@email.com")
         self.assertEqual(client_great.phone, "3412425841")
 
@@ -574,8 +649,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(Company_client.objects.all().count(), 8)
         client_great = Company_client.objects.get(tax_number="20123456780")
         self.assertEqual(client_great.tax_number, "20123456780")
-        self.assertEqual(client_great.name, "Great Sugar SA")
-        self.assertEqual(client_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(client_great.name, "GREAT SUGAR SA")
+        self.assertEqual(client_great.address, "Mutiple Street 1, Dublin, Ireland")
         self.assertEqual(client_great.email, "mclient1@email.com")
         self.assertEqual(client_great.phone, "3412425841")
 
@@ -630,13 +705,13 @@ class ErpTestCase(TestCase):
         response = self.client.get("/erp/client/edit")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/person_edit.html")
-        self.assertContains(response, "Client1 SRL | 20361382481")
+        self.assertContains(response, "CLIENT1 SRL | 20361382481")
 
     def test_client_delete_get(self):
         response = self.client.get("/erp/client/delete")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/person_delete.html")
-        self.assertContains(response, "Client1 SRL | 20361382481")
+        self.assertContains(response, "CLIENT1 SRL | 20361382481")
 
     def test_supplier_index_webpage(self):
         response = self.client.get("/erp/supplier")
@@ -697,8 +772,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(Supplier.objects.all().count(), 7)
         supplier_great = Supplier.objects.get(tax_number="20123456780")
         self.assertEqual(supplier_great.tax_number, "20123456780")
-        self.assertEqual(supplier_great.name, "Great Sugar SA")
-        self.assertEqual(supplier_great.address, "Mutiple street 1, Dublin, Ireland")
+        self.assertEqual(supplier_great.name, "GREAT SUGAR SA")
+        self.assertEqual(supplier_great.address, "Mutiple Street 1, Dublin, Ireland")
         self.assertEqual(supplier_great.email, "mclient1@email.com")
         self.assertEqual(supplier_great.phone, "3412425841")
 
@@ -706,13 +781,13 @@ class ErpTestCase(TestCase):
         response = self.client.get("/erp/supplier/edit")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/person_edit.html")
-        self.assertContains(response, "Supplier1 SA | 20361382482")
+        self.assertContains(response, "SUPPLIER1 SA | 20361382482")
 
     def test_supplier_delete_get(self):
         response = self.client.get("/erp/supplier/delete")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/person_delete.html")
-        self.assertContains(response, "Supplier1 SA | 20361382482")
+        self.assertContains(response, "SUPPLIER1 SA | 20361382482")
 
     def test_payment_conditions_webpage(self):
         response = self.client.get("/erp/payment_conditions")
@@ -1103,6 +1178,21 @@ class ErpTestCase(TestCase):
             self.assertEqual(Sale_invoice.objects.all().count(), 1)
             self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
 
+    def test_sales_new_massive_invoices_multiple_lines_post_wrong_data(self):
+        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
+            "invoices_mixed_wrong.csv")
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Row 10: Your invoice's information doesn't match with row 9",
+                response.content.decode("utf-8"))
+            self.assertEqual(Sale_invoice.objects.all().count(), 1)
+            self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+
     def test_sales_invoice_multiline_webpage(self):
         response = self.client.get("/erp/sales/invoices/1")
         self.assertEqual(response.status_code, 200)
@@ -1165,3 +1255,84 @@ class ErpTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Sale_invoice.objects.all().count(), 1)
         self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
+
+    def test_sales_list_get_webpage(self):
+        response = self.client.get("/erp/sales/invoices/list")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/sales_list.html")
+        self.assertContains(response, "Sales List")
+        self.assertContains(response, "Client Name")
+        # Reminder: Current year is 2024
+        self.assertContains(response, "21/01/2024")
+
+    def test_sales_list_post_year_webpage(self):
+        # Add financial year and an invoice before testing
+        FinancialYear.objects.create(year = "2025")
+        self.create_extra_invoices()
+        response = self.client.post(reverse("erp:sales_list"), {
+            "year": "2025",
+            "form_type": "year",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "23/06/2025")
+        self.assertContains(response, "20361382481")
+        self.assertContains(response, "600.01")
+
+    def test_sales_list_post_year_no_financial_webpage(self):
+        response = self.client.post(reverse("erp:sales_list"), {
+            "year": "2025",
+            "form_type": "year",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "The year 2025 doesn")
+        # By default, current's year invoices should appear
+        self.assertContains(response, "21/01/2024")
+        self.assertContains(response, "00000001")
+        
+    def test_sales_list_post_year_no_invoice_webpage(self):
+        FinancialYear.objects.create(year = "2025")
+        response = self.client.post(reverse("erp:sales_list"), {
+            "year": "2025",
+            "form_type": "year",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "The year 2025 doesn't exist in the records.")
+        self.assertContains(response, "There isn't any invoice in this period of time.")
+        
+    def test_sales_list_post_dates_webpage(self):
+        self.create_extra_invoices()
+        response = self.client.post(reverse("erp:sales_list"), {
+            "date_from": "23/04/2024",
+            "date_to": "24/04/2024",
+            "form_type": "date",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "00000002")
+        self.assertContains(response, "00000003")
+        self.assertContains(response, "00000004")
+        self.assertNotContains(response, "00000001")
+
+    def test_sales_list_post_dates_same_webpage(self):
+        self.create_extra_invoices()
+        response = self.client.post(reverse("erp:sales_list"), {
+            "date_from": "23/04/2024",
+            "date_to": "23/04/2024",
+            "form_type": "date",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "00000002")
+        self.assertContains(response, "00000003")
+        self.assertNotContains(response, "00000004")
+    
+    def test_sales_list_post_dates_inverted_webpage(self):
+        self.create_extra_invoices()
+        response = self.client.post(reverse("erp:sales_list"), {
+            "date_from": "24/04/2024",
+            "date_to": "23/04/2024",
+            "form_type": "date",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "should be older")
+        self.assertNotContains(response, "00000002")
+        self.assertNotContains(response, "00000004")
+        

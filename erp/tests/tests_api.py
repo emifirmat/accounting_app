@@ -119,20 +119,20 @@ class APIErpTests(APITestCase):
         response = self.client.get(reverse("erp:client_api",
             kwargs={"pk": self.client2.pk}), format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertContains(response, "Client street 2, Client city, Chile")
+        self.assertContains(response, "Client Street 2, Client City, Chile")
         self.assertNotContains(response, "20361382481")
 
     def test_supplier_api(self):
         response = self.client.get(reverse("erp:suppliers_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Supplier.objects.count(), 2)
-        self.assertContains(response, "Supplier2 SRL")
+        self.assertContains(response, "SUPPLIER2 SRL")
 
     def test_detail_supplier_api(self):
         response = self.client.get(reverse("erp:supplier_api",
             kwargs={"pk": self.supplier1.pk}), format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertContains(response, "Supplier street, Supplier city, Chile")
+        self.assertContains(response, "Supplier Street, Supplier City, Chile")
         self.assertNotContains(response, "22222222222")
 
     def test_payment_methods_api(self):

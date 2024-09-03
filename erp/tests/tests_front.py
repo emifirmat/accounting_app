@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
 
-from company.models import Company
+from company.models import Company, FinancialYear
 from ..models import (Company_client, Supplier, Payment_method, Payment_term,
     Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
 
@@ -596,6 +596,8 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             creation_date = datetime.date(1991, 3, 10),
             closing_date = datetime.date(2024, 6, 30),
         )
+
+        FinancialYear.objects.create(year="2024", current=True)
         
         self.client1 = Company_client.objects.create(
             tax_number = "20361382481",
@@ -666,24 +668,14 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         )
 
         self.sale_invoice1 = Sale_invoice.objects.create(
-            issue_date = datetime.date(2024, 1, 21),
-            type = self.doc_type1,
+            issue_date = datetime.date(2024, 1, 21), 
+            type = self.doc_type1, 
             point_of_sell = self.pos1,
-            number = "00000001",         
+            number = "00000001", 
             sender = self.company,
-            recipient = self.client1,
-            payment_method = self.pay_method,
+            recipient = self.client1, payment_method = self.pay_method,
             payment_term = self.pay_term,
         )
-
-        self.sale_invoice1_line1 = Sale_invoice_line.objects.create(
-            sale_invoice = self.sale_invoice1,
-            description = "Test sale invoice",
-            taxable_amount = Decimal("1000"),
-            not_taxable_amount = Decimal("90.01"),
-            vat_amount = Decimal("210"),
-        )
-
         self.sale_invoice2 = Sale_invoice.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             type = self.doc_type2,
@@ -694,7 +686,93 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             payment_method = self.pay_method2,
             payment_term = self.pay_term2,
         )
-
+        self.sale_invoice3 = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 23),
+            type = self.doc_type1,
+            point_of_sell = self.pos1, number="00000002", 
+            sender = self.company,
+            recipient = self.client1, 
+            payment_method = self.pay_method,
+            payment_term = self.pay_term
+        )
+        self.sale_invoice4 = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 23),
+            type=self.doc_type1,
+            point_of_sell = self.pos1,
+            number="00000003",
+            sender=self.company,
+            recipient = self.client2,
+            payment_method=self.pay_method2, 
+            payment_term = self.pay_term
+        )
+        self.sale_invoice5 = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 24),
+            type = self.doc_type2,
+            point_of_sell = self.pos1,
+            number = "00000002",
+            sender = self.company,
+            recipient = self.client1,
+            payment_method = self.pay_method, 
+            payment_term = self.pay_term
+        )
+        self.sale_invoice6 = Sale_invoice.objects.create(
+            issue_date=datetime.date(2024, 1, 24),
+            type=self.doc_type2,
+            point_of_sell=self.pos1,
+            number="00000003",
+            sender=self.company,
+            recipient=self.client2,
+            payment_method=self.pay_method2, 
+            payment_term=self.pay_term
+        )
+        self.sale_invoice7 = Sale_invoice.objects.create(
+            issue_date=datetime.date(2024, 1, 25),
+            type=self.doc_type1,
+            point_of_sell=self.pos2,
+            number="00000001",
+            sender=self.company,
+            recipient=self.client1,
+            payment_method=self.pay_method, 
+            payment_term=self.pay_term
+        )
+        self.sale_invoice8 = Sale_invoice.objects.create(
+            issue_date=datetime.date(2024, 1, 25),
+            type=self.doc_type1,
+            point_of_sell=self.pos2,
+            number="00000002",
+            sender=self.company,
+            recipient=self.client1,
+            payment_method=self.pay_method2,
+            payment_term=self.pay_term
+        )
+        self.sale_invoice9 = Sale_invoice.objects.create(
+            issue_date=datetime.date(2024, 1, 26),
+            type=self.doc_type2,
+            point_of_sell=self.pos2,
+            number="00000001",
+            sender=self.company,
+            recipient=self.client2,
+            payment_method=self.pay_method,
+            payment_term=self.pay_term
+        )
+        self.sale_invoice10 = Sale_invoice.objects.create(
+            issue_date=datetime.date(2024, 1, 26),
+            type=self.doc_type2,
+            point_of_sell=self.pos2,
+            number="00000002",
+            sender=self.company,
+            recipient=self.client2,
+            payment_method=self.pay_method2,
+            payment_term=self.pay_term
+        )
+        
+        self.sale_invoice1_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice1,
+            description = "Test sale invoice",
+            taxable_amount = Decimal("1000"),
+            not_taxable_amount = Decimal("90.01"),
+            vat_amount = Decimal("210"),
+        )
         self.sale_invoice2_line1 = Sale_invoice_line.objects.create(
             sale_invoice = self.sale_invoice2,
             description = "Second sale invoice",
@@ -702,42 +780,62 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             not_taxable_amount = Decimal("0.02"),
             vat_amount = Decimal("209.09"),
         )
-
-        sale_invoices = [
-            Sale_invoice(issue_date=datetime.date(2024, 1, 23), type=self.doc_type1, 
-                point_of_sell=self.pos1, number="00000002", sender=self.company,
-                recipient=self.client1, payment_method=self.pay_method, 
-                payment_term=self.pay_term),
-            Sale_invoice(issue_date=datetime.date(2024, 1, 23), type=self.doc_type1,
-                point_of_sell=self.pos1, number="00000003", sender=self.company,
-                recipient=self.client2, payment_method=self.pay_method2, 
-                payment_term=self.pay_term),
-            Sale_invoice(issue_date=datetime.date(2024, 1, 24),type=self.doc_type2,
-                point_of_sell=self.pos1, number="00000002", sender=self.company,
-                recipient=self.client1, payment_method=self.pay_method, 
-                payment_term=self.pay_term),
-            Sale_invoice(issue_date=datetime.date(2024, 1, 24),type=self.doc_type2,
-                point_of_sell=self.pos1, number="00000003", sender=self.company,
-                recipient=self.client2, payment_method=self.pay_method2, 
-                payment_term=self.pay_term),
-            Sale_invoice(issue_date=datetime.date(2024, 1, 25), type=self.doc_type1,
-                point_of_sell=self.pos2, number="00000001", sender=self.company,
-                recipient=self.client1, payment_method=self.pay_method, 
-                payment_term=self.pay_term),
-            Sale_invoice(issue_date=datetime.date(2024, 1, 25), type=self.doc_type1,
-                point_of_sell=self.pos2, number="00000002", sender=self.company,
-                recipient=self.client1, payment_method=self.pay_method2,
-                payment_term=self.pay_term),
-            Sale_invoice(issue_date=datetime.date(2024, 1, 26), type=self.doc_type2,
-                point_of_sell=self.pos2, number="00000001", sender=self.company,
-                recipient=self.client2, payment_method=self.pay_method,
-                payment_term=self.pay_term),
-            Sale_invoice(issue_date=datetime.date(2024, 1, 26), type=self.doc_type2,
-                point_of_sell=self.pos2, number="00000002", sender=self.company,
-                recipient=self.client2, payment_method=self.pay_method2,
-                payment_term=self.pay_term),
-        ]
-        Sale_invoice.objects.bulk_create(sale_invoices)
+        self.sale_invoice3_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice3,
+            description = "Third sale invoice",
+            taxable_amount = Decimal("3"),
+            not_taxable_amount = Decimal("3"),
+            vat_amount = Decimal("3"),
+        )
+        self.sale_invoice4_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice4,
+            description = "Forth sale invoice",
+            taxable_amount = Decimal("4"),
+            not_taxable_amount = Decimal("4"),
+            vat_amount = Decimal("4"),
+        )
+        self.sale_invoice5_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice5,
+            description = "Fifth sale invoice",
+            taxable_amount = Decimal("5"),
+            not_taxable_amount = Decimal("5"),
+            vat_amount = Decimal("5"),
+        )
+        self.sale_invoice6_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice6,
+            description = "Sixth sale invoice",
+            taxable_amount = Decimal("6"),
+            not_taxable_amount = Decimal("6"),
+            vat_amount = Decimal("6"),
+        )
+        self.sale_invoice7_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice7,
+            description = "Seventh sale invoice",
+            taxable_amount = Decimal("7"),
+            not_taxable_amount = Decimal("7"),
+            vat_amount = Decimal("7"),
+        )
+        self.sale_invoice8_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice8,
+            description = "Eighth sale invoice",
+            taxable_amount = Decimal("8"),
+            not_taxable_amount = Decimal("8"),
+            vat_amount = Decimal("8"),
+        )
+        self.sale_invoice9_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice9,
+            description = "Ninth sale invoice",
+            taxable_amount = Decimal("9"),
+            not_taxable_amount = Decimal("9"),
+            vat_amount = Decimal("9"),
+        )
+        self.sale_invoice10_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice10,
+            description = "Tenth sale invoice",
+            taxable_amount = Decimal("10"),
+            not_taxable_amount = Decimal("10"),
+            vat_amount = Decimal("10"),
+        )
 
     def tearDown(self):
         Company.objects.all().delete()
@@ -769,7 +867,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # Check sender field is the company
         sender_field = Select(self.driver.find_element(By.ID, "id_sender"))
         selected_option = sender_field.first_selected_option
-        self.assertIn("Test Company SRL", selected_option.text)
+        self.assertIn("TEST COMPANY SRL", selected_option.text)
         
         # Check number field is ""
         number_field = self.driver.find_element(By.ID, "id_number")
@@ -959,7 +1057,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             actions.send_keys_to_element(client_name_field, char).perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"Client2 SA")
+                (By.ID, "invoice-list"),"CLIENT2 SA")
         )
         invoice_list = path.find_elements(By.TAG_NAME, "li")
         self.assertEqual(len(invoice_list), 4)
@@ -980,7 +1078,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         action.send_keys('20').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"Client1 SRL")
+                (By.ID, "invoice-list"),"CLIENT1 SRL")
         )
         path = self.driver.find_element(By.ID, "invoice-list")
         invoice_list = path.find_elements(By.TAG_NAME, "li")
@@ -1067,7 +1165,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # Let list update
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"Client2 SA")
+                (By.ID, "invoice-list"),"CLIENT2 SA")
         )
         path = self.driver.find_element(By.ID, "invoice-list")
         # Client name
@@ -1220,3 +1318,181 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         path = self.driver.find_element(By.ID, "sales-menu")
         path.find_elements(By.CLASS_NAME, "dropdown-item")[2].click()
         self.assertEqual(self.driver.title, "New Massive Sales")
+
+    @tag("erp_front_show_list_tabs")
+    def test_sales_show_list_tabs(self):
+        # Go to show list page
+        self.driver.get(f"{self.live_server_url}")
+        self.driver.find_element(By.ID, "sales-menu-link").click()
+        path = self.driver.find_element(By.ID, "sales-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[4].click()
+        self.assertEqual(self.driver.title, "Sales List")
+
+        # Click on year tab
+        self.driver.find_element(By.ID, "year-tab").click()
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(
+                (By.ID, "id_year")
+            )
+        )
+        
+        # Click on date tab
+        self.driver.find_element(By.ID, "date-tab").click()
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(
+                (By.ID, "id_date_from")
+            )
+        )
+
+
+    @tag("erp_front_show_list_original_order")
+    def test_sales_show_list_original_order(self):
+        # Go to show list page
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
+        
+        # Test original sort
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        date = first_row.find_elements(By.TAG_NAME, "td")[0]
+        type = first_row.find_elements(By.TAG_NAME, "td")[1] 
+        pos = first_row.find_elements(By.TAG_NAME, "td")[2]
+        number = first_row.find_elements(By.TAG_NAME, "td")[3]
+        self.assertEqual(date.text, "26/01/2024")
+        self.assertEqual(type.text, "002 | B")
+        self.assertEqual(pos.text, "00002")
+        self.assertEqual(number.text, "00000001")
+
+        third_row = rows[2]
+        date = third_row.find_elements(By.TAG_NAME, "td")[0]
+        type = third_row.find_elements(By.TAG_NAME, "td")[1] 
+        pos = third_row.find_elements(By.TAG_NAME, "td")[2]
+        number = third_row.find_elements(By.TAG_NAME, "td")[3]
+        self.assertEqual(date.text, "25/01/2024")
+        self.assertEqual(type.text, "001 | A")
+        self.assertEqual(pos.text, "00002")
+        self.assertEqual(number.text, "00000001")
+
+        last_row = rows[-1]
+        date = last_row.find_elements(By.TAG_NAME, "td")[0]
+        type = last_row.find_elements(By.TAG_NAME, "td")[1] 
+        pos = last_row.find_elements(By.TAG_NAME, "td")[2]
+        number = last_row.find_elements(By.TAG_NAME, "td")[3]
+        self.assertEqual(date.text, "21/01/2024")
+        self.assertEqual(type.text, "001 | A")
+        self.assertEqual(pos.text, "00001")
+        self.assertEqual(number.text, "00000001")
+        
+    @tag("erp_front_show_list_date_reverse")
+    def test_sales_show_list_date_reverse_order(self):
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
+
+        # Test date reverse sort
+        headers = self.driver.find_elements(By.TAG_NAME, "th")
+        headers[0].click()
+        # Elements only change location, so I use time sleep
+        time.sleep(0.01)
+
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        date = first_row.find_elements(By.TAG_NAME, "td")[0]
+        type = first_row.find_elements(By.TAG_NAME, "td")[1] 
+        pos = first_row.find_elements(By.TAG_NAME, "td")[2]
+        number = first_row.find_elements(By.TAG_NAME, "td")[3]
+        self.assertEqual(date.text, "21/01/2024")
+        self.assertEqual(type.text, "001 | A")
+        self.assertEqual(pos.text, "00001")
+        self.assertEqual(number.text, "00000001")
+
+        third_row = rows[2]
+        date = third_row.find_elements(By.TAG_NAME, "td")[0]
+        type = third_row.find_elements(By.TAG_NAME, "td")[1] 
+        pos = third_row.find_elements(By.TAG_NAME, "td")[2]
+        number = third_row.find_elements(By.TAG_NAME, "td")[3]
+        self.assertEqual(date.text, "23/01/2024")
+        self.assertEqual(type.text, "001 | A")
+        self.assertEqual(pos.text, "00001")
+        self.assertEqual(number.text, "00000002")
+
+        last_row = rows[-1]
+        date = last_row.find_elements(By.TAG_NAME, "td")[0]
+        type = last_row.find_elements(By.TAG_NAME, "td")[1] 
+        pos = last_row.find_elements(By.TAG_NAME, "td")[2]
+        number = last_row.find_elements(By.TAG_NAME, "td")[3]
+        self.assertEqual(date.text, "26/01/2024")
+        self.assertEqual(type.text, "002 | B")
+        self.assertEqual(pos.text, "00002")
+        self.assertEqual(number.text, "00000002")
+
+    @tag("erp_front_show_list_client_name")
+    def test_sales_show_list_date_client_name_order(self):
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
+
+        # Test client name asc sort
+        headers = self.driver.find_elements(By.TAG_NAME, "th")
+        headers[5].click()
+        # Elements only change location, so I use time sleep
+        time.sleep(0.01)
+
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        client_name = first_row.find_elements(By.TAG_NAME, "td")[5]
+        self.assertEqual(client_name.text, "CLIENT1 SRL")
+
+        last_row = rows[-1]
+        client_name = last_row.find_elements(By.TAG_NAME, "td")[5]
+        self.assertEqual(client_name.text, "CLIENT2 SA")
+
+        # Test client name desc sort
+        headers[5].click()
+        # Elements only change location, so I use time sleep
+        time.sleep(0.01)
+
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        client_name = first_row.find_elements(By.TAG_NAME, "td")[5]
+        self.assertEqual(client_name.text, "CLIENT2 SA")
+
+        last_row = rows[-1]
+        client_name = last_row.find_elements(By.TAG_NAME, "td")[5]
+        self.assertEqual(client_name.text, "CLIENT1 SRL")
+
+    @tag("erp_front_show_list_total")
+    def test_sales_show_list_date_client_name_order(self):
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
+
+        # Test total amount asc sort
+        headers = self.driver.find_elements(By.TAG_NAME, "th")
+        headers[-1].click()
+        # Elements only change location, so I use time sleep
+        time.sleep(0.01)
+
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        client_name = first_row.find_elements(By.TAG_NAME, "td")[5]
+        total_amount = first_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(client_name.text, "CLIENT1 SRL")
+        self.assertEqual(total_amount.text, "$ 9.00")
+
+        last_row = rows[-1]
+        client_name = last_row.find_elements(By.TAG_NAME, "td")[5]
+        total_amount = last_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(client_name.text, "CLIENT1 SRL")
+        self.assertEqual(total_amount.text, "$ 1300.01")
+
+        # Test client name desc sort
+        headers[-1].click()
+        # Elements only change location, so I use time sleep
+        time.sleep(0.01)
+
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        number = first_row.find_elements(By.TAG_NAME, "td")[3]
+        total_amount = first_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(number.text, "00000001")
+        self.assertEqual(total_amount.text, "$ 1300.01")
+
+        last_row = rows[-1]
+        number = last_row.find_elements(By.TAG_NAME, "td")[3]
+        total_amount = last_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(number.text, "00000002")
+        self.assertEqual(total_amount.text, "$ 9.00")

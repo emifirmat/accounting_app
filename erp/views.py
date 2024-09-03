@@ -13,11 +13,11 @@ from django.urls import reverse
 from company.models import FinancialYear, PersonModel
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
     PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm,
-    AddPersonFileForm, AddSaleInvoicesFileForm)
+    AddPersonFileForm, AddSaleInvoicesFileForm, SearchByYearForm, SearchByDateForm)
 from .models import (Company, Company_client, Supplier, Payment_method, 
     Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
 from .utils import (read_uploaded_file, check_column_len, standarize_dataframe,
-check_column_names, list_file_errors, get_model_fields_name)
+check_column_names, list_file_errors, get_model_fields_name, get_sale_invoice_objects)
 
 
 # Create your views here.
@@ -75,40 +75,42 @@ def person_new_multiple(request, person_type):
             # Read file according to the extension    
             df = read_uploaded_file(file)
             
-            # Check all columns exist
+            # Check all columns exist and Standarize columns names and blanks
             check_column_len(df, 5)
-
-            # Standarize and check all columns have the right name
             df = standarize_dataframe(df)
             person_fields = get_model_fields_name(PersonModel)
             check_column_names(df, person_fields)
 
             # Pass all values in model
-            with transaction.atomic():
-                for index, row in df.iterrows():
-                    # Convert number fields into string to allow me using
-                    # validators
-                    person_fields_row = list(map(str, row[person_fields]))
+            try:
+                with transaction.atomic():
+                    for index, row in df.iterrows():
+                        # Convert number fields into string to allow me using
+                        # validators
+                        person_fields_row = list(map(str, row[person_fields]))
 
-                    if person_type == "client":
-                        person_model = Company_client
-                    elif person_type == "supplier":
-                        person_model = Supplier
-                    new_person = person_model(
-                        tax_number = person_fields_row[0],
-                        name = person_fields_row[1],
-                        address = person_fields_row[2],    
-                        email = person_fields_row[3],
-                        phone = person_fields_row[4],
-                    )
-                    
-                    # Execute validators before saving, and show error if exists,
-                    try:
-                        new_person.full_clean()
-                        new_person.save()
-                    except ValidationError as ve:
-                        errors = list_file_errors(ve, index)  
-                        return HttpResponseBadRequest(errors)
+                        if person_type == "client":
+                            person_model = Company_client
+                        elif person_type == "supplier":
+                            person_model = Supplier
+                        new_person = person_model(
+                            tax_number = person_fields_row[0],
+                            name = person_fields_row[1],
+                            address = person_fields_row[2],    
+                            email = person_fields_row[3],
+                            phone = person_fields_row[4],
+                        )
+                        
+                        # Execute validators before saving, and show error if exists,
+                        try:
+                            new_person.full_clean()
+                            new_person.save()
+                        except ValidationError as ve:
+                            # Value error is raised for atomic transaction
+                            raise ValueError(list_file_errors(ve, index))
+            except ValueError as ve:
+                return HttpResponseBadRequest(str(ve))
+
             # If everything is correct
             return HttpResponseRedirect(reverse(f"erp:{person_type}_index"))
         else:
@@ -264,8 +266,7 @@ def sales_new_massive(request):
            
             # Check all columns exist   
             check_column_len(df, 12)
-
-            # Standarize and check all columns have the right name
+             # Standarize and check all columns have the right name
             df = standarize_dataframe(df)
             document_fields = get_model_fields_name(Sale_invoice)
             line_fields = get_model_fields_name(Sale_invoice_line, "total_amount",
@@ -275,103 +276,87 @@ def sales_new_massive(request):
             check_column_names(df, total_fields)
      
             # Pass all values in model
-            with transaction.atomic():
-                last_invoice = None
-                for index, row in df.iterrows():
-                    # Convert all fields into string to allow me using
-                    # validators.
-                    total_fields_row = list(map(str, row[total_fields]))
-                    current_invoice = (
-                        f"{total_fields_row[1].zfill(3)}"
-                        f"{total_fields_row[3].zfill(5)}"
-                        f"{total_fields_row[2].zfill(8)}"
-                    )
-                    
-                    # Control if it's new invoice or line
-                    if index == 0 or last_invoice != current_invoice:
-                        # Get objects from related fields                
-                        try:
-                            message_field = "type"
-                            type_field = Document_type.objects.get(
-                                    code=total_fields_row[1].zfill(3)
-                                )
-                            message_field = "point_of_sell"
-                            pos_number_field = Point_of_sell.objects.get(
-                                    pos_number=total_fields_row[3].zfill(5)
-                                )  
-                            message_field = "sender"
-                            sender_field = Company.objects.get(
-                                    tax_number=total_fields_row[4]
-                                )
-                            message_field = "recipient"
-                            recipient_field = Company_client.objects.get(
-                                    tax_number=total_fields_row[5]
-                                )
-                            message_field = "payment_method"
-                            pay_method_field = Payment_method.objects.get(
-                                    pay_method=total_fields_row[6].capitalize()
-                                )
-                            message_field = "payment_term"
-                            pay_term_field = Payment_term.objects.get(
-                                    pay_term=total_fields_row[7]
-                                )
-                        except ObjectDoesNotExist:
-                            error_message = (
-                                f"The input in row {index + 2} and column "
-                                f"{message_field} doesn't exist in the records."
-                            )
-                            return HttpResponseBadRequest(error_message)
-                    
-                        new_invoice = Sale_invoice(
-                            issue_date = total_fields_row[0][0:10],
-                            type = type_field,
-                            point_of_sell = pos_number_field,
-                            number = total_fields_row[2],
-                            sender = sender_field,
-                            recipient = recipient_field,
-                            payment_method = pay_method_field,
-                            payment_term = pay_term_field
-                        )
+            try:
+                with transaction.atomic():
+                    last_invoice = None
+                    for index, row in df.iterrows():
+                        # Convert all fields into string to allow me using
+                        # validators.
+                        total_fields_row = list(map(str, row[total_fields]))
                         
-                        # Execute validators before saving, and show error if exists,
+                        if last_invoice:
+                            current_invoice = (
+                                f"{total_fields_row[1].zfill(3)}"
+                                f"{total_fields_row[3].zfill(5)}"
+                                f"{total_fields_row[2].zfill(8)}"
+                            )
+                        
+                        # Get objects from related fields                
+                        total_fields_row = get_sale_invoice_objects(
+                            total_fields_row, index)
+                        
+                        # Control if it's new invoice or line
+                        if index == 0 or last_invoice_id != current_invoice:
+                            new_invoice = Sale_invoice(
+                                issue_date = total_fields_row[0][0:10],
+                                type = total_fields_row[1],
+                                point_of_sell = total_fields_row[3],
+                                number = total_fields_row[2],
+                                sender = total_fields_row[4],
+                                recipient = total_fields_row[5],
+                                payment_method = total_fields_row[6],
+                                payment_term = total_fields_row[7]
+                            )
+                            
+                            # Execute validators before saving, and show error if exists,
+                            try:
+                                new_invoice.full_clean()
+                                new_invoice.save()
+                                # Save invoice data for next row
+                                last_invoice = new_invoice
+                                last_invoice_id = (
+                                    f"{new_invoice.type.code}"
+                                    f"{new_invoice.point_of_sell.pos_number}"
+                                    f"{new_invoice.number}"
+                                )
+                            except ValidationError as ve:
+                                raise ValueError(list_file_errors(ve, index))
+                            except IntegrityError:
+                                raise ValueError(
+                                    f"Invoice {new_invoice.type.type} "
+                                    f"{new_invoice.point_of_sell.pos_number}-"
+                                    f"{new_invoice.number} already exists."
+                                )
+                        # Control that invoice's info for new line is consistent
+                        else:                        
+                            if (
+                            str(last_invoice.issue_date) != total_fields_row[0][0:10] or    
+                            last_invoice.recipient != total_fields_row[5] or
+                            last_invoice.payment_method != total_fields_row[6] or
+                            last_invoice.payment_term != total_fields_row[7]):
+                                raise ValueError(
+                                    f"Row {index + 2}: Your invoice's information"
+                                    f" doesn't match with row {index + 1}."
+                                )
+
+                        # Add invoice line form
+                        new_line = Sale_invoice_line(
+                            sale_invoice = new_invoice,
+                            description = total_fields_row[8],
+                            taxable_amount = total_fields_row[9],
+                            not_taxable_amount = total_fields_row[10],
+                            vat_amount = total_fields_row[11],
+                            # Total amount is added to don't raise validation error
+                            # in full_clean(), then it's updated in saving.
+                            total_amount = "0",
+                        )
                         try:
-                            new_invoice.full_clean()
-                            new_invoice.save()
-                            # Save invoice data next row
-                            last_invoice = (
-                                f"{new_invoice.type.code}"
-                                f"{new_invoice.point_of_sell.pos_number}"
-                                f"{new_invoice.number}"
-                            )
+                            new_line.full_clean()
+                            new_line.save()
                         except ValidationError as ve:
-                            errors = list_file_errors(ve, index)
-                            return HttpResponseBadRequest(errors)
-                        except IntegrityError:
-                            error_message = (
-                                f"Invoice {new_invoice.type.type} "
-                                f"{new_invoice.point_of_sell.pos_number}-"
-                                f"{new_invoice.number} already exists."
-                            )
-                            return HttpResponseBadRequest(error_message)
-                    
-                    # Add invoice line form
-                    new_line = Sale_invoice_line(
-                        sale_invoice = new_invoice,
-                        description = total_fields_row[8],
-                        taxable_amount = total_fields_row[9],
-                        not_taxable_amount = total_fields_row[10],
-                        vat_amount = total_fields_row[11],
-                        # Hay add total amount to don't raise validation error
-                        # in full_clean(), then it's updated in saving.
-                        total_amount = "0",
-                    )
-                    try:
-                        new_line.full_clean()
-                        new_line.save()
-                    except ValidationError as ve:
-                        new_invoice.delete()
-                        errors = list_file_errors(ve, index)
-                        return HttpResponseBadRequest(errors)
+                            raise ValueError(list_file_errors(ve, index))
+            except ValueError as e:
+                 return HttpResponseBadRequest(str(e))   
                     
             # If everything is correct
             return HttpResponseRedirect(reverse(f"erp:sales_index"))
@@ -426,4 +411,55 @@ def sales_edit(request, inv_pk):
         "invoice": invoice,
         "invoice_form": invoice_form,
         "line_formset": line_formset,
+    })
+
+def sales_list(request):
+    """Show a list of invoices in a specific range webpage"""
+    # Get list general case, it gets overwritten if it changes
+    try:
+        financial_year = FinancialYear.objects.get(current=True)
+    except ObjectDoesNotExist:
+        return HttpResponseRedirect(reverse("company:year"))
+    
+    if request.method == "POST":
+        # Search between dates
+        if request.POST["form_type"] == "date":
+            form_year = SearchByYearForm()
+            form_date = SearchByDateForm(request.POST)
+            if form_date.is_valid():
+                date_from = form_date.cleaned_data["date_from"]
+                date_to = form_date.cleaned_data["date_to"]
+                # Add input control
+                if date_from > date_to:
+                    form_date.add_error(
+                        "date_from", "'From' should be older than 'To'."
+                    )
+                invoice_list = Sale_invoice.objects.filter(
+                        issue_date__range=(date_from, date_to)
+                    )
+        # Search by year
+        elif request.POST["form_type"] == "year":
+            form_year = SearchByYearForm(request.POST)
+            form_date = SearchByDateForm()
+            if form_year.is_valid():
+                try:
+                    input_year=form_year.cleaned_data["year"]
+                    financial_year = FinancialYear.objects.get(year=input_year)
+                except ObjectDoesNotExist:
+                    form_year.add_error(
+                        "year", f"The year {input_year} doesn't exist in the records."
+                    )
+                    financial_year = FinancialYear.objects.get(current=True)
+                invoice_list = Sale_invoice.objects.filter(issue_date__year=financial_year.year)
+    else:
+        form_date = SearchByDateForm()
+        form_year = SearchByYearForm()
+        invoice_list = Sale_invoice.objects.filter(issue_date__year=financial_year.year)
+
+    invoice_list = invoice_list.order_by("-issue_date", "type", 
+        "point_of_sell", "number")
+    return render(request, "erp/sales_list.html", {
+        "invoice_list": invoice_list,
+        "form_date": form_date,
+        "form_year": form_year, 
     })

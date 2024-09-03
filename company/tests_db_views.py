@@ -34,13 +34,13 @@ class CompanyTestCase(TestCase):
     def test_company_model_content(self):
         self.assertEqual(self.company.id, 1)
         self.assertEqual(self.company.tax_number, "20361382480")
-        self.assertEqual(self.company.name, "Test Company SRL")
-        self.assertEqual(self.company.address, "fake street 123, fakycity, Argentina")
+        self.assertEqual(self.company.name, "TEST COMPANY SRL")
+        self.assertEqual(self.company.address, "Fake Street 123, Fakycity, Argentina")
         self.assertEqual(self.company.email, "testcompany@email.com")
         self.assertEqual(self.company.phone, "5493465406182")
         self.assertEqual(self.company.creation_date, datetime.date(1991, 3, 10))
         self.assertEqual(self.company.closing_date, datetime.date(2024, 6, 30))
-        self.assertEqual(str(self.company), "Test Company SRL | 20361382480")
+        self.assertEqual(str(self.company), "TEST COMPANY SRL | 20361382480")
     
     def test_company_constraints(self):
         # Check number of companies
@@ -142,7 +142,7 @@ class CompanyTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Company.objects.all().count(), 1)
         new_company = Company.objects.all().first()
-        self.assertEqual(new_company.name, "Other Test Company SRL")
+        self.assertEqual(new_company.name, "OTHER TEST COMPANY SRL")
         self.assertNotEqual(new_company.tax_number, "20361382482")
 
     def test_company_settings_webpage_post_wrong_data(self):

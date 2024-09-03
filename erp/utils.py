@@ -1,8 +1,12 @@
 """Reutilizable functions for views.py in ERP app"""
 import pandas as pd
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseBadRequest
 
-from .models import Sale_invoice, Sale_invoice_line
+
+from company.models import Company
+from .models import (Sale_invoice, Sale_invoice_line, Payment_method, Payment_term,
+    Point_of_sell, Document_type, Company_client)
 
 def read_uploaded_file(file, date_column=None):
     """Read csv, xls or xlsx files"""
@@ -48,3 +52,39 @@ def get_model_fields_name(model, *exclude):
         for value in exclude:
             model_fields_name.remove(value)
     return model_fields_name
+
+def get_sale_invoice_objects(total_fields_row, index):
+    """Get all objects from fields that are related with other models"""
+    try:
+        message_field = "type"
+        total_fields_row[1] = Document_type.objects.get(
+                code=total_fields_row[1].zfill(3)
+            )
+        message_field = "point_of_sell"
+        total_fields_row[3] = Point_of_sell.objects.get(
+                pos_number=total_fields_row[3].zfill(5)
+            )  
+        message_field = "sender"
+        total_fields_row[4] = Company.objects.get(
+                tax_number=total_fields_row[4]
+            )
+        message_field = "recipient"
+        total_fields_row[5] = Company_client.objects.get(
+                tax_number=total_fields_row[5]
+            )
+        message_field = "payment_method"
+        total_fields_row[6] = Payment_method.objects.get(
+                pay_method=total_fields_row[6].capitalize()
+            )
+        message_field = "payment_term"
+        total_fields_row[7] = Payment_term.objects.get(
+                pay_term=total_fields_row[7]
+            )
+        return total_fields_row
+    except ObjectDoesNotExist:
+        error_message = (
+            f"The input in row {index + 2} and column "
+            f"{message_field} doesn't exist in the records."
+        )
+        raise ValueError(error_message)
+    

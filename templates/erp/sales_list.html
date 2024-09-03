@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Sales List{% endblock title %}
+
+{% block body %}
+
+    <h2>Sales List</h2>
+
+    <div class="container-fluid">
+        <h5>List range</h5>
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="date-tab" data-bs-toggle="tab"
+               data-bs-target="#date-tab-pane" type="button" role="tab" aria-controls="date-tab-pane"
+               aria-selected="true">By Date</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="year-tab" data-bs-toggle="tab" data-bs-target="#year-tab-pane"
+              type="button" role="tab" aria-controls="year-tab-pane" aria-selected="false">
+              By Year</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="section-search">
+            <div class="tab-pane fade show active" id="date-tab-pane" role="tabpanel"
+            aria-labelledby="date-tab" tabindex="0">
+                <form action="{% url 'erp:sales_list' %}" method="POST">
+                    {% csrf_token %}
+                    {{ form_date.as_p }}
+                    <input type="hidden" name="form_type" value="date">
+                    <input type="submit" value="Search">
+                </form>
+            </div>
+            <div class="tab-pane fade" id="year-tab-pane" role="tabpanel" 
+            aria-labelledby="year-tab" tabindex="0">
+                <form action="{% url 'erp:sales_list' %}" method="POST">
+                    {% csrf_token %}
+                    {{ form_year.as_p }}
+                    <input type="hidden" name="form_type" value="year">
+                    <input type="submit" value="Search">
+                </form>
+            </div>
+        </div>
+    </div>
+    <br>
+    <div id="section-list">
+        <table class="table">
+            <thead>
+                <tr id="columns">
+                    <th scope="col" data-col="0" data-reverse="false">Date</th>
+                    <th scope="col" data-col="1" data-reverse="false">Type</th>
+                    <th scope="col" data-col="2" data-reverse="false">Point of sell</th>
+                    <th scope="col" data-col="3" data-reverse="false">Number</th>
+                    <th scope="col" data-col="4" data-reverse="false">Client Tax N°</th>
+                    <th scope="col" data-col="5" data-reverse="false">Client Name</th>
+                    <th scope="col" data-col="6" data-reverse="false">Payment Method</th>
+                    <th scope="col" data-col="7" data-reverse="false">Payment Term</th>
+                    <th scope="col" data-col="8" data-reverse="false">Total</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">    
+                {% for invoice in invoice_list %}
+                <tr class="invoice">
+                    <td class="idate">{{ invoice.issue_date|date:"d/m/Y" }}</td>
+                    <td class="itype">{{ invoice.type }}</td>
+                    <td class="ipos">{{ invoice.point_of_sell }}</td>
+                    <td class="inumber">{{ invoice.number }}</td>
+                    <td class="ctax">{{ invoice.recipient.tax_number }}</td>
+                    <td class="cname">{{ invoice.recipient.name }}</td>
+                    <td class="pmethod">{{ invoice.payment_method }}</td>
+                    <td class="pterm">{{ invoice.payment_term }}</td>
+                    <td class="itotal">$ {{ invoice.total_lines_sum }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <p>There isn't any invoice in this period of time. Try adding 
+                    <a href="{% url 'erp:sales_new' %}">new invoices</a> or changing 
+                    the dates in search.
+                    </p>
+                </tr>
+                {% endfor %}
+            </tbody>    
+        </table>
+    </div>
+
+{% endblock body %}
+
+{% block script %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="{% static 'js/calendar.js' %}"></script>
+    <script src="{% static 'js/sales_list.js' %}"></script>
+
+{% endblock script %}

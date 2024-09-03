@@ -31,11 +31,12 @@ urlpatterns = [
         name="sales_new_massive"),
     # Specific sale invoice webpage
     path("sales/invoices/<int:inv_pk>", views.sales_invoice, name="sales_invoice"),
-    # Search an invoice webpage
+    # Search and delete invoices webpage
     path("sales/invoices/search", views.sales_search, name="sales_search"),
-    # Edit an invoices webpage
+    # Edit an invoice webpage
     path("sales/invoices/<int:inv_pk>/edit", views.sales_edit, name="sales_edit"),
-
+    # Show invoice list
+    path("sales/invoices/list", views.sales_list, name="sales_list"),
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),

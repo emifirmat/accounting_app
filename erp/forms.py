@@ -182,3 +182,41 @@ class AddSaleInvoicesFileForm(forms.Form):
     max 3 char; description=text, max 280 char; taxable_amount=decimal(2); 
     not_taxable_amount=decimal(2); VAT_amount=decimal(2);""",
     validators=[validate_file_extension])
+
+class SearchByYearForm(forms.Form):
+    """Year form for searching"""
+    year = forms.CharField(
+        max_length=4, 
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "XXXX",
+            }
+        ),
+        validators = [validate_is_digit]
+    )
+
+
+class SearchByDateForm(forms.Form):
+    """From date to date form for searching"""
+    date_from = forms.DateField(
+        label="From",
+        input_formats=["%d/%m/%Y"],
+        widget=forms.DateInput(
+            format="%d/%m/%Y",
+            attrs={
+                "class": "datepicker",
+            }
+        )
+    )
+    
+    date_to = forms.DateField(
+        label="To",
+        input_formats=["%d/%m/%Y"],
+        widget=forms.DateInput(
+            format="%d/%m/%Y",
+            attrs={
+                "class": "datepicker",
+            }
+        )
+    )
+  

@@ -11,6 +11,7 @@ urlpatterns = [
     path("company/settings", views.company_settings, name="settings"),
     # Company's Financial year
     path("company/year", views.company_year, name="year"),
+    
     # Financial years API
     path("api/company/years", views_api.CompanyYearAPI.as_view(), name="years_api"),
     # Especific f. year API
