@@ -1,9 +1,11 @@
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Sum, Q
 from django.urls import reverse
 
-from .validators import validate_is_digit, validate_in_current_year
+from .validators import (validate_is_digit, validate_in_current_year, 
+    validate_invoices_date_number_correlation)
 from company.models import PersonModel, Company
 
 # Create your models here.
@@ -123,7 +125,8 @@ class Document_type(models.Model):
     def save(self, *args, **kwargs):
         # Format fields
         self.code = self.code.zfill(3)
-        self.type = self.type.capitalize()
+        self.type = self.type.upper()
+        self.type_description = self.type_description.upper()
         return super(Document_type, self).save(*args, **kwargs)
 
 
@@ -161,7 +164,7 @@ class Sale_invoice(CommercialDocumentModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["point_of_sell", "number", "type"],
-                name="unique_sale_invoice_complete_number")
+                name="unique_sale_invoice_complete_number"),
         ]
 
     def get_absolute_url(self):
@@ -174,6 +177,13 @@ class Sale_invoice(CommercialDocumentModel):
             lines_sum=Sum("total_amount")
         )["lines_sum"]
         return round(total_sum, 2)
+    
+    def clean(self):
+        """Add date validator for invoice"""
+        super().clean()
+        validate_invoices_date_number_correlation(__class__, self)
+        
+    
     
 class Sale_invoice_line(CommercialDocumentLineModel):
     """Product/service detail of the sale invoice"""

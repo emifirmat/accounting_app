@@ -296,7 +296,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(doc_type_all.count(), 3)
         self.assertEqual(self.doc_type1.type, "A")
         self.assertEqual(self.doc_type1.code, "001")
-        self.assertEqual(self.doc_type1.type_description, "Invoice A")
+        self.assertEqual(self.doc_type1.type_description, "INVOICE A")
         self.assertEqual(self.doc_type1.hide, False)
         self.assertEqual(str(self.doc_type1), "001 | A")
 
@@ -885,7 +885,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(Sale_invoice.objects.all().count(), 2)
         self.assertEqual(Sale_invoice_line.objects.all().count(), 5)
 
-    def test_sales_new_invoice_post_wrong_date_webpage(self):
+    def test_sales_new_invoice_post_wrong_year_webpage(self):
         response = self.client.post(reverse("erp:sales_new"), {
             # Invoice form
             "issue_date": "29/01/2025",
@@ -911,6 +911,35 @@ class ErpTestCase(TestCase):
         self.assertEqual(Sale_invoice.objects.all().count(), 1)
         self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
         self.assertContains(response, "The selected date is not within the current year.")
+
+    def test_sales_new_invoice_post_wrong_date_correlation_webpage(self):
+        response = self.client.post(reverse("erp:sales_new"), {
+            # Invoice form
+            "issue_date": "20/01/2024",
+            "type": self.doc_type1.id,
+            "point_of_sell": self.pos1.id,
+            "number": "2",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "payment_method": self.payment_method.id,
+            "payment_term": self.payment_term.id,
+            # line-setform 
+            "s_invoice_lines-0-description": "Random products",
+            "s_invoice_lines-0-taxable_amount": Decimal("2000"),
+            "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
+            "s_invoice_lines-0-vat_amount": Decimal("420"),
+            # line-setform-management
+            "s_invoice_lines-TOTAL_FORMS": "1",
+            "s_invoice_lines-INITIAL_FORMS": "0",
+            "s_invoice_lines-MIN_NUM_FORMS": "0",
+            "s_invoice_lines-MAX_NUM_FORMS": "1000",
+        })       
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Sale_invoice.objects.all().count(), 1)
+        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertContains(response, 
+            "be older than previous invoice."
+        )
 
     def test_sales_new_invoice_post_blank_line_webpage(self):
         response = self.client.post(reverse("erp:sales_new"), {
@@ -1335,4 +1364,11 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "should be older")
         self.assertNotContains(response, "00000002")
         self.assertNotContains(response, "00000004")
-        
+
+    def test_receivables_overview_webpage(self):
+        response = self.client.get("/erp/receivables")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/receivables_index.html")
+        self.assertContains(response, "Receivables Overview")
+        self.assertContains(response, "Amount collected")
+        self.assertContains(response, "Last Receipts")

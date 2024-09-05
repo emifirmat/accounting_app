@@ -463,3 +463,9 @@ def sales_list(request):
         "form_date": form_date,
         "form_year": form_year, 
     })
+
+def receivables_index(request):
+    financial_year = current_year()
+    return render(request, "erp/receivables_index.html", {
+        "financial_year": financial_year,
+    })

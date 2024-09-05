@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block title %}Receivables{% endblock title %}
+
+{% block body %}
+
+    <h2>Receivables Overview</h2>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <h5>{{ financial_year.year }}</h5>
+                <p>Receipts: --TODO--
+                <p>Amount collected: --To do--</p>
+                <p>Collected per month: --TODO--</p>
+            </div>
+            <div class="col">
+                <h5>{{ financial_year.year|add:"-1" }}</h5>
+                <p>Receipts:  --TODO--
+                <p>Amount collected: --To do--</p>
+                <p>Collected per month: --TODO--</p>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col">
+                <h5>Last Receipts: --TODO--order </h5>
+                <ul>
+                    {% for receipt in receipt_list %}
+                        <li>{{ receipt }}</li>
+                    {% empty %}
+                        <p>You haven't issued any receipt in {{ financial_year.year }}.</p>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col">
+                <h5>Highest Receipts: --TODO-- order </h5>
+                <ul>
+                    {% for receipt in receipt_list %}
+                        <li>{{ receipt }}</li>
+                    {% empty %}
+                        <p>You haven't issued any receipt in {{ financial_year.year }}.</p>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}

@@ -5,29 +5,66 @@
 {% block body %}
     {% if company %}
         <h1>Company's name: {{ company.name }} </h1>
-        <p>Company's financial year: {% if financial_year %}{{ financial_year.year }}
-        {% else %}You haven't picked a year yet. <a href="{% url 'company:year' %}">
-        Click Here.</a>{% endif %}</p>
+        <h5>Company's financial year: {% if financial_year %}{{ financial_year.year }}
+        </h5>{% else %}<p>You haven't picked a year yet. <a href="{% url 'company:year' %}">
+        Click Here.</a></p>{% endif %}
         
-        <p>Current year Assets: --TO DO--</p>
-        <p>Current year Liabilities: --TO DO--</p>
-        <p>Current year Net Profit: --TO DO--</p>
+        <div class="container-fluid"> 
+            <div class="row">
+                <h3>Global information</h3>
+                <div class="col">
+                    <h5>Current Year</h5>
+                    <p>Total amount to collect: --TO DO--</p>
+                    <p>Total amount to pay: --TO DO--</p>
+                    <p>Total Net Working Capital : --TO DO--</p>
+                </div>
+                <div class="col">
+                    <h5>Historical</h5>
+                    <p>Total amount to collect: --TO DO--</p>
+                    <p>Total amount to pay: --TO DO--</p>
+                    <p>Total Net Working Capital : --TO DO--</p>
+                </div>
+            </div>
         
-        <h3>General Client's info</h3>
-        <p>Global amount to collect: --TO DO--</p>
-        <p>Highest receivable and client: --TO DO--</p>
-        <p>Last Invoice: -- TO DO --</p>
-        <p>Last Receipt: -- TO DO --</p>
-        <p>Oldest pending invoice to collect and client: -- TO DO -- </p>
+            <div class="row">
+                <h3>Clients' information</h3>
+                <div class="col">
+                    <p>Global amount to collect: --TO DO--</p>
+                    <p>Highest receivable and client: --TO DO--</p>
+                    <p>Last Invoice: -- TO DO --</p>
+                    <p>Last Receipt: -- TO DO --</p>
+                    <p>Oldest pending invoice to collect and client: -- TO DO -- </p>
+                </div>
+                <div class="col">
+                    <p>Global amount to collect: --TO DO--</p>
+                    <p>Highest receivable and client: --TO DO--</p>
+                    <p>Last Invoice: -- TO DO --</p>
+                    <p>Last Receipt: -- TO DO --</p>
+                    <p>Oldest pending invoice to collect and client: -- TO DO -- </p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <h3>Suppliers' information</h3>
+                <div class="col">
+                    <p>Global amount to pay: --TO DO--</p>
+                    <p>Highest debt and supplier: --TO DO--</p>
+                    <p>Last Supplier's Invoice: -- TO DO --</p>
+                    <p>Last Supplier's Receipt: -- TO DO --</p>
+                    <p>Oldest pending invoice to pay and supplier: -- TO DO -- </p>
+                </div>
+                <div class="col">
+                    <p>Global amount to pay: --TO DO--</p>
+                    <p>Highest debt and supplier: --TO DO--</p>
+                    <p>Last Supplier's Invoice: -- TO DO --</p>
+                    <p>Last Supplier's Receipt: -- TO DO --</p>
+                    <p>Oldest pending invoice to pay and supplier: -- TO DO -- </p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+            <p>Please create your company first.</p>
+        {% endif %}
         
-        <h3>General Suppliers info</h3>
-        <p>Global amount to pay: --TO DO--</p>
-        <p>Highest debt and supplier: --TO DO--</p>
-        <p>Last Supplier's Invoice: -- TO DO --</p>
-        <p>Last Supplier's Receipt: -- TO DO --</p>
-        <p>Oldest pending invoice to pay and supplier: -- TO DO -- </p>
-    {% else %}
-        <p>Please create your company first.</p>
-    {% endif %}
     
 {% endblock body %}

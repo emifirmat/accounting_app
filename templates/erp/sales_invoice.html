@@ -67,7 +67,7 @@
             <div class="col-2">
                 <p><b>VAT</b></p>
                 {% for line in invoice.s_invoice_lines.all %}
-                    <p>$ {{ line.VAT_amount }}</p>
+                    <p>$ {{ line.vat_amount }}</p>
                 {% endfor %}
             </div>
             <div class="col-2">

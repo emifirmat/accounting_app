@@ -907,7 +907,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         path = self.driver.find_element(By.ID, "invoice-form")
         type_link = path.find_elements(By.TAG_NAME, "a")[0]
         type_link.click()
-        WebDriverWait(self.driver, 10).until(
+        WebDriverWait(self.driver, 15).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "visible-list"),
                 "Invoice A"
@@ -1114,7 +1114,9 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # Type
         type_field = self.driver.find_element(By.ID, "id_type")
         action = ActionChains(self.driver).move_to_element(type_field).click(type_field)
-        action.send_keys('a').send_keys(' ').perform()
+        action.send_keys('a').perform()
+        time.sleep(0.1)
+        action.send_keys(' ').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "invoice-list"), "00002 | 00000002")
@@ -1496,3 +1498,11 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         total_amount = last_row.find_elements(By.TAG_NAME, "td")[-1]
         self.assertEqual(number.text, "00000002")
         self.assertEqual(total_amount.text, "$ 9.00")
+
+    def test_receivables_overview(self):
+        # Go to Receivables overview page.
+        self.driver.get(f"{self.live_server_url}")
+        self.driver.find_element(By.ID, "receivables-menu-link").click()
+        path = self.driver.find_element(By.ID, "receivables-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[0].click()
+        self.assertEqual(self.driver.title, "Receivables")

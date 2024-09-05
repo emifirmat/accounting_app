@@ -37,6 +37,8 @@ urlpatterns = [
     path("sales/invoices/<int:inv_pk>/edit", views.sales_edit, name="sales_edit"),
     # Show invoice list
     path("sales/invoices/list", views.sales_list, name="sales_list"),
+    # Receivables index webpage
+    path("receivables", views.receivables_index, name="receivables_index"),
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
