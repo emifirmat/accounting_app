@@ -66,7 +66,7 @@ async function searchInvoices(...fields) {
         invoiceListSection.append(pElement);
     } else {
     
-        for (invoice of filteredInvoiceList) {
+        for (let invoice of filteredInvoiceList) {
             // Create list item and buttons in html
             const liElement = document.createElement('li');
             const editButtonElement = document.createElement('button');
@@ -77,6 +77,7 @@ async function searchInvoices(...fields) {
             deleteButtonElement.innerHTML = "Delete";
             editButtonElement.className = "edit-button";
             deleteButtonElement.className = "delete-button";
+            
             editButtonElement.addEventListener('click', () => {
                 window.location.href = `/erp/sales/invoices/${invoice.id}/edit`;
             });

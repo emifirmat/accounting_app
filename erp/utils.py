@@ -57,8 +57,8 @@ def get_sale_invoice_objects(total_fields_row, index):
     """Get all objects from fields that are related with other models"""
     try:
         message_field = "type"
-        total_fields_row[1] = Document_type.objects.get(
-                code=total_fields_row[1].zfill(3)
+        total_fields_row[2] = Document_type.objects.get(
+                code=total_fields_row[2].zfill(3)
             )
         message_field = "point_of_sell"
         total_fields_row[3] = Point_of_sell.objects.get(

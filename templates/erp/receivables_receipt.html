@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}
+    Receipt {{ receipt.point_of_sell }}-{{ receipt.number }}
+{% endblock title %}
+
+{% block body %}
+
+    <h2>Receipt N° {{ receipt.point_of_sell }}-{{ receipt.number }}</h2>
+    <a id="edit-button" href="#">Edit</a>
+    <button id="delete-button" data-id="{{ receipt.id }}" data-pos="{{ receipt.point_of_sell }}" 
+    data-number="{{ receipt.number }}">Delete</button>
+    <br>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-5"> 
+                <h3>{{ receipt.sender.name }}</h3>
+                <p><b>Sender:</b> {{ receipt.sender.name }}</p>
+                <p><b>Address:</b> {{ receipt.sender.address }}</p>  
+            </div>
+            <div class="col-2">
+                <h1>X</h1>
+                <p>-</p>
+            </div>
+            <div class="col-5">
+                <h3>RECEIPT</h3>
+                <p><b>Point of Sell:</b> {{ receipt.point_of_sell }} <b>Receipt Number:</b> 
+                {{ receipt.number }}
+                </p>
+                <p><b>Issue Date:</b> {{ receipt.issue_date|date:"d/m/Y" }}</p>
+                <p><b>Tax Number:</b> {{ receipt.sender.tax_number }}</p>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-5"> 
+                <p><b>Tax Number:</b> {{ receipt.recipient.tax_number }}</p>
+                <p><b>Related Invoice:</b> {{ receipt.related_invoice.type.type }} |
+                    {{ receipt.related_invoice.point_of_sell }}-{{ receipt.related_invoice.number }}
+                </p>
+                <p><b>Payment Method:</b> {{ receipt.related_invoice.payment_method }}</p>
+            </div>
+            <div class="col-2"></div>
+            <div class="col-5">
+                <p><b>Name:</b> {{ receipt.recipient.name }}</p>
+                <p><b>Address:</b> {{ receipt.recipient.address }}</p>
+                <p><b>Payment Term:</b> {{ receipt.related_invoice.payment_term }}</p>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-10">
+                <p><b>Description</b></p>
+                    <p> {{ receipt.description }} </p>
+            </div>
+            <div class="col-2">
+                <p><b>Total</b></p>
+                    <p>$ {{ receipt.total_amount }}</p>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-8"></div>
+            <div class="col-2">
+                <p><b>TOTAL</b></p>
+            </div>
+            <div class="col-2">
+                <p>$ {{ receipt.total_amount }}</p>
+            </div>
+        </div>
+    </div>
+
+{% endblock body %}
+
+{% block script %}
+{% endblock script %}

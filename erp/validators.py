@@ -2,6 +2,7 @@
 from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Sum
 from django.apps import apps
 
 
@@ -48,4 +49,40 @@ def validate_invoices_date_number_correlation(model, instance):
         except ObjectDoesNotExist:
             pass
 
+def validate_receipt_date_number_correlation(model, instance):    
+    """Take the instance about to be save, check if there's a previous one and
+    compare the correlation of their dates"""
+    try:
+        doc_number = int(instance.number)
+    # If number is wrong, another validator will handle it
+    except ValueError:
+        return
+    # Check that it's not the first invoice
+    if doc_number >  1:
+        try:
+            previous_receipt = model.objects.get(
+                point_of_sell = instance.point_of_sell,
+                number = str(doc_number - 1).zfill(8)
+            )
+            if instance.issue_date < previous_receipt.issue_date:
+                raise ValidationError("Issue date can't be older than previous receipt.") 
+        # Case: The company decides to start adding invoices from a higer number
+        except ObjectDoesNotExist:
+            pass
 
+def validate_receipt_total_amount(model, instance):
+    """Check that total amount of receipt is equal o lower than total amount of
+    invoice"""
+    invoice_total = instance.related_invoice.total_lines_sum()
+    if instance.total_amount > invoice_total:
+        raise ValidationError(
+            f"Receipt total amount cannot be higher than invoice total amount."
+        )
+
+    receipts = model.objects.filter(related_invoice=instance.related_invoice
+        ).aggregate(total=Sum("total_amount")
+    ) 
+    if (receipts["total"] + instance.total_amount) > invoice_total:
+        raise ValidationError(
+            f"The sum of your receipts cannot be higher than invoice total amount."
+        )

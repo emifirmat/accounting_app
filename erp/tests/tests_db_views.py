@@ -137,7 +137,6 @@ class ErpTestCase(TestCase):
 
         cls.sale_receipt = Sale_receipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
-            type = cls.doc_type1,
             point_of_sell = cls.pos1,
             number = "00000001",
             description = "Test sale receipt",
@@ -168,7 +167,6 @@ class ErpTestCase(TestCase):
 
         cls.purchase_receipt = Purchase_receipt.objects.create(
             issue_date = datetime.date(2024, 2, 13),
-            type = cls.doc_type2,
             point_of_sell = "00231",
             number = "00000023",
             description = "Test purchase receipt",
@@ -334,7 +332,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_invoice.payment_term, self.payment_term)
         self.assertEqual(
             str(self.sale_invoice),
-            f"00001-00000001 | A | 2024-01-21"
+            f"2024-01-21 | A | 00001-00000001"
         )
 
     def test_sale_invoice_get_abosulte_url(self):
@@ -400,7 +398,6 @@ class ErpTestCase(TestCase):
         sale_receipts = Sale_receipt.objects.all()
         self.assertEqual(sale_receipts.count(), 1)
         self.assertEqual(self.sale_receipt.issue_date, datetime.date(2024, 2, 21))
-        self.assertEqual(self.sale_receipt.type, self.doc_type1)
         self.assertEqual(self.sale_receipt.point_of_sell.pos_number, "00001")
         self.assertEqual(self.sale_receipt.number, "00000001")
         self.assertEqual(self.sale_receipt.description, "Test sale receipt")
@@ -410,14 +407,13 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_receipt.total_amount, Decimal("1300.01"))
         self.assertEqual(
             str(self.sale_receipt),
-            f"00001-00000001 | A | 2024-02-21"
+            f"2024-02-21 | 00001-00000001"
         )
         
 
     def test_sale_receipt_constraint(self):
         sale_receipt2 = Sale_receipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
-            type = self.doc_type1,
             point_of_sell = self.pos1,
             number = "2",
             description = "Test 2 sale receipt",
@@ -433,7 +429,6 @@ class ErpTestCase(TestCase):
         with self.assertRaises(IntegrityError):
             sale_receipt3 = Sale_receipt.objects.create(
                 issue_date = datetime.date(2024, 2, 22),
-                type = self.doc_type1,
                 point_of_sell = self.pos1,
                 number = "00000001",
                 description = "Test 3 sale receipt",
@@ -457,7 +452,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.purchase_invoice.payment_term, self.payment_term2)
         self.assertEqual(
             str(self.purchase_invoice),
-            f"00231-00083051 | B | 2024-01-13"
+            f"2024-01-13 | B | 00231-00083051"
         )
 
     def test_purchase_invoice_constraint(self):
@@ -508,7 +503,6 @@ class ErpTestCase(TestCase):
         purchase_receipts = Purchase_receipt.objects.all()
         self.assertEqual(purchase_receipts.count(), 1)
         self.assertEqual(self.purchase_receipt.issue_date, datetime.date(2024, 2, 13))
-        self.assertEqual(self.purchase_receipt.type, self.doc_type2)
         self.assertEqual(self.purchase_receipt.point_of_sell, "00231")
         self.assertEqual(self.purchase_receipt.number, "00000023")
         self.assertEqual(self.purchase_receipt.description, "Test purchase receipt")
@@ -518,13 +512,12 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.purchase_receipt.total_amount, Decimal("242"))
         self.assertEqual(
             str(self.purchase_receipt),
-            f"00231-00000023 | B | 2024-02-13"
+            f"2024-02-13 | 00231-00000023"
         )
     
     def test_purchase_receipt_constraint(self):
         purchase_receipt2 = Purchase_receipt.objects.create(
             issue_date = datetime.date(2024, 2, 13),
-            type = self.doc_type2,
             point_of_sell = "231",
             number = "2",
             description = "Test 2 purchase receipt",
@@ -540,7 +533,6 @@ class ErpTestCase(TestCase):
         with self.assertRaises(IntegrityError):
             purchase_receipt3 = Purchase_receipt.objects.create(
                 issue_date = datetime.date(2024, 2, 14),
-                type = self.doc_type2,
                 point_of_sell = "00231",
                 number = "00000023",
                 description = "Test 3 purchase receipt",
@@ -1372,3 +1364,107 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "Receivables Overview")
         self.assertContains(response, "Amount collected")
         self.assertContains(response, "Last Receipts")
+
+    def test_receivables_new_receipt_get_webpage(self):
+        response = self.client.get("/erp/receivables/receipts/new")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/receivables_new.html")
+        self.assertContains(response, "Create a new receipt")
+        self.assertContains(response, "Related invoice")
+        self.assertNotContains(response, "Type:")
+
+    def test_receivables_new_receipt_post_webpage(self):
+        response = self.client.post(reverse("erp:receivables_new"), {
+            # Receipt form
+            "issue_date": "29/03/2024",
+            "point_of_sell": self.pos2.id,
+            "number": "1",
+            "related_invoice": self.sale_invoice.id,
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "description": "Something",
+            "total_amount": "600.01",
+        }) 
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Sale_receipt.objects.all().count(), 2)
+
+    def test_sales_new_receipt_post_wrong_year_webpage(self):
+        response = self.client.post(reverse("erp:receivables_new"), {
+            # Receipt form
+            "issue_date": "29/01/2025",
+            "point_of_sell": self.pos2.id,
+            "number": "1",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "related_invoice": self.sale_invoice.id,
+            "description": "Something",
+            "total_amount": "600.01"
+        })       
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Sale_receipt.objects.all().count(), 1)
+        self.assertContains(response, "The selected date is not within the current year.")
+
+    def test_receivables_new_receipt_post_wrong_date_correlation_webpage(self):
+        response = self.client.post(reverse("erp:receivables_new"), {
+            # Receipt form
+            "issue_date": "29/01/2024",
+            "point_of_sell": self.pos1.id,
+            "number": "2",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "related_invoice": self.sale_invoice.id,
+            "description": "Something",
+            "total_amount": "600.01"
+        })       
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Sale_receipt.objects.all().count(), 1)
+        self.assertContains(response, 
+            "be older than previous receipt."
+        )
+
+    def test_receivables_new_receipt_post_wrong_amount_webpage(self):
+        self.create_extra_invoices()
+        response = self.client.post(reverse("erp:receivables_new"), {
+            # Receipt form
+            "issue_date": "24/04/2024",
+            "point_of_sell": self.pos1.id,
+            "number": "2",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "related_invoice": 2, # First invoice from create_extra_invoices
+            "description": "Something",
+            "total_amount": "600.02" # Total from invoice is 600.01
+        })       
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Sale_receipt.objects.all().count(), 1)
+        self.assertContains(response, 
+            "Receipt total amount cannot be higher"
+        )
+
+    def test_receivables_new_receipt_post_wrong_second_amount_webpage(self):
+        response = self.client.post(reverse("erp:receivables_new"), {
+            # Receipt form
+            "issue_date": "24/04/2024",
+            "point_of_sell": self.pos1.id,
+            "number": "2",
+            "sender": self.company.id,
+            "recipient": self.company_client.id,
+            "related_invoice": self.sale_invoice.id, # First invoice from create_extra_invoices
+            "description": "Something",
+            "total_amount": "1209.02" # Total from invoice is $2509.02, first receipt $ 1300.01
+        })       
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Sale_receipt.objects.all().count(), 1)
+        self.assertContains(response, 
+            "The sum of your receipts cannot be higher"
+        )
+
+    def test_receivables_receipt_webpage(self):
+        response = self.client.get("/erp/receivables/receipts/1")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/receivables_receipt.html")
+        self.assertContains(response, "Receipt N° 00001-00000001")
+        self.assertContains(response, "Related Invoice")
+        self.assertContains(response, "$ 1300.01")
+        self.assertContains(response, "X")
+        

@@ -5,7 +5,8 @@ from django.db.models import Sum, Q
 from django.urls import reverse
 
 from .validators import (validate_is_digit, validate_in_current_year, 
-    validate_invoices_date_number_correlation)
+    validate_invoices_date_number_correlation, validate_receipt_date_number_correlation,
+    validate_receipt_total_amount)
 from company.models import PersonModel, Company
 
 # Create your models here.
@@ -24,7 +25,6 @@ class CommercialDocumentModel(models.Model):
     issue_date = models.DateField(validators=[
         validate_in_current_year,
     ])
-    type = models.ForeignKey('Document_type', on_delete=models.PROTECT)
     number = models.CharField(max_length=8, validators=[
         validate_is_digit
     ]) 
@@ -33,7 +33,7 @@ class CommercialDocumentModel(models.Model):
         abstract = True
 
     def __str__(self):
-        return f"{self.point_of_sell}-{self.number} | {self.type.type} | {self.issue_date}"
+        return f"{self.issue_date} | {self.point_of_sell}-{self.number}"
     
     def save(self, *args, **kwargs):
         # Complete numbers with 0
@@ -155,17 +155,20 @@ class Payment_term(models.Model):
 
 class Sale_invoice(CommercialDocumentModel):
     """Create a sale invoice"""
+    type = models.ForeignKey(Document_type, on_delete=models.PROTECT)
     point_of_sell = models.ForeignKey(Point_of_sell, on_delete=models.PROTECT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
     recipient = models.ForeignKey(Company_client, on_delete=models.PROTECT)
     payment_method = models.ForeignKey(Payment_method, on_delete=models.PROTECT)
     payment_term = models.ForeignKey(Payment_term, on_delete=models.PROTECT)
+    collected = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["point_of_sell", "number", "type"],
                 name="unique_sale_invoice_complete_number"),
         ]
+        ordering = ["-issue_date", "type", "point_of_sell", "number" ]
 
     def get_absolute_url(self):
         """Get object webpage"""
@@ -178,13 +181,14 @@ class Sale_invoice(CommercialDocumentModel):
         )["lines_sum"]
         return round(total_sum, 2)
     
+    def __str__(self):
+        return f"{self.issue_date} | {self.type.type} | {self.point_of_sell}-{self.number}"
+    
     def clean(self):
         """Add date validator for invoice"""
         super().clean()
         validate_invoices_date_number_correlation(__class__, self)
         
-    
-    
 class Sale_invoice_line(CommercialDocumentLineModel):
     """Product/service detail of the sale invoice"""
     sale_invoice = models.ForeignKey(Sale_invoice, on_delete=models.CASCADE,
@@ -201,13 +205,29 @@ class Sale_receipt(CommercialDocumentModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["point_of_sell", "number", "type"],
-                name="unique_sale_receipt_complete_number")
+            models.UniqueConstraint(fields=["point_of_sell", "number"],
+                name="unique_sale_receipt_complete_number"
+            ),
         ]
+        ordering = ["-issue_date", "point_of_sell", "number"]
+
+    def get_absolute_url(self):
+        """Get object webpage"""
+        return reverse("erp:receivables_receipt", args=[self.pk])
+    
+    def __str__(self):
+        return f"{self.issue_date} | {self.point_of_sell}-{self.number}"
+    
+    def clean(self):
+        """Add date validator for receipt"""
+        super().clean()
+        validate_receipt_date_number_correlation(__class__, self)
+        validate_receipt_total_amount(__class__, self)
 
 class Purchase_invoice(CommercialDocumentModel):
     """Record a purchase invoice"""
     # POS is different from Sale invoice, as dif suppliers have dif POS.
+    type = models.ForeignKey(Document_type, on_delete=models.PROTECT)
     point_of_sell = models.CharField(max_length=5, validators=[
         validate_is_digit
     ])
@@ -221,6 +241,10 @@ class Purchase_invoice(CommercialDocumentModel):
             models.UniqueConstraint(fields=["sender", "point_of_sell", "number",
                 "type"], name="unique_purchase_invoice_per_supplier")
         ]
+        ordering = ["-issue_date", "sender", "type", "point_of_sell", "number"]
+
+    def __str__(self):
+        return f"{self.issue_date} | {self.type.type} | {self.point_of_sell}-{self.number}"
 
 class Purchase_invoice_line(CommercialDocumentLineModel):
     """Product/service detail of the purchase invoice"""
@@ -242,6 +266,12 @@ class Purchase_receipt(CommercialDocumentModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["sender", "point_of_sell", "number",
-                "type"], name="unique_purchase_receipt_per_supplier")
+            models.UniqueConstraint(fields=[
+                "sender", "point_of_sell", "number",
+            ], name="unique_purchase_receipt_per_supplier"
+            )
         ]
+        ordering = ["-issue_date", "sender", "point_of_sell", "number"]
+    
+    def __str__(self):
+        return f"{self.issue_date} | {self.point_of_sell}-{self.number}"

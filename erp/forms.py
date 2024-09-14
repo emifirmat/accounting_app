@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 
 from company.models import Company
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
+    Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line, Sale_receipt)
 from .validators import validate_is_digit, validate_file_extension
 
 
@@ -99,7 +99,7 @@ class SaleInvoiceForm(forms.ModelForm):
         fields = ["issue_date", "type", "point_of_sell", "number", "sender", "recipient",
             "payment_method", "payment_term"]
         help_texts = {
-            "issue_date": "The date should be in the current financial year.",
+            "issue_date": "The date should be in the current financial year. Format=DD/MM/YYYY",
             "type": "Can't find the type you need? <a href=\"/erp/document_types\">Click Here</a>",
             "number": "The number you see is the next in sequence after the last invoice created in the system.",
             "point_of_sell": "Can't find the point of sell you need? <a href=\"/erp/points_of_sell\">Click Here</a>",
@@ -220,3 +220,42 @@ class SearchByDateForm(forms.Form):
         )
     )
   
+class SaleReceiptForm(forms.ModelForm):
+    """Create a new receipt"""
+    class Meta:
+        model = Sale_receipt
+        fields = ["issue_date", "point_of_sell", "number", "related_invoice",
+                "sender", "recipient", "description", "total_amount"]
+        help_texts = {
+            "issue_date": "The date should be in the current financial year. Format=DD/MM/YYYY",
+            "number": "The number you see is the next in sequence after the last invoice created in the system.",
+            "related_invoice": "You can only add one invoice per receipt.",
+            "point_of_sell": "Can't find the point of sell you need? <a href=\"/erp/points_of_sell\">Click Here</a>",
+            "total_amount": "Total amount collected.",
+        } 
+        labels = {
+            "issue_date": "Date",        
+        }
+        widgets = {
+            "issue_date": forms.DateInput(format="%d/%m/%Y", attrs={
+                "class": "datepicker",
+            }),
+            "number": forms.NumberInput(attrs={"placeholder": "XXXXXXXX"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """Customize intitial fields"""
+        super().__init__(*args, **kwargs)
+        
+        # Customize issue_date field
+        self.fields["issue_date"].input_formats = ["%d/%m/%Y"]
+        self.fields["issue_date"].initial = datetime.now()
+        
+        # Define sender as the company
+        sender = Company.objects.first()
+        if sender:
+            self.fields["sender"].initial = sender
+            self.fields["sender"].disabled = True
+
+        # In related invoice field, show only uncollected invoices
+        # TODO

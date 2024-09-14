@@ -6,6 +6,7 @@ async function deleteInvoice(invoice) {
         );
     
         if(confirmDelete) {
+
             try {
                 fetch(`/erp/api/sale_invoices/${invoice.id}`, {
                     method: 'DELETE',
@@ -39,7 +40,6 @@ async function deleteInvoice(invoice) {
                 console.error('Error' + error);
             }
         }
-
 
     })
     

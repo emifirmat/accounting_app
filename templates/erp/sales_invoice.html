@@ -14,7 +14,7 @@
     <br>
     <div class="container-fluid">
         <div class="row">
-            <div class="col-4"> 
+            <div class="col-5"> 
                 <h3>{{ invoice.sender.name }}</h3>
                 <p><b>Sender:</b> {{ invoice.sender.name }}</p>
                 <p><b>Address:</b> {{ invoice.sender.address }}</p>  
@@ -23,7 +23,7 @@
                 <h1>{{ invoice.type.type }}</h1>
                 <p>{{ invoice.type.code }}</p>
             </div>
-            <div class="col-4">
+            <div class="col-5">
                 <h3>{{ invoice.type.type_description }}</h3>
                 <p><b>Point of Sell:</b> {{ invoice.point_of_sell }} <b>Invoice Number:</b> 
                 {{ invoice.number }}
@@ -34,11 +34,12 @@
         </div>
         <br>
         <div class="row">
-            <div class="col-6"> 
-                <p><b>Tax number:</b> {{ invoice.recipient.tax_number }}</p>
+            <div class="col-5"> 
+                <p><b>Tax Number:</b> {{ invoice.recipient.tax_number }}</p>
                 <p><b>Payment Method:</b> {{ invoice.payment_method }}</p>
             </div>
-            <div class="col-6">
+            <div class="col-2"></div>
+            <div class="col-5">
                 <p><b>Name:</b> {{ invoice.recipient.name }}</p>
                 <p><b>Address:</b> {{ invoice.recipient.address }}</p>
                 <p><b>Payment Term:</b> {{ invoice.payment_term }}</p>

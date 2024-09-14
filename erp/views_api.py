@@ -3,10 +3,10 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice)
+    Point_of_sell, Document_type, Sale_invoice, Sale_receipt)
 from .serializers import (CClientSerializer, SupplierSerializer, 
     PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer,
-    DocTypesSerializer, SaleInvoicesSerializer)
+    DocTypesSerializer, SaleInvoicesSerializer, SaleReceiptsSerializer)
 
 
 class CompanyClientAPI(generics.ListAPIView):
@@ -123,3 +123,14 @@ class SaleInvoiceAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale invoice"""
     queryset = Sale_invoice.objects.all()
     serializer_class = SaleInvoicesSerializer
+
+class SaleReceiptsAPI(generics.ListCreateAPIView):
+    """CRUD API of sale receipts"""
+    queryset = Sale_receipt.objects.all()
+    serializer_class = SaleReceiptsSerializer
+
+
+class SaleReceiptAPI(generics.RetrieveUpdateDestroyAPIView):
+    """CRUD API of specific sale receipt"""
+    queryset = Sale_receipt.objects.all()
+    serializer_class = SaleReceiptsSerializer

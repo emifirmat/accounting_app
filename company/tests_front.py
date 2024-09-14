@@ -60,7 +60,7 @@ class CompanyFrontTestCase(StaticLiveServerTestCase):
         # Select new current year
         self.driver.find_element(By.ID, "year-dropdown").click()
         path = self.driver.find_element(By.ID, "change-year-menu")
-        path.find_elements(By.CSS_SELECTOR, ".dropdown-item.year")[0].click()
+        path.find_elements(By.CSS_SELECTOR, ".dropdown-item.year")[1].click()
         # Confirm that current year of 2023 is true. If it is false it will 
         # raise an error.
         WebDriverWait(self.driver, 10).until(

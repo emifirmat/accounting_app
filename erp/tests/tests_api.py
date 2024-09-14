@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase
 
 from company.models import Company
 from ..models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice)
+    Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line, Sale_receipt)
 
 
 @tag("erp_api")
@@ -97,6 +97,14 @@ class APIErpTests(APITestCase):
             payment_method = cls.pay_method1,
             payment_term = cls.pay_term1,
         )
+        cls.sale_invoice_line = Sale_invoice_line.objects.create(
+            sale_invoice = cls.sale_invoice,
+            description = "A test product",
+            taxable_amount = Decimal(900),
+            not_taxable_amount = Decimal(0),
+            vat_amount = Decimal(100),
+            total_amount = Decimal(1000),
+        )
         cls.sale_invoice2 = Sale_invoice.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             type = cls.doc_type1,
@@ -106,6 +114,26 @@ class APIErpTests(APITestCase):
             recipient = cls.client2,
             payment_method = cls.pay_method2,
             payment_term = cls.pay_term2,
+        )
+        cls.sale_receipt = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 1, 22),
+            point_of_sell = cls.pos1,
+            number = "00000001",
+            related_invoice = cls.sale_invoice,
+            sender = cls.company,
+            recipient = cls.client1,
+            description = "First payment 60%",
+            total_amount = Decimal(600),
+        )
+        cls.sale_receipt2 = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 1, 23),
+            point_of_sell = cls.pos1,
+            number = "00000002",
+            related_invoice = cls.sale_invoice,
+            sender = cls.company,
+            recipient = cls.client1,
+            description = "Second payment 40%",
+            total_amount = Decimal(400),
         )
 
     
@@ -199,4 +227,20 @@ class APIErpTests(APITestCase):
             kwargs={"pk": self.sale_invoice.pk}), format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertContains(response, "00000001")
+        self.assertNotContains(response, "00000002")
+
+    def test_sale_receipts_api(self):
+        response = self.client.get(reverse("erp:sale_receipts_api"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Sale_receipt.objects.count(), 2)
+        self.assertContains(response, "00000001")
+        self.assertContains(response, "400")
+        self.assertContains(response, "00000002")
+
+    def test_sale_receipt_api(self):
+        response = self.client.get(reverse("erp:sale_receipt_api",
+            kwargs={"pk": self.sale_receipt.pk}), format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "00000001")
+        self.assertContains(response, "600")
         self.assertNotContains(response, "00000002")

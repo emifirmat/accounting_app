@@ -72,6 +72,7 @@ class FinancialYear(models.Model):
                 name="unique_true_current_year"
             )
         ]
+        ordering = ["-current", "-year"]
 
     def __str__(self):
         return f"{self.year}"

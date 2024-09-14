@@ -27,7 +27,7 @@
                 <h5>Last Receipts: --TODO--order </h5>
                 <ul>
                     {% for receipt in receipt_list %}
-                        <li>{{ receipt }}</li>
+                        <a href="{{ receipt.get_absolute_url }}"><li>{{ receipt }}</li></a>
                     {% empty %}
                         <p>You haven't issued any receipt in {{ financial_year.year }}.</p>
                     {% endfor %}
@@ -37,7 +37,7 @@
                 <h5>Highest Receipts: --TODO-- order </h5>
                 <ul>
                     {% for receipt in receipt_list %}
-                        <li>{{ receipt }}</li>
+                        <a href="{{ receipt.get_absolute_url }}"><li>{{ receipt }}</li></a>
                     {% empty %}
                         <p>You haven't issued any receipt in {{ financial_year.year }}.</p>
                     {% endfor %}

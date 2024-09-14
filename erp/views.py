@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.conf import settings
 from django.db import transaction, IntegrityError
+from django.db.models import Sum
 from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -13,9 +14,11 @@ from django.urls import reverse
 from company.models import FinancialYear, PersonModel
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
     PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm,
-    AddPersonFileForm, AddSaleInvoicesFileForm, SearchByYearForm, SearchByDateForm)
+    AddPersonFileForm, AddSaleInvoicesFileForm, SearchByYearForm, SearchByDateForm,
+    SaleReceiptForm)
 from .models import (Company, Company_client, Supplier, Payment_method, 
-    Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line)
+    Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line,
+    Sale_receipt)
 from .utils import (read_uploaded_file, check_column_len, standarize_dataframe,
 check_column_names, list_file_errors, get_model_fields_name, get_sale_invoice_objects)
 
@@ -268,7 +271,7 @@ def sales_new_massive(request):
             check_column_len(df, 12)
              # Standarize and check all columns have the right name
             df = standarize_dataframe(df)
-            document_fields = get_model_fields_name(Sale_invoice)
+            document_fields = get_model_fields_name(Sale_invoice, "collected")
             line_fields = get_model_fields_name(Sale_invoice_line, "total_amount",
                 "sale_invoice"
             )
@@ -286,9 +289,9 @@ def sales_new_massive(request):
                         
                         if last_invoice:
                             current_invoice = (
-                                f"{total_fields_row[1].zfill(3)}"
+                                f"{total_fields_row[2].zfill(3)}"
                                 f"{total_fields_row[3].zfill(5)}"
-                                f"{total_fields_row[2].zfill(8)}"
+                                f"{total_fields_row[1].zfill(8)}"
                             )
                         
                         # Get objects from related fields                
@@ -299,9 +302,9 @@ def sales_new_massive(request):
                         if index == 0 or last_invoice_id != current_invoice:
                             new_invoice = Sale_invoice(
                                 issue_date = total_fields_row[0][0:10],
-                                type = total_fields_row[1],
+                                type = total_fields_row[2],
                                 point_of_sell = total_fields_row[3],
-                                number = total_fields_row[2],
+                                number = total_fields_row[1],
                                 sender = total_fields_row[4],
                                 recipient = total_fields_row[5],
                                 payment_method = total_fields_row[6],
@@ -456,8 +459,6 @@ def sales_list(request):
         form_year = SearchByYearForm()
         invoice_list = Sale_invoice.objects.filter(issue_date__year=financial_year.year)
 
-    invoice_list = invoice_list.order_by("-issue_date", "type", 
-        "point_of_sell", "number")
     return render(request, "erp/sales_list.html", {
         "invoice_list": invoice_list,
         "form_date": form_date,
@@ -465,7 +466,41 @@ def sales_list(request):
     })
 
 def receivables_index(request):
+    """Overview of receivables webpage"""
     financial_year = current_year()
+    receipt_list = Sale_receipt.objects.all()
     return render(request, "erp/receivables_index.html", {
+        "receipt_list": receipt_list,
         "financial_year": financial_year,
+    })
+
+def receivables_new(request):
+    """Create new receipt webpage"""
+    if request.method == "POST":
+        receipt_form = SaleReceiptForm(request.POST)
+        if receipt_form.is_valid():
+            receipt = receipt_form.save()
+            
+            # Check and update invoice's collected attribute
+            invoice = receipt.related_invoice
+            receipts = Sale_receipt.objects.filter(
+                related_invoice=invoice
+            ).aggregate(total=Sum("total_amount")) 
+            if receipts["total"] - invoice.total_lines_sum() == 0:
+                invoice.collected = True
+                invoice.save()        
+
+            return HttpResponseRedirect(reverse("erp:receivables_new"))
+    else:
+        receipt_form = SaleReceiptForm()
+    
+    return render(request, "erp/receivables_new.html", {
+        "receipt_form": receipt_form,
+    })
+
+def receivables_receipt(request, rec_pk):
+    """Specific receipt webpage"""
+    receipt = Sale_receipt.objects.get(pk=rec_pk)
+    return render(request, "erp/receivables_receipt.html", {
+        "receipt": receipt,
     })
