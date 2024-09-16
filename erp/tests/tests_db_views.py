@@ -330,6 +330,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_invoice.recipient, self.company_client)
         self.assertEqual(self.sale_invoice.payment_method, self.payment_method)
         self.assertEqual(self.sale_invoice.payment_term, self.payment_term)
+        self.assertEqual(self.sale_invoice.collected, False)
         self.assertEqual(
             str(self.sale_invoice),
             f"2024-01-21 | A | 00001-00000001"
@@ -1373,6 +1374,7 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "Related invoice")
         self.assertNotContains(response, "Type:")
 
+    @tag("erp_db_view_receivables_new_post")
     def test_receivables_new_receipt_post_webpage(self):
         response = self.client.post(reverse("erp:receivables_new"), {
             # Receipt form
@@ -1383,10 +1385,14 @@ class ErpTestCase(TestCase):
             "sender": self.company.id,
             "recipient": self.company_client.id,
             "description": "Something",
-            "total_amount": "600.01",
+            "total_amount": "1209",
         }) 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Sale_receipt.objects.all().count(), 2)
+        
+        # Update sale invoice and test
+        self.sale_invoice.refresh_from_db()
+        self.assertEqual(self.sale_invoice.collected, True)
 
     def test_sales_new_receipt_post_wrong_year_webpage(self):
         response = self.client.post(reverse("erp:receivables_new"), {
@@ -1467,4 +1473,64 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "Related Invoice")
         self.assertContains(response, "$ 1300.01")
         self.assertContains(response, "X")
+        
+    def test_receivables_edit_receipt_get_webpage(self):
+        response = self.client.get("/erp/receivables/receipts/1/edit")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/receivables_edit.html")
+        self.assertContains(response, "Edit Receipt")
+        self.assertContains(response, "00000001")
+        self.assertContains(response, "1300.01")
+
+    def test_receivables_edit_receipt_post_webpage(self):
+        response = self.client.post(reverse("erp:receivables_edit", 
+            args=[self.sale_receipt.pk]), {
+                # Receipt form
+                "issue_date": "21/02/2024",
+                "point_of_sell": self.pos1.id,
+                "number": "1",
+                "description": "Test sale receipt edited.",
+                "related_invoice": self.sale_invoice.pk,
+                "sender": self.company.id,
+                "recipient": self.company_client.id,
+                "total_amount": Decimal("1200.01"),
+            }
+        )   
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Sale_receipt.objects.all().count(), 1)
+        
+        self.sale_receipt.refresh_from_db()
+        self.sale_invoice.refresh_from_db()
+        self.assertEqual(self.sale_receipt.description, "Test sale receipt edited.")
+        self.assertEqual(self.sale_invoice.collected, False)
+
+    def test_receivables_edit_receipt_post_webpage(self):
+        # As I need 2 invoices, I add more
+        self.create_extra_invoices()
+        
+        # I modifiy collected to test function
+        self.sale_invoice.collected = True
+
+        response = self.client.post(reverse("erp:receivables_edit", 
+            args=[self.sale_receipt.pk]), {
+                # Receipt form
+                "issue_date": "21/02/2024",
+                "point_of_sell": self.pos1.id,
+                "number": "1",
+                "description": "Test modified rel inv.",
+                "related_invoice": 2,
+                "sender": self.company.id,
+                "recipient": self.company_client.id,
+                "total_amount": Decimal("600.01"),
+            }
+        )   
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Sale_receipt.objects.all().count(), 1)
+        
+        self.sale_receipt.refresh_from_db()
+        self.sale_invoice.refresh_from_db()
+        self.assertEqual(self.sale_receipt.description, "Test modified rel inv.")
+        self.assertEqual(self.sale_invoice.collected, False)
+        invoice = Sale_invoice.objects.get(pk=2)
+        self.assertEqual(invoice.collected, True)
         

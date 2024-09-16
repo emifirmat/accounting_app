@@ -8,7 +8,7 @@
 {% block body %}
 
     <h2>Receipt N° {{ receipt.point_of_sell }}-{{ receipt.number }}</h2>
-    <a id="edit-button" href="#">Edit</a>
+    <a id="edit-button" href="{% url 'erp:receivables_edit' receipt.id %}">Edit</a>
     <button id="delete-button" data-id="{{ receipt.id }}" data-pos="{{ receipt.point_of_sell }}" 
     data-number="{{ receipt.number }}">Delete</button>
     <br>

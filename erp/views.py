@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.conf import settings
 from django.db import transaction, IntegrityError
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -20,7 +20,8 @@ from .models import (Company, Company_client, Supplier, Payment_method,
     Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line,
     Sale_receipt)
 from .utils import (read_uploaded_file, check_column_len, standarize_dataframe,
-check_column_names, list_file_errors, get_model_fields_name, get_sale_invoice_objects)
+check_column_names, list_file_errors, get_model_fields_name, get_sale_invoice_objects,
+update_invoice_collected_status)
 
 
 # Create your views here.
@@ -483,12 +484,8 @@ def receivables_new(request):
             
             # Check and update invoice's collected attribute
             invoice = receipt.related_invoice
-            receipts = Sale_receipt.objects.filter(
-                related_invoice=invoice
-            ).aggregate(total=Sum("total_amount")) 
-            if receipts["total"] - invoice.total_lines_sum() == 0:
-                invoice.collected = True
-                invoice.save()        
+            invoice.collected = update_invoice_collected_status(invoice)
+            invoice.save()
 
             return HttpResponseRedirect(reverse("erp:receivables_new"))
     else:
@@ -503,4 +500,38 @@ def receivables_receipt(request, rec_pk):
     receipt = Sale_receipt.objects.get(pk=rec_pk)
     return render(request, "erp/receivables_receipt.html", {
         "receipt": receipt,
+    })
+
+def receivables_edit(request, rec_pk):
+    """Edit Specific receipt webpage"""
+    receipt = Sale_receipt.objects.get(id=rec_pk)
+
+    if request.method == "POST":
+        receipt_form = SaleReceiptForm(instance=receipt, data=request.POST)
+
+        if receipt_form.is_valid():
+            receipt_edited = receipt_form.save()
+            invoice = receipt_edited.related_invoice
+            old_r_invoice = receipt.related_invoice
+            
+            # If related invoice was modified, I have to update old invoice first.
+            if old_r_invoice != invoice:
+                old_r_invoice.collected = update_invoice_collected_status(
+                    old_r_invoice)
+                old_r_invoice.save()
+
+            # Check and update invoice's collected attribute
+            invoice.collected = update_invoice_collected_status(invoice)
+            invoice.save()     
+
+            return HttpResponseRedirect(reverse("erp:receivables_receipt", 
+                args=[receipt.pk]
+            ))
+
+    else:
+        receipt_form = SaleReceiptForm(instance=receipt)
+        
+    return render(request, "erp/receivables_edit.html", {
+        "receipt": receipt,
+        "receipt_form": receipt_form,
     })

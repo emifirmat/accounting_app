@@ -1148,7 +1148,9 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # Number
         number_field = self.driver.find_element(By.ID, "id_number")
         action = ActionChains(self.driver).move_to_element(number_field).click(number_field)
-        action.send_keys('1').send_keys(' ').perform()
+        action.send_keys('1').perform()
+        action.send_keys(' ').perform()
+        time.sleep(0.1)
         # Let list update again
         WebDriverWait(self.driver, 30).until(
             EC.staleness_of(last_invoice_in_list)
@@ -1312,6 +1314,23 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice2.pk}/edit")
         )
         self.assertEqual(self.driver.title, "Invoice 00001-00000001")
+
+    @tag("erp_front_edit_invoice_number")
+    def test_sales_invoice_edit_numbers(self):
+        # Go to Sales new invoice page.
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}/edit")
+       
+        # Check number field is 1
+        number_field = self.driver.find_element(By.ID, "id_number")
+        self.assertEqual(number_field.get_attribute('value'), "00000001")
+
+        # Pick type and check new number field
+        type_field = Select(self.driver.find_element(By.ID, "id_type"))
+        type_field.select_by_index(2)
+        WebDriverWait(self.driver, 10).until(
+            element_has_selected_option((By.ID, "id_type"), "002 | B")
+        )
+        self.assertEqual(number_field.get_attribute('value'), "4")
 
     @tag("erp_front_invoice_delete")
     def test_sales_invoice_delete(self):
@@ -1598,3 +1617,46 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
                 "Add"
             )
         )
+
+    @tag("erp_front_receipt_edit")
+    def test_receivable_receipt_edit(self):
+        # Go to receipt 1 webpage.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt.pk}")
+        WebDriverWait(self.driver, 15).until(
+            EC.visibility_of_element_located((By.ID, "edit-button"))
+        )
+        self.assertEqual(self.driver.title, "Receipt 00001-00000001")
+
+        # Click on edit button
+        self.driver.find_element(By.ID, "edit-button").click()
+        WebDriverWait(self.driver, 15).until(
+            EC.url_changes(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt.pk}")
+        )
+        self.assertEqual(self.driver.title, "Edit Receipt")
+
+        # Go back to receipt detail
+        receipt_link = self.driver.find_element(By.ID, "receipt-link")
+        ActionChains(self.driver).move_to_element(receipt_link).click(receipt_link).perform()
+        WebDriverWait(self.driver, 10).until(
+            EC.url_changes(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt.pk}/edit")
+        )
+        self.assertEqual(self.driver.title, "Receipt 00001-00000001")
+
+    @tag("erp_front_edit_receipt_number")
+    def test_receivables_receipt_edit_numbers(self):
+        # Go to Sales new receipt page.
+        self.driver.get(
+            f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt.pk}/edit"
+        )
+       
+        # Check number field is 1
+        number_field = self.driver.find_element(By.ID, "id_number")
+        self.assertEqual(number_field.get_attribute('value'), "00000001")
+
+        # Pick pos and check new number field
+        pos_field = Select(self.driver.find_element(By.ID, "id_point_of_sell"))
+        pos_field.select_by_index(2)
+        WebDriverWait(self.driver, 10).until(
+            element_has_selected_option((By.ID, "id_point_of_sell"), "00002")
+        )
+        self.assertEqual(number_field.get_attribute('value'), "1")

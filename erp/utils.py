@@ -1,12 +1,24 @@
 """Reutilizable functions for views.py in ERP app"""
 import pandas as pd
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Sum
 from django.http import HttpResponseBadRequest
 
 
 from company.models import Company
 from .models import (Sale_invoice, Sale_invoice_line, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Company_client)
+    Point_of_sell, Document_type, Company_client, Sale_receipt)
+
+def update_invoice_collected_status(invoice):
+    """Check and update invoice's collected attribute"""
+    receipts = Sale_receipt.objects.filter(related_invoice=invoice
+    ).aggregate(total=Sum("total_amount")) 
+
+    if invoice.total_lines_sum() - receipts["total"] == 0:
+        return True
+    else:
+        return False
+
 
 def read_uploaded_file(file, date_column=None):
     """Read csv, xls or xlsx files"""

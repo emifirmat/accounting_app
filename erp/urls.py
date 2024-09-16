@@ -44,6 +44,8 @@ urlpatterns = [
     # Specific sale receipt webpage
     path("receivables/receipts/<int:rec_pk>", views.receivables_receipt, 
         name="receivables_receipt"),
+    # Edit a receipt webpage
+    path("receivables/receipts/<int:rec_pk>/edit", views.receivables_edit, name="receivables_edit"),
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),

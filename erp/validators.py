@@ -1,5 +1,6 @@
 """Validators file for erp app"""
 from datetime import datetime
+from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Sum
@@ -79,9 +80,14 @@ def validate_receipt_total_amount(model, instance):
             f"Receipt total amount cannot be higher than invoice total amount."
         )
 
+    """Check validator"""
     receipts = model.objects.filter(related_invoice=instance.related_invoice
-        ).aggregate(total=Sum("total_amount")
-    ) 
+        ).exclude(pk=instance.pk).aggregate(total=Sum("total_amount")
+    )
+    # Case: First receipt
+    if receipts["total"] == None:
+        receipts["total"] = 0
+  
     if (receipts["total"] + instance.total_amount) > invoice_total:
         raise ValidationError(
             f"The sum of your receipts cannot be higher than invoice total amount."
