@@ -13,43 +13,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
 })
 
-function addNewPOS() {
+async function addNewPOS() {
     // Add a POS through api
     event.preventDefault();
     const confirmNew = confirm('Add new POS?');
     if (confirmNew) {
         const form = document.querySelector('#new-pos-form');
-        const csrftoken = getCookie('csrftoken');
-        fetch(`/erp/api/points_of_sell`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                pos_number: form.elements['pos_number'].value,
-            }),
-            mode: 'same-origin'
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Couldn't add a new POS.");
-            } else {
-                return response.json()
-            }
-        })
-        .then(result => {
-                messageElement = document.querySelector('#message-section')
-                messageElement.innerHTML = `Point of Sell added succesfully.`;
-                setTimeout(() => location.reload(), 1000);
-        });
-    }
+        data = {['pos_number']: form.elements['pos_number'].value};
+
+        await postData(`/erp/api/points_of_sell`, data); // crud.js
+    
+        messageElement = document.querySelector('#message-section');
+        messageElement.innerHTML = `Point of Sell added succesfully.`;
+        setTimeout(() => location.reload(), 1000);
+    };
 }
 
 
 async function showPOSList() {
     // Get and show list of POS
-    const list = await getPOSList();
+    const list = await getList('/erp/api/points_of_sell'); // crud.js
     
     // Clean list
     const listSection = document.querySelector('#pos-list');
@@ -71,8 +54,8 @@ async function disablePOS() {
     // Disable a POS
     const POSNumber = event.target.innerHTML.trim()
     const confirmElement = confirm(`Are you sure that you want to disable the POS number ${POSNumber}?`);
-    const csrfToken = getCookie('csrftoken');
-    const POSList = await getPOSList();
+    const csrfToken = getCookie('csrftoken'); // crud.js
+    const POSList = await getList('/erp/api/points_of_sell'); // crud.js
     let POSId;
 
     // get pos id
@@ -89,59 +72,13 @@ async function disablePOS() {
     
     // If aler accepted, modify status
     if (confirmElement) {
-        try {
-            fetch(`/erp/api/points_of_sell/${POSId}`, {
-                method: 'PATCH',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    disabled: true,
-                }),
-                mode: 'same-origin'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Couldn't disable the POS.");
-                } else {
-                    console.log('POS disabled successfully.');
-                    messageElement = document.querySelector('#message-section')
-                    messageElement.innerHTML = `Point of Sell ${POSNumber} disabled.`;
-                    setTimeout(() => location.reload(), 1000);
-                }
-            })
-        } catch (error) {
-            console.error('Error', error)
-        }
+        const url = `/erp/api/points_of_sell/${POSId}`;
+        // Disable POS
+        await changeOneAttribute(url, 'disabled', true,
+            'POS disabled successfully.'); // crud.js
+        
+        messageElement = document.querySelector('#message-section')
+        messageElement.innerHTML = `Point of Sell ${POSNumber} disabled.`;
+        setTimeout(() => location.reload(), 1000);
     }
-}
-
-async function getPOSList() {
-    // Get post list and pick id
-    return fetch('/erp/api/points_of_sell')
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Couldn't load the list.");
-        } else {
-            return response.json();
-        }
-    })
-}
-
-function getCookie(name) {
-    // Get cookie for CSRF token
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
 }

@@ -676,6 +676,8 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             recipient = self.client1,
             payment_method = self.pay_method,
             payment_term = self.pay_term,
+            # Set collected manually, as this attribute is modified in views.
+            collected = True, 
         )
         self.sale_invoice2 = Sale_invoice.objects.create(
             issue_date = datetime.date(2024, 1, 22),
@@ -981,13 +983,13 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
         self.assertEqual(self.driver.title, "Search Invoice")
 
-        # Sleep 1.5 sec to prevent false errors
-        time.sleep(1.5)
+        # Sleep 2 secs to prevent false errors
+        time.sleep(2)
         # Test type
         type_field = self.driver.find_element(By.ID, "id_type")
         action = ActionChains(self.driver).move_to_element(type_field).click(type_field)
         action.send_keys('a').perform()
-        time.sleep(0.1)
+        time.sleep(0.2)
         WebDriverWait(self.driver, 30).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "invoice-list"),"00001")
@@ -1001,7 +1003,10 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # Test Pos
         pos_field = self.driver.find_element(By.ID, "id_pos")
         action = ActionChains(self.driver).move_to_element(pos_field).click(pos_field)
+        time.sleep(0.1)
         # Separate keys with explicit waits as sometimes get buggy and throw error
+        action.send_keys(' ').perform()
+        time.sleep(0.1)
         action.send_keys(' ').perform()
         time.sleep(0.1)
         WebDriverWait(self.driver, 35).until(
@@ -1104,6 +1109,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         action.send_keys('1').perform()
         time.sleep(0.1)
         action.send_keys('3').perform()
+        time.sleep(0.1)
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "invoice-list"),"Couldn't match any invoice.")
@@ -1141,6 +1147,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         pos_field = self.driver.find_element(By.ID, "id_pos")
         action = ActionChains(self.driver).move_to_element(pos_field).click(pos_field)
         action.send_keys(' ').send_keys('2').perform()
+        time.sleep(0.1)
         WebDriverWait(self.driver, 35).until(
             EC.staleness_of(last_invoice_in_list)
         )
@@ -1149,6 +1156,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         number_field = self.driver.find_element(By.ID, "id_number")
         action = ActionChains(self.driver).move_to_element(number_field).click(number_field)
         action.send_keys('1').perform()
+        time.sleep(0.1)
         action.send_keys(' ').perform()
         time.sleep(0.1)
         # Let list update again
@@ -1178,6 +1186,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         client_tax_field = self.driver.find_element(By.ID, "id_client_tax_number")
         action = ActionChains(self.driver).move_to_element(client_tax_field).click(client_tax_field)
         action.send_keys('99999').perform()
+        time.sleep(0.2)
         # Let list update
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
@@ -1188,6 +1197,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         client_name_field = self.driver.find_element(By.ID, "id_client_name")
         action = ActionChains(self.driver).move_to_element(client_name_field).click(client_name_field)
         action.send_keys('cLiEnT2 SA').perform()
+        time.sleep(0.2)
         # Let list update
         last_invoice_in_list = path.find_elements(By.TAG_NAME, "li")[-1]
         WebDriverWait(self.driver, 35).until(
@@ -1210,7 +1220,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         type_field = self.driver.find_element(By.ID, "id_type")
         action = ActionChains(self.driver).move_to_element(type_field).click(type_field)
         action.send_keys('a').perform()
-        time.sleep(0.1)
+        time.sleep(0.2)
         action.send_keys(' ').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
@@ -1223,6 +1233,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         pos_field = self.driver.find_element(By.ID, "id_pos")
         action = ActionChains(self.driver).move_to_element(pos_field).click(pos_field)
         action.send_keys('1').perform()
+        time.sleep(0.2)
         WebDriverWait(self.driver, 35).until(
             EC.staleness_of(last_invoice_in_list)
         )
@@ -1660,3 +1671,28 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             element_has_selected_option((By.ID, "id_point_of_sell"), "00002")
         )
         self.assertEqual(number_field.get_attribute('value'), "1")
+
+    @tag("erp_front_receipt_delete")
+    def test_sales_receipt_delete(self):
+        # Go to receipt 1 webpage.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt.pk}")
+        self.assertEqual(self.driver.title, "Receipt 00001-00000001")
+        
+        # Check initial invoice collected status is true for later test
+        self.assertEqual(self.sale_invoice1.collected, True)
+
+        # Click on delete button
+        self.driver.find_element(By.ID, "delete-button").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        
+        # Wait 
+        WebDriverWait(self.driver, 15).until(
+            EC.url_changes(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt.pk}")
+        )
+        self.assertEqual(self.driver.title, "Receivables")
+        
+        # Check DB update
+        self.sale_invoice1.refresh_from_db()
+        self.assertEqual(self.sale_invoice1.collected, False) 
+        

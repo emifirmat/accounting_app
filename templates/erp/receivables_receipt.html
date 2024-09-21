@@ -9,8 +9,9 @@
 
     <h2>Receipt N° {{ receipt.point_of_sell }}-{{ receipt.number }}</h2>
     <a id="edit-button" href="{% url 'erp:receivables_edit' receipt.id %}">Edit</a>
-    <button id="delete-button" data-id="{{ receipt.id }}" data-pos="{{ receipt.point_of_sell }}" 
-    data-number="{{ receipt.number }}">Delete</button>
+    <button id="delete-button" data-document="receipt" data-id="{{ receipt.id }}"
+    data-pos="{{ receipt.point_of_sell }}" data-number="{{ receipt.number }}"
+    data-invoice="{{ receipt.related_invoice.id }}">Delete</button>
     <br>
     <div class="container-fluid">
         <div class="row">
@@ -65,7 +66,7 @@
             <div class="col-2">
                 <p><b>TOTAL</b></p>
             </div>
-            <div class="col-2">
+            <div id="total-amount" data-amount="{{ receipt.total_amount }}" class="col-2">
                 <p>$ {{ receipt.total_amount }}</p>
             </div>
         </div>
@@ -74,4 +75,7 @@
 {% endblock body %}
 
 {% block script %}
+    <script src="{% static 'js/document_detail.js' %}"></script>
+    <script src="{% static 'js/document_delete.js' %}"></script>
+    <script src="{% static 'js/crud.js' %}"></script>
 {% endblock script %}

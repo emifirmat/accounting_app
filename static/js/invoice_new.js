@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add a new line form for invoice
     const newLineButton = document.querySelector('#new-line')
-    let lineFormIndex = parseInt(document.querySelector('#id_s_invoice_lines-TOTAL_FORMS').value, 10) - 1;
+    let lineFormIndex = parseInt(
+        document.querySelector('#id_s_invoice_lines-TOTAL_FORMS').value, 10) - 1;
     
     newLineButton.addEventListener('click', () => {
         // Add new line, update index and total forms

@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Add click event to each client or supplier
     document.querySelectorAll('.specific-person').forEach(function (element) {
-        element.addEventListener('click', (event) => showDetail(event))
+        element.addEventListener('click', (event) => showDetail(event));
     });
 });
 
@@ -15,25 +15,18 @@ async function showDetail(event) {
     }
     
     detailSection.style.display = 'block';
-    
 
     // Get client or supplier details
     const personDetails = await getPersonDetails(personId);
 
     // Show details
-    showPersonDetails(personDetails, detailSection, formSection)
+    showPersonDetails(personDetails, detailSection, formSection);
 };
 
 async function getPersonDetails(personId) {
     // Get details from API
-    const person = document.querySelector('#title').dataset.title
-    return fetch(`/erp/api/${person}s/${personId}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Not response from api');
-        }
-        return response.json();
-    })
+    const person = document.querySelector('#title').dataset.title;
+    return getList(`/erp/api/${person}s/${personId}`);
 }
 
 function showPersonDetails(personDetails, detailSection, formSection=null) {
@@ -95,6 +88,7 @@ function confirmEdition(personId, form) {
     let person = document.querySelector('#title').dataset.title
 
     // modify data
+    const url = `/erp/api/${person}s/${personId}`;
     fetch(`/erp/api/${person}s/${personId}`, {
         method: 'PUT',
         headers: {
@@ -136,48 +130,22 @@ function confirmEdition(personId, form) {
     })
 }
 
-function deletePerson(personId, detailSection) {
-    let person = document.querySelector('#title').dataset.title
-    const personCamel = person.charAt(0).toUpperCase() + person.slice(1)
+async function deletePerson(personId, detailSection) {
+    const person = document.querySelector('#title').dataset.title;
+    const personCamel = person.charAt(0).toUpperCase() + person.slice(1);
     const confirmDelete = 
         confirm(`Are you sure that you want to delete ${person} number ${personId}?`);
 
     if (confirmDelete === true) {
-        fetch(`/erp/api/${person}s/${personId}`, {
-            method: 'DELETE'
-        })
-        .then(response => ({
-            status: response.status,
-            ok: response.ok,
-        }))
-        .then(result => {
-            if (result.ok) {
-                console.log(`${personCamel} deleted successfully.`);
-                detailSection.style.display = 'none';
-                document.querySelector('#delete-message').innerHTML = 
-                    `${personCamel} deleted successfully.`;
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                console.error(`Failed to delete ${person}. ${result.json}`);
-            }
-        })
+        const url = `/erp/api/${person}s/${personId}`;
+        await deleteInstance(url, {person}); // crud.js
+        
+        detailSection.style.display = 'none';
+        document.querySelector('#delete-message').innerHTML = 
+            `${personCamel} deleted successfully.`;
+        setTimeout(() => location.reload(), 1000);
+
     }
 }
 
-function getCookie(name) {
-    // Get cookie for CSRF token
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 

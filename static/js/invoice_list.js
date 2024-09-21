@@ -23,7 +23,7 @@ function sortInvoices(invoices, columnIndex) {
     const reverse = column.children[columnIndex].dataset.reverse;
     
     // Convert node into an array for sorting
-    const invoice_list = Array.from(invoices)
+    const invoice_list = Array.from(invoices);
     
     // sort invoice list
     invoice_list.sort((a, b) => {
@@ -49,14 +49,14 @@ function sortInvoices(invoices, columnIndex) {
             column.children[columnIndex].dataset.reverse = 'true';
             // case: Date and Total amount
             if(columnIndex == "0" || columnIndex == "8") {
-                return aNotText - bNotText
+                return aNotText - bNotText;
             } else {
                 return aText.localeCompare(bText);
             }
         } else {
             column.children[columnIndex].dataset.reverse = 'false';
             if(columnIndex == "0" || columnIndex == "8") {
-                return bNotText - aNotText
+                return bNotText - aNotText;
             } else {
                 return bText.localeCompare(aText);
             }
@@ -72,7 +72,7 @@ function refreshList(invoice_list) {
     // Clean old list and newone
     tableBody.innerHTML = '';
     invoice_list.forEach((element) => {
-        tableBody.append(element)
+        tableBody.append(element);
     })
     
 }

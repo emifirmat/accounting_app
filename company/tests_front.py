@@ -1,6 +1,7 @@
 """Tests for company app"""
 import datetime
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,7 +14,7 @@ class CompanyFrontTestCase(StaticLiveServerTestCase):
     def setUpClass(cls):
         """Initiate selenium server"""
         super().setUpClass()
-        cls.driver = WebDriver()
+        cls.driver = webdriver.Firefox()
         cls.driver.implicitly_wait(5)
 
     @classmethod

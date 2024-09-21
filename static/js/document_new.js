@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // Autoselect invoice number when pick a doc type and a pos
-    const posField = document.querySelector('#id_point_of_sell')
+    const posField = document.querySelector('#id_point_of_sell');
     const documentType = document.querySelector('#document-title').dataset.document;
 
     if(documentType === "invoice") {
@@ -30,7 +30,8 @@ async function autoSelectNumber(documentType, ...fieldsIds) {
         (documentType === 'receipt' && fieldsIds[0])
     ) {
         // fields[0] = pos | fields [1] = type
-        const documentList = await getDocumentList(`sale_${documentType}`, documentType);
+        const documentList = await getList(`/erp/api/sale_${documentType}s`,
+            documentType); // crud.js
         filteredList = filterList(documentType, documentList, ...fieldsIds);
     } else {
         // Return nothing as still there are fields to be picked
@@ -64,21 +65,4 @@ function filterList(documentType, documentList, ...fieldsIds) {
 
     return filteredList.map(commercialDocument => commercialDocument.number);
 
-}
-
-async function getDocumentList(url, document) {
-    // Get list of all documents
-    try {
-        return fetch(`/erp/api/${url}s`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Couldn't get the ${document} list.`);
-            } else {
-                return response.json();
-            }
-        })
-    }
-    catch (error) {
-        console.error('Error' + error);
-    }
 }

@@ -39,7 +39,7 @@ async function searchInvoices(...fields) {
     }
     
     // Get the full list.
-    let invoiceList = await getInvoiceList();
+    let invoiceList = await getList('/erp/api/sale_invoices'); // crud.js
 
     // Get the subfields of each field
     const [typeTypes, posNumbers, clientsInfo] = await getFieldsInfo(invoiceList);
@@ -82,8 +82,9 @@ async function searchInvoices(...fields) {
                 window.location.href = `/erp/sales/invoices/${invoice.id}/edit`;
             });
             deleteButtonElement.addEventListener('click', async () => {
-                await deleteInvoice(invoice);
-                setTimeout(() => location.reload(), 500);
+                if (await deleteComDocument('invoice', invoice)) { // document_delete.js
+                    setTimeout(() => location.reload(), 500);
+                }
             });
 
             // List item
@@ -96,24 +97,6 @@ async function searchInvoices(...fields) {
                 deleteButtonElement);
         }
 
-    }
-}
-
-
-async function getInvoiceList() {
-    // Get list of all invoices
-    try {
-        return fetch(`/erp/api/sale_invoices`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Couln't get the invoices list.");
-            } else {
-                return response.json();
-            }
-        })
-    }
-    catch (error) {
-        console.error('Error' + error);
     }
 }
 
@@ -156,20 +139,19 @@ async function getFieldsInfo(invoiceList) {
 
     // Get Pos numbers for each id
     const typeTypes = await Promise.all(cleanedTypeIdList.map(typeId => {
-        url = `/erp/api/document_types/`;
-        return getSubField(url, typeId, result => 
+        return getSubField(`/erp/api/document_types/`, typeId, result => 
             ({id: result.id, type: result.type}));
     }));   
 
+    // Get pos numbers for each id
     const posNumbers = await Promise.all(cleanedPosIdList.map(posId => {
-        url = `/erp/api/points_of_sell/`;
-        return getSubField(url, posId, result => 
+        return getSubField(`/erp/api/points_of_sell/`, posId, result => 
             ({id: result.id, pos_number: result.pos_number}));
     }));
+    
     // Get Clients name and tax number for each id
     const clientsInfo = await Promise.all(cleanedClientIdList.map(clientId => {
-        url =`/erp/api/clients/`;
-        return getSubField(url, clientId, result => 
+        return getSubField(`/erp/api/clients/`, clientId, result => 
         ({id: result.id, name: result.name, tax_number: result.tax_number}));
     }));
 
@@ -178,19 +160,10 @@ async function getFieldsInfo(invoiceList) {
 
 async function getSubField(url, subFieldId, getResult) {
     // Take from API the subfield info
-    try {
-        return fetch(`${url}${subFieldId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Couldn't get pos number.");
-            } else {
-                return response.json();
-            }
-        })
-        .then(result => getResult(result))
-    } catch (error) {
-        console.error(`Error trying to get ${url} for ID ${subFieldId}.`);
-    }
+    
+    const subField = await getList(`${url}${subFieldId}`); // crud.js
+    
+    return getResult(subField);
 
 }
 

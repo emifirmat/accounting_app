@@ -487,7 +487,8 @@ def receivables_new(request):
             invoice.collected = update_invoice_collected_status(invoice)
             invoice.save()
 
-            return HttpResponseRedirect(reverse("erp:receivables_new"))
+            return HttpResponseRedirect(reverse("erp:receivables_receipt", 
+                args=[receipt.id]))
     else:
         receipt_form = SaleReceiptForm()
     
