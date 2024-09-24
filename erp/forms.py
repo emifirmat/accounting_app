@@ -259,3 +259,17 @@ class SaleReceiptForm(forms.ModelForm):
 
         # In related invoice field, show only uncollected invoices
         # TODO
+
+class SearchReceiptForm(forms.Form):
+    """Fields for the receipt search"""
+    related_invoice = forms.CharField(max_length=14, widget=forms.TextInput(
+            attrs={
+                "placeholder": "XX XXXXX-XXXXXXXX",
+            }
+        ), help_text="Invoice type, POS and number.")
+    pos = forms.CharField(max_length=5, label="Point of sell")
+    number = forms.CharField(max_length=8)
+    client_tax_number = forms.CharField(max_length=11)
+    client_name = forms.CharField(max_length=40)
+    year = forms.CharField(max_length=4)
+    month = forms.CharField(max_length=2, help_text="Only numbers.")

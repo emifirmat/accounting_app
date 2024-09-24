@@ -679,6 +679,29 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             # Set collected manually, as this attribute is modified in views.
             collected = True, 
         )
+        
+        self.sale_invoice1_line1 = Sale_invoice_line.objects.create(
+            sale_invoice = self.sale_invoice1,
+            description = "Test sale invoice",
+            taxable_amount = Decimal("1000"),
+            not_taxable_amount = Decimal("90.01"),
+            vat_amount = Decimal("210"),
+        )
+
+        self.sale_receipt = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 2, 21),
+            point_of_sell = self.pos1,
+            number = "00000001",
+            description = "Test sale receipt",
+            related_invoice = self.sale_invoice1,
+            sender = self.company,
+            recipient = self.client1,
+            total_amount = Decimal("1300.01"),
+        )
+
+        
+    def create_extra_invoices(self):
+        """Add extra invoices in necessary tests"""
         self.sale_invoice2 = Sale_invoice.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             type = self.doc_type2,
@@ -688,6 +711,8 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             recipient = self.client1,
             payment_method = self.pay_method2,
             payment_term = self.pay_term2,
+            # Set collected manually, as this attribute is modified in views.
+            collected = True, 
         )
         self.sale_invoice3 = Sale_invoice.objects.create(
             issue_date = datetime.date(2024, 1, 23),
@@ -769,13 +794,6 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             payment_term=self.pay_term
         )
         
-        self.sale_invoice1_line1 = Sale_invoice_line.objects.create(
-            sale_invoice = self.sale_invoice1,
-            description = "Test sale invoice",
-            taxable_amount = Decimal("1000"),
-            not_taxable_amount = Decimal("90.01"),
-            vat_amount = Decimal("210"),
-        )
         self.sale_invoice2_line1 = Sale_invoice_line.objects.create(
             sale_invoice = self.sale_invoice2,
             description = "Second sale invoice",
@@ -839,28 +857,59 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
             not_taxable_amount = Decimal("10"),
             vat_amount = Decimal("10"),
         )
-        self.sale_receipt = Sale_receipt.objects.create(
-            issue_date = datetime.date(2024, 2, 21),
+        
+    def create_extra_receipts(self): 
+        """Create extra receipts if it's necessary """
+        self.sale_receipt2 = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 2, 22),
             point_of_sell = self.pos1,
-            number = "00000001",
-            description = "Test sale receipt",
-            related_invoice = self.sale_invoice1,
+            number = "00000002",
+            description = "Second receipt",
+            related_invoice = self.sale_invoice2,
             sender = self.company,
             recipient = self.client1,
-            total_amount = Decimal("1300.01"),
+            total_amount = Decimal("600.01"),
         )
-
-    def tearDown(self):
-        Company.objects.all().delete()
-        Sale_invoice.objects.all().delete()
-        Company_client.objects.all().delete()
-        Supplier.objects.all().delete()
-        Point_of_sell.objects.all().delete()
-        Document_type.objects.all().delete()
-        Payment_method.objects.all().delete()
-        Payment_term.objects.all().delete()
-        Sale_receipt.objects.all().delete()
-        super().tearDown()
+        self.sale_receipt3 = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 2, 23),
+            point_of_sell = self.pos1,
+            number = "00000003",
+            description = "Third receipt",
+            related_invoice = self.sale_invoice2,
+            sender = self.company,
+            recipient = self.client1,
+            total_amount = Decimal("609"),
+        )
+        self.sale_receipt4 = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 3, 24),
+            point_of_sell = self.pos2,
+            number = "00000001",
+            description = "Fourth receipt",
+            related_invoice = self.sale_invoice5,
+            sender = self.company,
+            recipient = self.client1,
+            total_amount = Decimal("5"),
+        )
+        self.sale_receipt5 = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 3, 24),
+            point_of_sell = self.pos2,
+            number = "00000002",
+            description = "Fifth receipt",
+            related_invoice = self.sale_invoice5,
+            sender = self.company,
+            recipient = self.client1,
+            total_amount = Decimal("5"),
+        )
+        self.sale_receipt6 = Sale_receipt.objects.create(
+            issue_date = datetime.date(2024, 3, 24),
+            point_of_sell = self.pos1,
+            number = "00000004",
+            description = "Sixth receipt",
+            related_invoice = self.sale_invoice6,
+            sender = self.company,
+            recipient = self.client2,
+            total_amount = Decimal("8"),
+        )
 
     def test_sales_overview(self):
         # Go to Sales overview page.
@@ -872,6 +921,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
 
     def test_sales_new_invoice_numbers(self):
         # Go to Sales new invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}")
         self.driver.find_element(By.ID, "sales-menu-link").click()
         path = self.driver.find_element(By.ID, "sales-menu")
@@ -977,6 +1027,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # I use action chains as regular send_keys or clear lead to errors
         # Keys are sent one by one to avoid error
         # Go to search page
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}")
         self.driver.find_element(By.ID, "sales-menu-link").click()
         path = self.driver.find_element(By.ID, "sales-menu")
@@ -985,7 +1036,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
 
         # Sleep 2 secs to prevent false errors
         time.sleep(2)
-        # Test type
+        # Search by type
         type_field = self.driver.find_element(By.ID, "id_type")
         action = ActionChains(self.driver).move_to_element(type_field).click(type_field)
         action.send_keys('a').perform()
@@ -997,24 +1048,21 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         path = self.driver.find_element(By.ID, "invoice-list")
         invoice_list = path.find_elements(By.TAG_NAME, "li")
         self.assertEqual(len(invoice_list), 5)
-        action.send_keys(Keys.BACKSPACE + Keys.BACKSPACE).perform()
+        action.send_keys(Keys.BACKSPACE).perform()
         WebDriverWait(self.driver, 25).until(EC.staleness_of(invoice_list[0]))
         
         # Test Pos
         pos_field = self.driver.find_element(By.ID, "id_pos")
         action = ActionChains(self.driver).move_to_element(pos_field).click(pos_field)
-        time.sleep(0.1)
         # Separate keys with explicit waits as sometimes get buggy and throw error
         action.send_keys(' ').perform()
-        time.sleep(0.1)
-        action.send_keys(' ').perform()
-        time.sleep(0.1)
+        time.sleep(0.3)
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element((By.ID, "invoice-list"), "00002")
         )
-        action.send_keys('2').perform()
-        time.sleep(0.1)
         first_invoice = path.find_elements(By.TAG_NAME, "li")[0]
+        action.send_keys('2').perform()
+        time.sleep(0.3)
         WebDriverWait(self.driver, 35).until(
             EC.staleness_of(first_invoice)
         )
@@ -1029,6 +1077,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # I use action chains as regular send_keys or clear lead to errors
         # Keys are sent one by one to avoid error
         # Go to Sales search invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         self.assertEqual(self.driver.title, "Search Invoice")
         
@@ -1041,7 +1090,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         action.send_keys('1').send_keys(' ').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"00001 | 00000001")
+                (By.ID, "invoice-list"),"00001-00000001")
         )
         path = self.driver.find_element(By.ID, "invoice-list")
         invoice_list = path.find_elements(By.TAG_NAME, "li")
@@ -1053,9 +1102,10 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         client_tax_field = self.driver.find_element(By.ID, "id_client_tax_number")
         action = ActionChains(self.driver).move_to_element(client_tax_field).click(client_tax_field)
         action.send_keys('13').send_keys(' ').perform()
+        time.sleep(0.2)
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"), "00002 | 00000002")
+                (By.ID, "invoice-list"), "00002-00000002")
         )
         invoice_list = path.find_elements(By.TAG_NAME, "li")
         last_invoice_in_list = invoice_list[-1]
@@ -1084,6 +1134,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # I use action chains as regular send_keys or clear lead to errors
         # Keys are sent one by one to avoid error
         # Go to Sales search invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         self.assertEqual(self.driver.title, "Search Invoice")
         
@@ -1123,6 +1174,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # I use action chains as regular send_keys or clear lead to errors
         # Keys are sent one by one to avoid error
         # Go to Sales search invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         self.assertEqual(self.driver.title, "Search Invoice")
 
@@ -1137,7 +1189,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         action.send_keys(' ').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"), "00002 | 00000002")
+                (By.ID, "invoice-list"), "00002-00000002")
         )
         path = self.driver.find_element(By.ID, "invoice-list")
         invoice_list = path.find_elements(By.TAG_NAME, "li")
@@ -1179,6 +1231,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         # I use action chains as regular send_keys or clear lead to errors
         # Keys are sent one by one to avoid error
         # Go to Sales search invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         self.assertEqual(self.driver.title, "Search Invoice")
 
@@ -1210,6 +1263,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
     def test_sales_new_search_invoice_edit(self):
         # I use action chains as regular send_keys or clear lead to errors
         # Go to Sales search invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         self.assertEqual(self.driver.title, "Search Invoice")
 
@@ -1224,7 +1278,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         action.send_keys(' ').perform()
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"A | 00001 | 00000001")
+                (By.ID, "invoice-list"),"A | 00001-00000001")
         )
         path = self.driver.find_element(By.ID, "invoice-list")
         last_invoice_in_list = path.find_elements(By.TAG_NAME, "li")[-1]
@@ -1250,6 +1304,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
     def test_sales_new_search_invoice_delete(self):
         # I use action chains as regular send_keys or clear lead to errors  
         # Go to Sales search invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         self.assertEqual(self.driver.title, "Search Invoice")
 
@@ -1266,7 +1321,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         time.sleep(0.1)
         WebDriverWait(self.driver, 35).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"), "A | 00001 | 00000001")
+                (By.ID, "invoice-list"), "A | 00001-00000001")
         )
         path = self.driver.find_element(By.ID, "invoice-list")
         last_invoice_in_list = path.find_elements(By.TAG_NAME, 'li')[-1]
@@ -1293,7 +1348,8 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
 
     @tag("erp_front_invoice_edit")
     def test_sales_invoice_edit(self):
-        # Go to invoice 1 webpage.
+        # Go to invoice 2 webpage.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice2.pk}")
         WebDriverWait(self.driver, 15).until(
             EC.visibility_of_element_located((By.ID, "edit-button"))
@@ -1329,6 +1385,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
     @tag("erp_front_edit_invoice_number")
     def test_sales_invoice_edit_numbers(self):
         # Go to Sales new invoice page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}/edit")
        
         # Check number field is 1
@@ -1346,6 +1403,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
     @tag("erp_front_invoice_delete")
     def test_sales_invoice_delete(self):
         # Go to invoice 1 webpage.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice7.pk}")
         self.assertEqual(self.driver.title, "Invoice 00002-00000001")
 
@@ -1398,6 +1456,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
     @tag("erp_front_show_list_original_order")
     def test_sales_show_list_original_order(self):
         # Go to show list page
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
         
         # Test original sort
@@ -1434,6 +1493,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
         
     @tag("erp_front_show_list_date_reverse")
     def test_sales_show_list_date_reverse_order(self):
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
 
         # Test date reverse sort
@@ -1475,6 +1535,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
 
     @tag("erp_front_show_list_client_name")
     def test_sales_show_list_date_client_name_order(self):
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
 
         # Test client name asc sort
@@ -1508,6 +1569,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
 
     @tag("erp_front_show_list_total")
     def test_sales_show_list_date_client_name_order(self):
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
 
         # Test total amount asc sort
@@ -1590,6 +1652,7 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
     @tag("erp_receipt_recipient")
     def test_receivables_new_receipt_recipient(self):
         # Go to Receivables new receipt page.
+        self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/new")
 
         # Check recipient field is empty
@@ -1628,6 +1691,333 @@ class ErpFrontDocumentsTestCase(StaticLiveServerTestCase):
                 "Add"
             )
         )
+    
+    @tag("erp_front_receipt_search")
+    def test_receivables_new_search_receipt_one_field_part_1(self):
+        # I use action chains as regular send_keys or clear lead to errors
+        # Keys are sent one by one to avoid error
+        self.create_extra_invoices() # Some receipts are related to these invoices
+        self.create_extra_receipts()
+        # Go to search page
+        self.driver.get(f"{self.live_server_url}")
+        self.driver.find_element(By.ID, "receivables-menu-link").click()
+        path = self.driver.find_element(By.ID, "receivables-menu")
+        path.find_elements(By.CLASS_NAME, "dropdown-item")[3].click()
+        self.assertEqual(self.driver.title, "Search Receipt")
+
+        # Sleep 3 secs (2.5s is not enough) to prevent false errors
+        time.sleep(3)
+        # Search related invoice
+        r_invoice_field = self.driver.find_element(By.ID, "id_related_invoice")
+        action = ActionChains(self.driver).move_to_element(r_invoice_field).click(r_invoice_field)
+        action.send_keys('3').perform()
+        time.sleep(0.2)
+        WebDriverWait(self.driver, 30).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"),"00001-00000004")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 1)
+        action.send_keys(Keys.BACKSPACE).perform()
+        WebDriverWait(self.driver, 25).until(EC.staleness_of(receipt_list[0]))
+        
+        # Search Pos
+        pos_field = self.driver.find_element(By.ID, "id_pos")
+        action = ActionChains(self.driver).move_to_element(pos_field).click(pos_field)
+        # Separate keys with explicit waits as sometimes get buggy and throw error
+        action.send_keys(' ').perform()
+        time.sleep(0.2)
+        first_receipt = path.find_elements(By.TAG_NAME, "li")[0]
+        action.send_keys('2').perform()
+        time.sleep(0.2)
+        WebDriverWait(self.driver, 35).until(
+            EC.staleness_of(first_receipt)
+        )
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 2)
+        action.send_keys(Keys.BACKSPACE + Keys.BACKSPACE).perform()
+        WebDriverWait(self.driver, 25).until(EC.staleness_of(receipt_list[0]))
+        
+      
+    @tag("erp_front_receipt_search_2")
+    def test_receivables_new_search_receipt_one_field_part_2(self):
+        # I use action chains as regular send_keys or clear lead to errors
+        # Keys are sent one by one to avoid error
+        self.create_extra_invoices() # Some receipts are related to these invoices
+        self.create_extra_receipts()
+        # Go to Sales search receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
+        self.assertEqual(self.driver.title, "Search Receipt")
+        
+        # Sleep 3 sec to prevent false errors
+        time.sleep(3)
+
+        # Test Number
+        number_field = self.driver.find_element(By.ID, "id_number")
+        action = ActionChains(self.driver).move_to_element(number_field).click(number_field)
+        action.send_keys('1').send_keys(' ').perform()
+        time.sleep(0.2)
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"),"00001-00000001")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 2)
+        action.send_keys(Keys.BACKSPACE + Keys.BACKSPACE).perform()
+        WebDriverWait(self.driver, 35).until(EC.staleness_of(receipt_list[0]))
+
+        # Test Client tax number
+        client_tax_field = self.driver.find_element(By.ID, "id_client_tax_number")
+        action = ActionChains(self.driver).move_to_element(client_tax_field).click(client_tax_field)
+        action.send_keys('13').send_keys(' ').perform()
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"), "00002-00000002")
+        )
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        last_receipt_in_list = receipt_list[-1]
+        first_receipt_in_list = receipt_list[0]
+        self.assertEqual(len(receipt_list), 5)
+        action.send_keys(Keys.BACKSPACE + Keys.BACKSPACE + Keys.BACKSPACE).perform()
+        # Check all invoices disappeared
+        WebDriverWait(self.driver, 35).until(EC.staleness_of(last_receipt_in_list))
+        WebDriverWait(self.driver, 35).until(EC.staleness_of(first_receipt_in_list))
+        
+        # Test Client name
+        client_name_field = self.driver.find_element(By.ID, "id_client_name")
+        actions = ActionChains(self.driver)
+        text = "cLiEnT2 SA"
+        for char in text:
+            actions.send_keys_to_element(client_name_field, char).perform()
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"),"CLIENT2 SA")
+        )
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 1)
+
+   
+
+    @tag("erp_front_receipt_search_3")
+    def test_receivables_new_search_receipt_one_field_part_3(self):
+        # I use action chains as regular send_keys or clear lead to errors
+        # Keys are sent one by one to avoid error
+        self.create_extra_invoices() # Some receipts are related to these invoices
+        self.create_extra_receipts()
+        # Go to Sales search receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
+        self.assertEqual(self.driver.title, "Search Receipt")
+        
+        # Sleep 3 sec to prevent false errors
+        time.sleep(3)
+        # Search Year
+        year_field = self.driver.find_element(By.ID, "id_year")
+        action = ActionChains(self.driver).move_to_element(year_field).click(year_field)
+        action.send_keys('20').perform()
+        time.sleep(0.2)
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"),"CLIENT1 SRL")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 6)
+        action.send_keys(Keys.BACKSPACE + Keys.BACKSPACE).perform()
+        WebDriverWait(self.driver, 35).until(EC.staleness_of(receipt_list[0]))
+        
+        # Search month
+        month_field = self.driver.find_element(By.ID, "id_month")
+        action = ActionChains(self.driver).move_to_element(month_field).click(month_field)
+        action.send_keys('1').perform()
+        time.sleep(0.1)
+        action.send_keys('3').perform()
+        time.sleep(0.1)
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"),"Couldn't match any receipt.")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertFalse(receipt_list)
+
+    @tag("erp_front_receipt_search_multiple")
+    def test_receivables_new_search_receipt_multiple_field(self): 
+        # I use action chains as regular send_keys or clear lead to errors
+        # Keys are sent one by one to avoid error
+        self.create_extra_invoices() # Some receipts are related to these invoices
+        self.create_extra_receipts()
+        # Go to Sales search receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
+        
+
+        # Sleep 3 sec to prevent false errors
+        time.sleep(3)
+        # Search multiple fields
+        # Related Invoice
+        r_invoice_field = self.driver.find_element(By.ID, "id_related_invoice")
+        action = ActionChains(self.driver).move_to_element(r_invoice_field).click(r_invoice_field)
+        action.send_keys('1').perform()
+        time.sleep(0.2)
+        action.send_keys(' ').perform()
+        time.sleep(0.2)
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"), "00001-00000002")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 6)
+        last_receipt_in_list = path.find_elements(By.TAG_NAME, "li")[-1]
+        # POS
+        pos_field = self.driver.find_element(By.ID, "id_pos")
+        action = ActionChains(self.driver).move_to_element(pos_field).click(pos_field)
+        action.send_keys(' ').perform()
+        time.sleep(0.2)
+        action.send_keys('1').perform()
+        time.sleep(0.3)
+        WebDriverWait(self.driver, 35).until(
+            EC.staleness_of(last_receipt_in_list)
+        )
+        last_receipt_in_list = path.find_elements(By.TAG_NAME, "li")[-1]
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 4)
+        # Number
+        number_field = self.driver.find_element(By.ID, "id_number")
+        action = ActionChains(self.driver).move_to_element(number_field).click(number_field)
+        action.send_keys('2').perform()
+        time.sleep(0.2)
+        action.send_keys(' ').perform()
+        time.sleep(0.2)
+        # Let list update again
+        WebDriverWait(self.driver, 30).until(
+            EC.staleness_of(last_receipt_in_list)
+        )
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        first_receipt_in_list = receipt_list[0]
+        self.assertEqual(len(receipt_list), 1)
+        # Clear all fields
+        r_invoice_field.send_keys(Keys.BACKSPACE)
+        pos_field.send_keys(Keys.BACKSPACE + Keys.BACKSPACE)
+        number_field.send_keys(Keys.BACKSPACE + Keys.BACKSPACE)
+        WebDriverWait(self.driver, 35).until(
+            EC.staleness_of(first_receipt_in_list)
+        )
+
+    
+
+    @tag("erp_front_receipt_search_multiple_2")
+    def test_receivables_new_search_receipt_multiple_field_2(self): 
+        # I use action chains as regular send_keys or clear lead to errors
+        # Keys are sent one by one to avoid error
+        self.create_extra_invoices() # Some receipts are related to these invoices
+        self.create_extra_receipts()
+        # Go to Sales search receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
+        
+        # Client tax field
+        client_tax_field = self.driver.find_element(By.ID, "id_client_tax_number")
+        action = ActionChains(self.driver).move_to_element(client_tax_field).click(client_tax_field)
+        action.send_keys('99999').perform()
+        time.sleep(0.2)
+        # Let list update
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"),"CLIENT2 SA")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+        # Client name
+        client_name_field = self.driver.find_element(By.ID, "id_client_name")
+        action = ActionChains(self.driver).move_to_element(client_name_field).click(client_name_field)
+        action.send_keys('cLiEnT2 SA').perform()
+        time.sleep(0.2)
+        # Let list update
+        last_receipt_in_list = path.find_elements(By.TAG_NAME, "li")[-1]
+        WebDriverWait(self.driver, 35).until(
+            EC.staleness_of(last_receipt_in_list)
+        )
+        receipt_list = path.find_elements(By.TAG_NAME, "li")
+        self.assertEqual(len(receipt_list), 1)
+
+    @tag("erp_front_receipt_search_edit")
+    def test_receivables_new_search_receipt_edit(self):
+        # I use action chains as regular send_keys or clear lead to errors
+        self.create_extra_invoices() # Some receipts are related to these invoices
+        self.create_extra_receipts()
+        # Go to Sales search receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
+
+        # Sleep 3 sec to prevent false errors
+        time.sleep(3)
+        # Search receipt 1
+        # search related invoice
+        r_invoice_field = self.driver.find_element(By.ID, "id_related_invoice")
+        action = ActionChains(self.driver).move_to_element(r_invoice_field).click(r_invoice_field)
+        action.send_keys('3').perform()
+        time.sleep(0.2)
+        action.send_keys(' ').perform()
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"),"00001-00000004")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+
+        # Click on edit button
+        edit_button = path.find_element(By.CLASS_NAME, "edit-button")
+        ActionChains(self.driver).move_to_element(edit_button).click(edit_button).perform()
+        WebDriverWait(self.driver, 35).until(
+            EC.url_changes(f"{self.live_server_url}/erp/receivables/receipts/search")
+        )
+        self.assertEqual(self.driver.title, "Edit Receipt") 
+
+    @tag("erp_front_receipt_search_delete")
+    def test_receivables_new_search_receipt_delete(self):
+        # I use action chains as regular send_keys or clear lead to errors  
+        self.create_extra_invoices() # Some receipts are related to these invoices
+        self.create_extra_receipts()
+        # Go to Sales search receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
+
+        # Sleep 2 sec to prevent false errors
+        time.sleep(2)
+
+        # Search receipt 00001-00000002
+        # Related invoice
+        r_invoice_field = self.driver.find_element(By.ID, "id_related_invoice")
+        action = ActionChains(self.driver).move_to_element(r_invoice_field).click(r_invoice_field)
+        action.send_keys('00001-00000001').perform()
+        time.sleep(0.2)
+        action.send_keys(' ').perform()
+        time.sleep(0.2)
+        WebDriverWait(self.driver, 35).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "receipt-list"), "00001-00000001")
+        )
+        path = self.driver.find_element(By.ID, "receipt-list")
+        last_receipt_in_list = path.find_elements(By.TAG_NAME, 'li')[-1]
+        # number
+        number_field = self.driver.find_element(By.ID, "id_number")
+        action = ActionChains(self.driver).move_to_element(number_field).click(number_field)
+        action.send_keys('2').perform()
+        time.sleep(0.2)
+        WebDriverWait(self.driver, 35).until(
+            EC.staleness_of(last_receipt_in_list)
+        )
+        # Click on delete button   
+        path = self.driver.find_element(By.ID, "receipt-list")     
+        delete_button = path.find_element(By.CLASS_NAME, "delete-button")
+        self.driver.execute_script('arguments[0].click();', delete_button)
+        # Accept emergent alert
+        WebDriverWait(self.driver, 35).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        time.sleep(0.2)
+        # Wait for receipt list to disappear
+        WebDriverWait(self.driver, 35).until(
+            EC.staleness_of(path)
+        )
+        self.sale_invoice2.refresh_from_db()
+        self.assertEqual(self.sale_invoice2.collected, False)
 
     @tag("erp_front_receipt_edit")
     def test_receivable_receipt_edit(self):

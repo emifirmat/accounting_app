@@ -3,7 +3,9 @@ async function deleteComDocument(commercialDocument, cDocObject) {
 
     if (commercialDocument === "receipt") {
         cDocObject.type = "";
-        var rTotalAmount = document.querySelector('#total-amount').dataset.amount;
+        var rTotalAmount = await getSubFields(`/erp/api/sale_receipts/${cDocObject.id}`,
+            result => result.total_amount
+        );
     }
 
     const msg = `Are you sure you want to delete ${commercialDocument} ` +

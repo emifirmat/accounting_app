@@ -31,7 +31,7 @@ urlpatterns = [
         name="sales_new_massive"),
     # Specific sale invoice webpage
     path("sales/invoices/<int:inv_pk>", views.sales_invoice, name="sales_invoice"),
-    # Search and delete invoices webpage
+    # Search invoices webpage
     path("sales/invoices/search", views.sales_search, name="sales_search"),
     # Edit an invoice webpage
     path("sales/invoices/<int:inv_pk>/edit", views.sales_edit, name="sales_edit"),
@@ -46,7 +46,9 @@ urlpatterns = [
         name="receivables_receipt"),
     # Edit a receipt webpage
     path("receivables/receipts/<int:rec_pk>/edit", views.receivables_edit, name="receivables_edit"),
-
+    # Search receipts webpage
+    path("receivables/receipts/search", views.receivables_search, name="receivables_search"),
+    
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
     path("api/clients/<int:pk>", views_api.DetailCompanyClientAPI.as_view(), 

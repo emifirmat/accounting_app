@@ -1226,7 +1226,7 @@ class ErpTestCase(TestCase):
     def test_sales_search_webpage(self):
         response = self.client.get("/erp/sales/invoices/search")
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "erp/sales_search.html")
+        self.assertTemplateUsed(response, "erp/document_search.html")
         self.assertContains(response, "Search Invoice")
         self.assertContains(response, "Year")
         
@@ -1534,3 +1534,9 @@ class ErpTestCase(TestCase):
         invoice = Sale_invoice.objects.get(pk=2)
         self.assertEqual(invoice.collected, True)
         
+    def test_receivables_search_webpage(self):
+        response = self.client.get("/erp/receivables/receipts/search")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/document_search.html")
+        self.assertContains(response, "Search Receipt")
+        self.assertContains(response, "Related invoice")

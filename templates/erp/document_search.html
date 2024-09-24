@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}Search {{ com_document|capfirst }}{% endblock title %}
+
+{% block body %}
+
+    <h3 id="search-title" data-document="{{ com_document }}">Search {{ com_document|capfirst }}</h3>
+    <p>Type on one or more fields to search for sale {{ com_document }}s.</p>
+    <br>
+    <div class="container">
+        <form>
+            {{ form.as_p }}
+        </form>
+    </div>
+    <br>
+    <div id="{{ com_document }}s-section" class="container hidden">
+        <h3>Search Results</h3>
+        <ul id="{{ com_document }}-list">
+        </ul>
+    </div>
+    
+{% endblock body %}
+
+{% block script %}
+    <script src="{% static 'js/document_search.js' %}"></script>
+    <script src="{% static 'js/document_delete.js' %}"></script>
+    <script src="{% static 'js/crud.js' %}"></script>
+{% endblock script %}

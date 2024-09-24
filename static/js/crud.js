@@ -18,6 +18,12 @@ async function getList(url) {
     }
 }
 
+async function getSubFields(url, getResult=(result) => result) {
+    // Get some attributes from an object or list of objects
+    const objectOrList = await getList(url);
+    return getResult(objectOrList);
+}
+
 async function postData(url, bodyData, msg="Data posted successfully.") {
     const csrftoken = getCookie('csrftoken');
     try {

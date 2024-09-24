@@ -15,7 +15,7 @@ from company.models import FinancialYear, PersonModel
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
     PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm,
     AddPersonFileForm, AddSaleInvoicesFileForm, SearchByYearForm, SearchByDateForm,
-    SaleReceiptForm)
+    SaleReceiptForm, SearchReceiptForm)
 from .models import (Company, Company_client, Supplier, Payment_method, 
     Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line,
     Sale_receipt)
@@ -384,9 +384,10 @@ def sales_invoice(request, inv_pk):
 
 
 def sales_search(request):
-    """Edit or delete invoices webpage"""
+    """Search, and edit or delete invoices webpage"""
     form = SearchInvoiceForm()
-    return render(request, "erp/sales_search.html", {
+    return render(request, "erp/document_search.html", {
+        "com_document": "invoice",
         "form": form,
     })
 
@@ -535,4 +536,13 @@ def receivables_edit(request, rec_pk):
     return render(request, "erp/receivables_edit.html", {
         "receipt": receipt,
         "receipt_form": receipt_form,
+    })
+
+
+def receivables_search(request):
+    """Search and edit or delete receipt webpage"""
+    form = SearchReceiptForm()
+    return render(request, "erp/document_search.html", {
+        "com_document": "receipt",
+        "form": form,
     })
