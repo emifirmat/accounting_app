@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}New Massive {{ com_document|capfirst }}s{% endblock title %} 
+
+{% block body %}
+
+    <h2>Create new massive {{ com_document }}s</h2>
+    {% block introduction %}{% endblock introduction %}
+    <p>Available extensions: .xls, .xlsx, .csv.</p>
+    
+    <br>
+    <form id="{{ com_document }}-form" action="{% block url %}{% endblock url %} "
+    method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ document_file_form.as_p }}
+        <input type="submit" value="Upload">  
+    </form>
+
+{% endblock body %}

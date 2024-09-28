@@ -15,7 +15,7 @@ from company.models import FinancialYear, PersonModel
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
     PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm,
     AddPersonFileForm, AddSaleInvoicesFileForm, SearchByYearForm, SearchByDateForm,
-    SaleReceiptForm, SearchReceiptForm)
+    SaleReceiptForm, SearchReceiptForm, AddSaleReceiptsFileForm)
 from .models import (Company, Company_client, Supplier, Payment_method, 
     Payment_term, Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line,
     Sale_receipt)
@@ -261,8 +261,8 @@ def sales_new(request):
 def sales_new_massive(request):
     """New massive sale invoices webpage"""
     if request.method == "POST":
-        invoices_file_form = AddSaleInvoicesFileForm(request.POST, request.FILES)
-        if invoices_file_form.is_valid():
+        document_file_form = AddSaleInvoicesFileForm(request.POST, request.FILES)
+        if document_file_form.is_valid():
             file = request.FILES["file"]
                       
             # Read file according to the extension
@@ -287,29 +287,39 @@ def sales_new_massive(request):
                         # Convert all fields into string to allow me using
                         # validators.
                         total_fields_row = list(map(str, row[total_fields]))
-                        
+                        date_index = total_fields.index("issue_date")
+                        type_index = total_fields.index("type")
+                        pos_index = total_fields.index("point_of_sell")
+                        number_index = total_fields.index("number")
+                        sender_index = total_fields.index("sender")
+                        recipient_index = total_fields.index("recipient")
+                        pay_method_index = total_fields.index("payment_method")
+                        pay_term_index = total_fields.index("payment_term")
+
+
+
                         if last_invoice:
                             current_invoice = (
-                                f"{total_fields_row[2].zfill(3)}"
-                                f"{total_fields_row[3].zfill(5)}"
-                                f"{total_fields_row[1].zfill(8)}"
+                                f"{total_fields_row[type_index].zfill(3)}"
+                                f"{total_fields_row[pos_index].zfill(5)}"
+                                f"{total_fields_row[number_index].zfill(8)}"
                             )
                         
                         # Get objects from related fields                
                         total_fields_row = get_sale_invoice_objects(
-                            total_fields_row, index)
+                            total_fields, total_fields_row, index, "invoice")
                         
                         # Control if it's new invoice or line
                         if index == 0 or last_invoice_id != current_invoice:
                             new_invoice = Sale_invoice(
-                                issue_date = total_fields_row[0][0:10],
-                                type = total_fields_row[2],
-                                point_of_sell = total_fields_row[3],
-                                number = total_fields_row[1],
-                                sender = total_fields_row[4],
-                                recipient = total_fields_row[5],
-                                payment_method = total_fields_row[6],
-                                payment_term = total_fields_row[7]
+                                issue_date = total_fields_row[date_index][0:10],
+                                type = total_fields_row[type_index],
+                                point_of_sell = total_fields_row[pos_index],
+                                number = total_fields_row[number_index],
+                                sender = total_fields_row[sender_index],
+                                recipient = total_fields_row[recipient_index],
+                                payment_method = total_fields_row[pay_method_index],
+                                payment_term = total_fields_row[pay_term_index]
                             )
                             
                             # Execute validators before saving, and show error if exists,
@@ -334,10 +344,10 @@ def sales_new_massive(request):
                         # Control that invoice's info for new line is consistent
                         else:                        
                             if (
-                            str(last_invoice.issue_date) != total_fields_row[0][0:10] or    
-                            last_invoice.recipient != total_fields_row[5] or
-                            last_invoice.payment_method != total_fields_row[6] or
-                            last_invoice.payment_term != total_fields_row[7]):
+                            str(last_invoice.issue_date) != total_fields_row[date_index][0:10] or    
+                            last_invoice.recipient != total_fields_row[recipient_index] or
+                            last_invoice.payment_method != total_fields_row[pay_method_index] or
+                            last_invoice.payment_term != total_fields_row[pay_term_index]):
                                 raise ValueError(
                                     f"Row {index + 2}: Your invoice's information"
                                     f" doesn't match with row {index + 1}."
@@ -346,10 +356,14 @@ def sales_new_massive(request):
                         # Add invoice line form
                         new_line = Sale_invoice_line(
                             sale_invoice = new_invoice,
-                            description = total_fields_row[8],
-                            taxable_amount = total_fields_row[9],
-                            not_taxable_amount = total_fields_row[10],
-                            vat_amount = total_fields_row[11],
+                            description = total_fields_row[
+                                total_fields.index("description")],
+                            taxable_amount = total_fields_row[
+                                total_fields.index("taxable_amount")],
+                            not_taxable_amount = total_fields_row[
+                                total_fields.index("not_taxable_amount")],
+                            vat_amount = total_fields_row[
+                                total_fields.index("vat_amount")],
                             # Total amount is added to don't raise validation error
                             # in full_clean(), then it's updated in saving.
                             total_amount = "0",
@@ -368,9 +382,10 @@ def sales_new_massive(request):
             return HttpResponseBadRequest("Invalid file.")
     # Get method
     else:
-        invoices_file_form = AddSaleInvoicesFileForm()
+        document_file_form = AddSaleInvoicesFileForm()
         return render(request, "erp/sales_new_massive.html", {
-            "invoices_file_form": invoices_file_form,
+            "document_file_form": document_file_form,
+            "com_document": "invoice",
         })
 
 
@@ -496,6 +511,104 @@ def receivables_new(request):
     return render(request, "erp/receivables_new.html", {
         "receipt_form": receipt_form,
     })
+
+def receivables_new_massive(request):
+    """New massive sale receipt webpage"""
+    if request.method == "POST":
+        document_file_form = AddSaleInvoicesFileForm(request.POST, request.FILES)
+        if document_file_form.is_valid():
+            file = request.FILES["file"]
+                      
+            # Read file according to the extension
+            df = read_uploaded_file(file, "issue_date")
+           
+            # Check all columns exist   
+            check_column_len(df, 10)
+            # Standarize and check all columns have the right name
+            df = standarize_dataframe(df)
+            document_fields = get_model_fields_name(Sale_receipt, "related_invoice")
+            for field in ["ri_type", "ri_pos", "ri_number"]:
+                document_fields.append(field)
+
+            check_column_names(df, document_fields)
+     
+            # Pass all values in model
+            try:
+                with transaction.atomic():
+                    for index, row in df.iterrows():
+                        # Convert all fields into string to allow me using
+                        # validators.
+                        total_fields_row = list(map(str, row[document_fields]))
+                        
+                        # Get objects from related fields                
+                        total_fields_row = get_sale_invoice_objects(
+                            document_fields, total_fields_row, index, "receipt")
+                        
+                        # Get related invoice
+                        try:
+                            related_invoice_field = Sale_invoice.objects.get(
+                                type=total_fields_row[7], 
+                                point_of_sell=total_fields_row[8],
+                                number=total_fields_row[9].zfill(8)
+                            )
+                        except ObjectDoesNotExist:
+                            error_message = (
+                                f"The related invoice in row {index + 2} "
+                                f"doesn't exist in the records."
+                            )
+                            raise ValueError(error_message)
+
+                        # Control if it's new invoice or line
+                        try:
+                            new_receipt = Sale_receipt(
+                                issue_date = total_fields_row[
+                                    document_fields.index("issue_date")][0:10],
+                                point_of_sell = total_fields_row[
+                                    document_fields.index("point_of_sell")],
+                                number = total_fields_row[
+                                    document_fields.index("number")],
+                                sender = total_fields_row[
+                                    document_fields.index("sender")],
+                                recipient = total_fields_row[
+                                    document_fields.index("recipient")],
+                                description = total_fields_row[
+                                    document_fields.index("description")],
+                                total_amount = total_fields_row[
+                                    document_fields.index("total_amount")],
+                                related_invoice = related_invoice_field
+                            )
+                            # Execute validators before saving, and show error if exists,
+                            new_receipt.full_clean()
+                            new_receipt.save()      
+                        except ValidationError as ve:
+                            raise ValueError(list_file_errors(ve, index))
+                        except IntegrityError:
+                            raise ValueError(
+                                f"Receipt {new_receipt.point_of_sell.pos_number}-"
+                                f"{new_receipt.number} already exists."
+                            )
+                        # Update invoice collected status
+                        else:
+                            invoice = new_receipt.related_invoice
+                            invoice.collected = update_invoice_collected_status(
+                                invoice)
+                            invoice.save()
+                        
+            except ValueError as e:
+                 return HttpResponseBadRequest(str(e))   
+                    
+            # If everything is correct
+            return HttpResponseRedirect(reverse(f"erp:receivables_index"))
+        else:
+            return HttpResponseBadRequest("Invalid file.")
+    # Get method
+    else:
+        document_file_form = AddSaleReceiptsFileForm()
+        return render(request, "erp/receivables_new_massive.html", {
+            "document_file_form": document_file_form,
+            "com_document": "receipt",
+        })
+
 
 def receivables_receipt(request, rec_pk):
     """Specific receipt webpage"""

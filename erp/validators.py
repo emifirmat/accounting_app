@@ -60,6 +60,10 @@ def validate_receipt_date_number_correlation(model, instance):
         return
     # Check that it's not the first invoice
     if doc_number >  1:
+        # Pass string dates to datetime date type
+        if type(instance.issue_date) == str:
+            instance.issue_date = datetime.strptime(instance.issue_date, "%Y-%m-%d")
+            instance.issue_date = datetime.date(instance.issue_date)
         try:
             previous_receipt = model.objects.get(
                 point_of_sell = instance.point_of_sell,

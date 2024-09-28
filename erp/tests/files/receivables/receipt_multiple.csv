@@ -1,0 +1,6 @@
+﻿issue_date,point_of_sell,number,sender,recipient,description,total_amount,ri_type,ri_pos,ri_number
+22-02-24,1,2,20361382480,20361382481,test import receipt,1209,1,1,1
+23-02-24,1,3,20361382480,20361382481,test import receipt 2,609,2,1,1
+02-03-24,2,1,20361382480,20361382481,test import receipt 3,5,2,1,2
+02-03-24,2,2,20361382480,20361382481,test import receipt 4,10,2,1,2
+02-03-24,1,4,20361382480,99999999999,test import receipt 5,8,2,1,3

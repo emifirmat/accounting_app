@@ -65,38 +65,51 @@ def get_model_fields_name(model, *exclude):
             model_fields_name.remove(value)
     return model_fields_name
 
-def get_sale_invoice_objects(total_fields_row, index):
+def get_sale_invoice_objects(total_fields, total_fields_row, index,
+    commercial_document=""):
     """Get all objects from fields that are related with other models"""
+    
+    get_object_from_subfield("point_of_sell", Point_of_sell, total_fields,
+        total_fields_row, index, "pos_number", value_function=lambda x: x.zfill(5))
+    get_object_from_subfield("sender", Company, total_fields,
+        total_fields_row, index, "tax_number")
+    get_object_from_subfield("recipient", Company_client, total_fields,
+        total_fields_row, index, "tax_number")    
+    
+    if commercial_document == "invoice":
+        get_object_from_subfield("type", Document_type, total_fields,
+        total_fields_row, index, "code", value_function=lambda x: x.zfill(3))
+        get_object_from_subfield("payment_method", Payment_method, total_fields,
+        total_fields_row, index, "pay_method", 
+        value_function=lambda x: x.capitalize())
+        get_object_from_subfield("payment_term", Payment_term, total_fields,
+        total_fields_row, index, "pay_term")
+      
+    elif commercial_document == "receipt":
+        get_object_from_subfield("ri_type", Document_type, total_fields,
+        total_fields_row, index, "code", value_function=lambda x: x.zfill(3))
+        get_object_from_subfield("ri_pos", Point_of_sell, total_fields,
+        total_fields_row, index, "pos_number", value_function=lambda x: x.zfill(5))
+        
+    return total_fields_row
+    
+    
+def get_object_from_subfield(column, model, columns, row, index, subfield,
+    value_function=None):
+    """Get the object of a model using subfields and raise ValueError with details
+    if it doesn't work."""
     try:
-        message_field = "type"
-        total_fields_row[2] = Document_type.objects.get(
-                code=total_fields_row[2].zfill(3)
-            )
-        message_field = "point_of_sell"
-        total_fields_row[3] = Point_of_sell.objects.get(
-                pos_number=total_fields_row[3].zfill(5)
-            )  
-        message_field = "sender"
-        total_fields_row[4] = Company.objects.get(
-                tax_number=total_fields_row[4]
-            )
-        message_field = "recipient"
-        total_fields_row[5] = Company_client.objects.get(
-                tax_number=total_fields_row[5]
-            )
-        message_field = "payment_method"
-        total_fields_row[6] = Payment_method.objects.get(
-                pay_method=total_fields_row[6].capitalize()
-            )
-        message_field = "payment_term"
-        total_fields_row[7] = Payment_term.objects.get(
-                pay_term=total_fields_row[7]
-            )
-        return total_fields_row
+        column_index = columns.index(column)
+        value = row[column_index]
+        if value_function:
+            value = value_function(value)
+        # Create a dict to pass it dinamically as otherwise objects.get doesn't work.
+        lookup_field = {f"{subfield}": value}
+        row[column_index] = model.objects.get(**lookup_field)
+        return row
     except ObjectDoesNotExist:
         error_message = (
             f"The input in row {index + 2} and column "
-            f"{message_field} doesn't exist in the records."
+            f"{column} doesn't exist in the records."
         )
         raise ValueError(error_message)
-    

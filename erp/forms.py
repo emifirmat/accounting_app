@@ -273,3 +273,14 @@ class SearchReceiptForm(forms.Form):
     client_name = forms.CharField(max_length=40)
     year = forms.CharField(max_length=4)
     month = forms.CharField(max_length=2, help_text="Only numbers.")
+
+class AddSaleReceiptsFileForm(forms.Form):
+    """Add file for new sale receipts"""
+    file = forms.FileField(label="", help_text=
+    """Format:
+    issue_date=DD/MM/YYYY; point_of_sell=number, max 5 char; number=number, max 8 char;
+    sender=tax_number, max 11 char; recipient=tax_number, max 11 char; 
+    description=text, max 280char; total_amount=decimal(2); ri_type=code, number,
+    max 3char; ri_pos=number, max 5 char; ri_number=number, max 8 char;
+    """,
+    validators=[validate_file_extension])

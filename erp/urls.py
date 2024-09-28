@@ -41,6 +41,8 @@ urlpatterns = [
     path("receivables", views.receivables_index, name="receivables_index"),
     # New Receipt webpage
     path("receivables/receipts/new", views.receivables_new, name="receivables_new"),
+    path("receivables/receipts/new_massive", views.receivables_new_massive, 
+        name="receivables_new_massive"),
     # Specific sale receipt webpage
     path("receivables/receipts/<int:rec_pk>", views.receivables_receipt, 
         name="receivables_receipt"),

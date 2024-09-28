@@ -6,6 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.test import TestCase, tag
 from django.urls import reverse
+from pathlib import Path
 
 # Create your tests here.
 from ..models import (Company_client, Supplier, Client_current_account,
@@ -249,7 +250,57 @@ class ErpTestCase(TestCase):
             not_taxable_amount = Decimal("20.01"),
             vat_amount = Decimal("80"),
         )
-
+        new_sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 22),
+            type = self.doc_type2,
+            point_of_sell = self.pos1,
+            number = "00000001",
+            sender = self.company,
+            recipient = self.company_client,
+            payment_method = self.payment_method2,
+            payment_term = self.payment_term2,
+        )
+        Sale_invoice_line.objects.create(
+            sale_invoice = new_sale_invoice,
+            description = "Test a sale invoice",
+            taxable_amount = Decimal("999.99"),
+            not_taxable_amount = Decimal("0.02"),
+            vat_amount = Decimal("209.09"),
+        )
+        new_sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 24),
+            type = self.doc_type2,
+            point_of_sell = self.pos1,
+            number = "00000002",
+            sender = self.company,
+            recipient = self.company_client,
+            payment_method = self.payment_method,
+            payment_term = self.payment_term,
+        )
+        Sale_invoice_line.objects.create(
+            sale_invoice = new_sale_invoice,
+            description = "Test b sale invoice",
+            taxable_amount = Decimal("5"),
+            not_taxable_amount = Decimal("5"),
+            vat_amount = Decimal("5"),
+        )
+        new_sale_invoice = Sale_invoice.objects.create(
+            issue_date = datetime.date(2024, 1, 24),
+            type = self.doc_type2,
+            point_of_sell = self.pos1,
+            number = "00000003",
+            sender = self.company,
+            recipient = self.company_client,
+            payment_method = self.payment_method2,
+            payment_term = self.payment_term,
+        )
+        Sale_invoice_line.objects.create(
+            sale_invoice = new_sale_invoice,
+            description = "Test c sale invoice",
+            taxable_amount = Decimal("6"),
+            not_taxable_amount = Decimal("6"),
+            vat_amount = Decimal("6"),   
+        )
 
     def test_company_client_content(self):
         company_clients = Company_client.objects.all()
@@ -587,8 +638,7 @@ class ErpTestCase(TestCase):
 
     def test_client_new_multiple_post_csv(self):
         # Get file dir to test
-        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
-            "clients.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"clients"/"clients.csv"
         
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(), 
@@ -608,8 +658,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(client_great.phone, "3412425841")
     
     def test_client_new_multiple_post_xls(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
-            "clients.xls")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"clients"/"clients.xls"
+
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/vnd.ms-excel")
@@ -628,8 +678,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(client_great.phone, "3412425841")
 
     def test_client_new_multiple_post_xlsx(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
-            "clients.xlsx")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"clients"/"clients.xlsx"
+   
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -648,8 +698,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(client_great.phone, "3412425841")
 
     def test_client_new_multiple_post_pdf(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
-            "clients.pdf")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"clients"/"clients.pdf"
+       
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/pdf")
@@ -662,8 +712,7 @@ class ErpTestCase(TestCase):
 
     def test_client_new_multiple_post_repeated_client(self):
         # Get file dir to test
-        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
-            "clientsbad2.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"clients"/"clientsbad2.csv"
         
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(), 
@@ -678,8 +727,7 @@ class ErpTestCase(TestCase):
 
     def test_client_new_multiple_post_wrong_data(self):
         # Get file dir to test
-        file_path = os.path.join(os.path.dirname(__file__), "files", "clients",
-            "clientsbad.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"clients"/"clientsbad.csv"
         
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(), 
@@ -750,8 +798,7 @@ class ErpTestCase(TestCase):
         # Note: As I use same view and template as clients, I only do one test to
         # check that suppliers db is update correctly
         # Get file dir to test
-        file_path = os.path.join(os.path.dirname(__file__), "files", "suppliers",
-            "suppliers.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"suppliers"/"suppliers.csv"
         
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(), 
@@ -964,12 +1011,12 @@ class ErpTestCase(TestCase):
         response = self.client.get("/erp/sales/invoices/new_massive")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/sales_new_massive.html")
-        self.assertContains(response, "Create massive new invoices")
+        self.assertContains(response, "Create new massive invoices")
         self.assertContains(response, "Upload")
 
     def test_sales_new_massive_invoice_post_csv(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line.csv"
+    
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="text/csv")
@@ -999,8 +1046,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(invoice_line.total_amount, Decimal("1155"))
 
     def test_sales_new_massive_invoice_post_xls(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line.xls")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line.xls"
+
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/vnd.ms-excel")
@@ -1029,8 +1076,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(invoice_line.total_amount, Decimal("1155"))
 
     def test_sales_new_massive_invoice_post_xlsx(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line.xlsx")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line.xlsx"
+    
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -1059,8 +1106,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(invoice_line.total_amount, Decimal("1155"))
 
     def test_sales_new_massive_invoice_pdf(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line.pdf")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line.pdf"
+        
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/pdf")
@@ -1072,8 +1119,8 @@ class ErpTestCase(TestCase):
             self.assertEqual(Sale_invoice.objects.all().count(), 1)
 
     def test_sales_new_massive_invoice_multiple_lines_post_xlsx(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_multiple_lines.xlsx")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_multiple_lines.xlsx"
+  
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -1111,8 +1158,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(invoice_lines[2].total_amount, Decimal("2260.50"))
 
     def test_sales_new_massive_invoices_multiple_lines_post_xlsx(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoices_mixed.xlsx")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoices_mixed.xlsx"
+    
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -1141,8 +1188,8 @@ class ErpTestCase(TestCase):
         self.assertEqual(invoice_lines[0].total_amount, Decimal("110.74"))
 
     def test_sales_new_massive_invoice_post_repeated(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line_repeated.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line_repeated.csv"
+     
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="text/csv")
@@ -1157,8 +1204,8 @@ class ErpTestCase(TestCase):
             self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
     
     def test_sales_new_massive_invoice_post_wrong_data(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line_wrong.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line_wrong.csv"
+
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="text/csv")
@@ -1170,9 +1217,9 @@ class ErpTestCase(TestCase):
             self.assertEqual(Sale_invoice.objects.all().count(), 1)
             self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
 
-    def test_sales_new_massive_invoice_post_wrong_data_2(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line_wrong2.csv")
+    def test_sales_new_massive_invoice_post_wrong_sender(self):
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line_wrong2.csv"
+
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="text/csv")
@@ -1186,8 +1233,8 @@ class ErpTestCase(TestCase):
             self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
     
     def test_sales_new_massive_invoice_post_wrong_data_3(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoice_one_line_wrong3.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line_wrong3.csv"
+    
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="text/csv")
@@ -1200,9 +1247,24 @@ class ErpTestCase(TestCase):
             self.assertEqual(Sale_invoice.objects.all().count(), 1)
             self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
 
+    def test_sales_new_massive_invoice_post_wrong_date(self):
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoice_one_line_wrong_date.csv"
+    
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:sales_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("within the current year", response.content.decode("utf-8"))
+            self.assertEqual(Sale_invoice.objects.all().count(), 1)
+            self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+
+
     def test_sales_new_massive_invoices_multiple_lines_post_wrong_data(self):
-        file_path = os.path.join(os.path.dirname(__file__), "files", "sales",
-            "invoices_mixed_wrong.csv")
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"sales"/"invoices_mixed_wrong.csv"
+        
         with open(file_path, "rb") as file:
             uploaded_file = SimpleUploadedFile(file.name, file.read(),
                 content_type="text/csv")
@@ -1464,6 +1526,223 @@ class ErpTestCase(TestCase):
         self.assertContains(response, 
             "The sum of your receipts cannot be higher"
         )
+
+    def test_receivables_new_massive_receipt_get(self):
+        response = self.client.get("/erp/receivables/receipts/new_massive")
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "erp/receivables_new_massive.html")
+        self.assertContains(response, "Create new massive receipts")
+        self.assertContains(response, "Upload")
+
+    def test_sales_new_massive_receipt_post_csv(self):
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one.csv"
+        
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="text/csv")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+
+        # Test DB was updated correctly
+        self.assertEqual(Sale_receipt.objects.all().count(), 2)
+        new_receipt = Sale_receipt.objects.get(
+            point_of_sell=self.pos1, number="00000002")
+        self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 22))
+        self.assertEqual(new_receipt.point_of_sell, self.pos1)
+        self.assertEqual(new_receipt.number, "00000002")
+        self.assertEqual(new_receipt.sender, self.company)
+        self.assertEqual(new_receipt.recipient, self.company_client)
+        self.assertEqual(new_receipt.description, "test import receipt")
+        self.assertEqual(new_receipt.total_amount, Decimal("1209"))
+
+        self.sale_invoice.refresh_from_db()
+        self.assertEqual(self.sale_invoice.collected, True)
+
+    def test_sales_new_massive_receipt_post_xls(self):
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one.xls"
+
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.ms-excel")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+        
+        # Test DB was updated correctly
+        self.assertEqual(Sale_receipt.objects.all().count(), 2)
+        new_receipt = Sale_receipt.objects.get(
+            point_of_sell=self.pos1, number="00000002")
+        self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 22))
+        self.assertEqual(new_receipt.point_of_sell, self.pos1)
+        self.assertEqual(new_receipt.number, "00000002")
+        self.assertEqual(new_receipt.sender, self.company)
+        self.assertEqual(new_receipt.recipient, self.company_client)
+        self.assertEqual(new_receipt.description, "test import receipt")
+        self.assertEqual(new_receipt.total_amount, Decimal("1209"))
+
+        self.sale_invoice.refresh_from_db()
+        self.assertEqual(self.sale_invoice.collected, True)
+
+    def test_receivables_new_massive_receipt_post_xlsx(self):
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one.xlsx"
+
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+        
+        # Test DB was updated correctly
+        self.assertEqual(Sale_receipt.objects.all().count(), 2)
+        new_receipt = Sale_receipt.objects.get(
+            point_of_sell=self.pos1, number="00000002")
+        self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 22))
+        self.assertEqual(new_receipt.point_of_sell, self.pos1)
+        self.assertEqual(new_receipt.number, "00000002")
+        self.assertEqual(new_receipt.sender, self.company)
+        self.assertEqual(new_receipt.recipient, self.company_client)
+        self.assertEqual(new_receipt.description, "test import receipt")
+        self.assertEqual(new_receipt.total_amount, Decimal("1209"))
+
+        self.sale_invoice.refresh_from_db()
+        self.assertEqual(self.sale_invoice.collected, True)
+
+    
+    def test_receivables_new_massive_receipt_pdf(self):
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one.pdf"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/pdf")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Invalid file", response.content.decode("utf-8"))
+            self.assertEqual(Sale_receipt.objects.all().count(), 1)
+
+    def test_sales_new_massive_invoice_multiple_receipts_post_xlsx(self):
+        self.create_extra_invoices()
+        
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_multiple.xlsx"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 302)
+        
+        # Test DB was updated correctly
+        self.assertEqual(Sale_receipt.objects.all().count(), 6)
+        new_receipt = Sale_receipt.objects.get(
+        point_of_sell=self.pos1, number="00000003")
+        self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 23))
+        self.assertEqual(new_receipt.point_of_sell, self.pos1)
+        self.assertEqual(new_receipt.number, "00000003")
+        self.assertEqual(new_receipt.sender, self.company)
+        self.assertEqual(new_receipt.recipient, self.company_client)
+        self.assertEqual(new_receipt.description, "test import receipt 2")
+        self.assertEqual(new_receipt.total_amount, Decimal("609"))
+       
+        self.sale_invoice.refresh_from_db()
+        self.assertEqual(self.sale_invoice.collected, True)
+
+    def test_receivables_new_massive_invoice_post_repeated(self):
+        self.create_extra_invoices()
+        
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_repeated.xlsx"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("Receipt 00001-00000002 already exists.",
+                response.content.decode("utf-8")
+            )
+            self.assertEqual(Sale_receipt.objects.all().count(), 1)
+
+            self.sale_invoice.refresh_from_db()
+            self.assertEqual(self.sale_invoice.collected, False)
+
+    def test_receivables_new_massive_receipt_post_wrong_number_descripcion(self):
+        self.create_extra_invoices()
+
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one_wrong_number_blank.xlsx"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("must be only digits", response.content.decode("utf-8"))
+            self.assertIn("cannot be blank", response.content.decode("utf-8"))
+            self.assertEqual(Sale_receipt.objects.all().count(), 1)
+
+    def test_receivables_new_massive_receipt_post_wrong_amount(self):
+        self.create_extra_invoices()
+
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one_wrong_amount.xlsx"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("higher than invoice total", response.content.decode("utf-8"))
+            self.assertEqual(Sale_receipt.objects.all().count(), 1)
+
+    def test_receivables_new_massive_receipt_post_wrong_invoice(self):
+        self.create_extra_invoices()
+
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one_wrong_invoice.xlsx"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("column ri_pos doesn't exist in the records.", response.content.decode("utf-8"))
+            self.assertEqual(Sale_receipt.objects.all().count(), 1)
+
+    def test_receivables_new_massive_receipt_post_wrong_date(self):
+        self.create_extra_invoices()
+
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one_wrong_date.xlsx"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("selected date is not within the current year."
+                , response.content.decode("utf-8"))
+            self.assertEqual(Sale_receipt.objects.all().count(), 1)
+
+    def test_receivables_new_massive_receipt_post_wrong_client(self):
+        self.create_extra_invoices()
+
+        file_path = Path.cwd()/"erp"/"tests"/"files"/"receivables"/"receipt_one_wrong_client.xlsx"
+        with open(file_path, "rb") as file:
+            uploaded_file = SimpleUploadedFile(file.name, file.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response = self.client.post(reverse("erp:receivables_new_massive"), {
+                "file": uploaded_file
+            })
+            self.assertEqual(response.status_code, 400)
+            self.assertIn("column recipient doesn't exist in the records."
+                , response.content.decode("utf-8"))
+            self.assertEqual(Sale_receipt.objects.all().count(), 1)
 
     def test_receivables_receipt_webpage(self):
         response = self.client.get("/erp/receivables/receipts/1")
