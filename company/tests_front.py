@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .models import Company, FinancialYear
+from erp.tests.test_utils import go_to_section
 
 class CompanyFrontTestCase(StaticLiveServerTestCase):
     @classmethod
@@ -36,27 +37,29 @@ class CompanyFrontTestCase(StaticLiveServerTestCase):
         )
         self.f_year1 = FinancialYear.objects.create(year = "2023")
         self.f_year2 = FinancialYear.objects.create(year = "2024")
-        
+    
+
+    def test_navigation(self):
         self.driver.get(f"{self.live_server_url}")
-
-
-    def test_company_settings_loads(self):
         self.assertEqual(self.driver.title, "Index")
-        self.driver.find_element(By.ID, "company-menu-link").click()
-        path = self.driver.find_element(By.ID, "company-menu")
-        path.find_elements(By.CLASS_NAME, "dropdown-item")[0].click()
+        go_to_section(self.driver, "company", 0)
         self.assertEqual(self.driver.title, "Settings")
+        go_to_section(self.driver, "company", 1)
+        self.assertEqual(self.driver.title, "Financial Year")
+        go_to_section(self.driver, "company", 2)
+        self.assertEqual(self.driver.title, "Points of Sell")
+        go_to_section(self.driver, "company", 3)
+        self.assertEqual(self.driver.title, "Payment Conditions")
+        go_to_section(self.driver, "company", 4)
+        self.assertEqual(self.driver.title, "Document Types")
 
     def test_company_year_changeYear(self):
         # Test page loads
-        self.driver.find_element(By.ID, "company-menu-link").click()
-        path = self.driver.find_element(By.ID, "company-menu")
-        path.find_elements(By.CLASS_NAME, "dropdown-item")[1].click()
-        self.assertEqual(self.driver.title, "Financial Year")
+        self.driver.get(f"{self.live_server_url}/company/year")
 
         # Test there is no current year
         current_year = self.driver.find_element(By.ID, "current-year")
-        self.assertEqual(current_year.text[-21:], "and/or select a year.")
+        self.assertIn("and/or select a year.", current_year.text)
         
         # Select new current year
         self.driver.find_element(By.ID, "year-dropdown").click()

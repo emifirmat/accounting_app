@@ -384,7 +384,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.sale_invoice.collected, False)
         self.assertEqual(
             str(self.sale_invoice),
-            f"2024-01-21 | A | 00001-00000001"
+            f"2024-01-21 | A 00001-00000001"
         )
 
     def test_sale_invoice_get_abosulte_url(self):
@@ -504,7 +504,7 @@ class ErpTestCase(TestCase):
         self.assertEqual(self.purchase_invoice.payment_term, self.payment_term2)
         self.assertEqual(
             str(self.purchase_invoice),
-            f"2024-01-13 | B | 00231-00083051"
+            f"2024-01-13 | B 00231-00083051"
         )
 
     def test_purchase_invoice_constraint(self):
@@ -1197,7 +1197,7 @@ class ErpTestCase(TestCase):
                 "file": uploaded_file
             })
             self.assertEqual(response.status_code, 400)
-            self.assertIn("Invoice A 00001-00000001 already exists.",
+            self.assertIn("Invoice A 00001-00000001 already exists or repeated",
                 response.content.decode("utf-8")
             )
             self.assertEqual(Sale_invoice.objects.all().count(), 1)
@@ -1344,7 +1344,7 @@ class ErpTestCase(TestCase):
         response = self.client.get("/erp/sales/invoices/list")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "erp/sales_list.html")
-        self.assertContains(response, "Sales List")
+        self.assertContains(response, "Invoice List")
         self.assertContains(response, "Client Name")
         # Reminder: Current year is 2024
         self.assertContains(response, "21/01/2024")
@@ -1353,7 +1353,7 @@ class ErpTestCase(TestCase):
         # Add financial year and an invoice before testing
         FinancialYear.objects.create(year = "2025")
         self.create_extra_invoices()
-        response = self.client.post(reverse("erp:sales_list"), {
+        response = self.client.post(reverse("erp:invoice_list"), {
             "year": "2025",
             "form_type": "year",
         })
@@ -1363,7 +1363,7 @@ class ErpTestCase(TestCase):
         self.assertContains(response, "600.01")
 
     def test_sales_list_post_year_no_financial_webpage(self):
-        response = self.client.post(reverse("erp:sales_list"), {
+        response = self.client.post(reverse("erp:invoice_list"), {
             "year": "2025",
             "form_type": "year",
         })
@@ -1375,7 +1375,7 @@ class ErpTestCase(TestCase):
         
     def test_sales_list_post_year_no_invoice_webpage(self):
         FinancialYear.objects.create(year = "2025")
-        response = self.client.post(reverse("erp:sales_list"), {
+        response = self.client.post(reverse("erp:invoice_list"), {
             "year": "2025",
             "form_type": "year",
         })
@@ -1385,7 +1385,7 @@ class ErpTestCase(TestCase):
         
     def test_sales_list_post_dates_webpage(self):
         self.create_extra_invoices()
-        response = self.client.post(reverse("erp:sales_list"), {
+        response = self.client.post(reverse("erp:invoice_list"), {
             "date_from": "23/04/2024",
             "date_to": "24/04/2024",
             "form_type": "date",
@@ -1398,7 +1398,7 @@ class ErpTestCase(TestCase):
 
     def test_sales_list_post_dates_same_webpage(self):
         self.create_extra_invoices()
-        response = self.client.post(reverse("erp:sales_list"), {
+        response = self.client.post(reverse("erp:invoice_list"), {
             "date_from": "23/04/2024",
             "date_to": "23/04/2024",
             "form_type": "date",
@@ -1410,7 +1410,7 @@ class ErpTestCase(TestCase):
     
     def test_sales_list_post_dates_inverted_webpage(self):
         self.create_extra_invoices()
-        response = self.client.post(reverse("erp:sales_list"), {
+        response = self.client.post(reverse("erp:invoice_list"), {
             "date_from": "24/04/2024",
             "date_to": "23/04/2024",
             "form_type": "date",
@@ -1663,7 +1663,7 @@ class ErpTestCase(TestCase):
                 "file": uploaded_file
             })
             self.assertEqual(response.status_code, 400)
-            self.assertIn("Receipt 00001-00000002 already exists.",
+            self.assertIn("Receipt 00001-00000002 already exists or repeated",
                 response.content.decode("utf-8")
             )
             self.assertEqual(Sale_receipt.objects.all().count(), 1)

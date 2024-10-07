@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+    
     // After typing a letter in a field, search for matching invoices/receipts
     
     // Get document type
@@ -11,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const clientTaxNumberField = document.querySelector('#id_client_tax_number');
     const yearField = document.querySelector('#id_year');
     const monthField = document.querySelector('#id_month');
+
     let searchFields = [posField, numberField, clientNameField, clientTaxNumberField,
         yearField, monthField];
 
@@ -25,14 +27,49 @@ document.addEventListener('DOMContentLoaded', function() {
         searchFields.push(rInvoiceField);
     }
     
+    // list cache, to make searching faster
+    let comDocumentList;
+    
     searchFields.forEach(field => {
-        field.addEventListener('input', () => searchComDocuments(comDocument, 
-            searchFields));
+        field.addEventListener('focus', async () => {
+            if(!comDocumentList) {
+                // crud.js, preload list when user click on a field
+                comDocumentList = await preloadComDocuments(comDocument, comDocumentList)
+            }
+        })
+    
+        field.addEventListener('input', async () => {
+            if(!comDocumentList) {
+                comDocumentList = await preloadComDocuments(comDocument, comDocumentList)
+            } 
+            searchComDocuments(comDocument, comDocumentList, searchFields)
+        })
     });
- 
 });
 
-async function searchComDocuments(comDocument, ...fields) {
+async function preloadComDocuments(comDocument, comDocumentList) {
+    // Preload the invoices to allow fast searching
+    
+    // Get the full list.
+    comDocumentList = await getList(`/erp/api/sale_${comDocument}s`);
+
+    // Get the subfields of each field
+    const fieldsSubfields = await Promise.all([
+        getCommonFieldsInfo(comDocumentList),
+        getParticularFieldsInfo(comDocument, comDocumentList)
+    ]);
+
+    // Convert invoice's ids fields
+    comDocumentList = convertDocumentFields(comDocument, comDocumentList,
+        fieldsSubfields);
+
+    return comDocumentList;
+
+}
+
+
+function searchComDocuments(comDocument, comDocumentList, ...fields) {
+    // Search com documents from the full list
     
     // Standarize fields
     const trimmedFields = fields[0].map(field => field.value.trim());
@@ -42,19 +79,8 @@ async function searchComDocuments(comDocument, ...fields) {
     if (allEmpty) {
         document.querySelector(`#${comDocument}-list`).innerHTML = '';
         return;
-    }
-    
-    // Get the full list.
-    let comDocumentList = await getList(`/erp/api/sale_${comDocument}s`); // crud.js
+    }   
 
-    // Get the subfields of each field
-    let fieldsSubfields = await getCommonFieldsInfo(comDocumentList);
-    fieldsSubfields.push(await getParticularFieldsInfo(comDocument, comDocumentList));
-    
-    // Convert invoice's ids fields
-    comDocumentList = convertDocumentFields(comDocument, comDocumentList,
-        fieldsSubfields);
-    
     // Filter the list.
     const filteredCDocumentList = 
         filterCDocumentList(comDocument, comDocumentList, trimmedFields);
@@ -156,23 +182,27 @@ function filterCDocumentList(comDocument, cDocumentList, ...fields) {
 async function getCommonFieldsInfo(comDocumentList) {
 
     // Create a list of posIds and clientIds 
-    const posIdList = comDocumentList.map(cDocument => cDocument.point_of_sell);
-    const cleanedPosIdList = [...new Set(posIdList)];
+    let posIdList = comDocumentList.map(cDocument => cDocument.point_of_sell);
+    posIdList = [...new Set(posIdList)];
     
-    const clientIdList = comDocumentList.map(cDocument => cDocument.recipient);
-    const cleanedClientIdList = [...new Set(clientIdList)];
+    let clientIdList = comDocumentList.map(cDocument => cDocument.recipient);
+    clientIdList = [...new Set(clientIdList)];
 
-    // Get pos numbers for each id
-    const posNumbers = await Promise.all(cleanedPosIdList.map(posId => {
-        return getSubFields(`/erp/api/points_of_sell/${posId}`, result => 
-            ({id: result.id, pos_number: result.pos_number}));
-    }));
-    
-    // Get Clients name and tax number for each id
-    const clientsInfo = await Promise.all(cleanedClientIdList.map(clientId => {
-        return getSubFields(`/erp/api/clients/${clientId}`, result => 
-        ({id: result.id, name: result.name, tax_number: result.tax_number}));
-    }));
+    // Get pos numbers and clients tax and name for each id in parallel mode.
+    const [posNumbers, clientsInfo] = await Promise.all([
+
+        Promise.all(posIdList.map(posId => 
+            getSubFields(`/erp/api/points_of_sell/${posId}`, result => 
+                ({id: result.id, pos_number: result.pos_number})
+            )
+        )),
+        
+        Promise.all(clientIdList.map(clientId => 
+            getSubFields(`/erp/api/clients/${clientId}`, result => 
+                ({id: result.id, name: result.name, tax_number: result.tax_number})
+            )
+        ))
+    ])
 
     return [posNumbers, clientsInfo];
 
@@ -182,42 +212,49 @@ async function getParticularFieldsInfo(comDocument, comDocumentList) {
     // Create typeIds, and related_invoiceIds depending on the document
     if (comDocument === 'invoice') {
 
-        const typeIdList = comDocumentList.map(invoice => invoice.type);
-        const cleanedTypeIdList = [...new Set(typeIdList)];
+        let typeIdList = comDocumentList.map(invoice => invoice.type);
+        typeIdList = [...new Set(typeIdList)];
 
         // Get invoice types for each id
-        return await Promise.all(cleanedTypeIdList.map(typeId => {
-            return getSubFields(`/erp/api/document_types/${typeId}`, result => 
-                ({id: result.id, type: result.type}));
-        }));
+        return await Promise.all(typeIdList.map(typeId => 
+            getSubFields(`/erp/api/document_types/${typeId}`, result => 
+                ({id: result.id, type: result.type})
+            )
+        ));
     } else if (comDocument === 'receipt') {
-        const rInvoiceIdList = comDocumentList.map(receipt => receipt.related_invoice);
-        const cleanedRInvoiceIdList = [...new Set(rInvoiceIdList)];
+        let rInvoiceIdList = comDocumentList.map(receipt => receipt.related_invoice);
+        rInvoiceIdList = [...new Set(rInvoiceIdList)];
 
         // Get invoice type, pos and numbers for each id
-        const relatedInvoice = await Promise.all(cleanedRInvoiceIdList.map(InvoiceId => {
-            return getSubFields(`/erp/api/sale_invoices/${InvoiceId}`, result => 
+        let relatedInvoices = await Promise.all(rInvoiceIdList.map(InvoiceId => 
+            getSubFields(`/erp/api/sale_invoices/${InvoiceId}`, result => 
                 ({id: result.id, type: result.type, pos: result.point_of_sell,
-                    number: result.number}));     
-        }));
+                    number: result.number})
+            )     
+        ));
+        
         // Convert pos and type id from related invoice to pos-number.
-        for (let invoice of relatedInvoice) {
+        // Note: For parallel fetch I use promise all
+        relatedInvoices = await Promise.all(relatedInvoices.map(async invoice => {
+        
             invoice.type = await getSubFields(`/erp/api/document_types/${invoice.type}`,
                 result => result.type);
             invoice.pos = await getSubFields(`/erp/api/points_of_sell/${invoice.pos}`,
-                result => result.pos_number);   
-        }
+                result => result.pos_number);
+            return invoice;
         
-        return relatedInvoice;
+        }));
+        
+        return relatedInvoices;
     }
 }
 
-function convertDocumentFields(comDocument, cDocumentList, ...fieldsSubfields) {
+function convertDocumentFields(comDocument, cDocumentList, fieldsSubfields) {
     // Convert document attributes from id to real values 
     
     cDocumentList.forEach(cDocument => {
 
-        // Common fields
+        // Common fields        
         for (const posNumber of fieldsSubfields[0][0]) {
             if (posNumber.id === cDocument.point_of_sell) {
                 cDocument.point_of_sell = posNumber.pos_number;
@@ -233,13 +270,13 @@ function convertDocumentFields(comDocument, cDocumentList, ...fieldsSubfields) {
 
         // particular fields
         if (comDocument === 'invoice') {
-            for (const typeType of fieldsSubfields[0][2]) {
+            for (const typeType of fieldsSubfields[1]) {
                 if (typeType.id === cDocument.type) {
                     cDocument.type = typeType.type;
                 }
             }
         } else if (comDocument === 'receipt') {
-            for (const rInvoice of fieldsSubfields[0][2]) {
+            for (const rInvoice of fieldsSubfields[1]) {
                 if (rInvoice.id === cDocument.related_invoice) {
                     cDocument.related_invoice_info = 
                         `${rInvoice.type} ${rInvoice.pos}-${rInvoice.number}`;

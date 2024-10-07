@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}{{ com_document|capfirst }} List{% endblock title %}
+
+{% block body %}
+
+    <h2 id="title" data-com-document="{{ com_document }}">{{ com_document|capfirst }} List</h2>
+
+    <div class="container-fluid">
+        <h5>List range</h5>
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="date-tab" data-bs-toggle="tab"
+               data-bs-target="#date-tab-pane" type="button" role="tab" aria-controls="date-tab-pane"
+               aria-selected="true">By Date</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="year-tab" data-bs-toggle="tab" data-bs-target="#year-tab-pane"
+              type="button" role="tab" aria-controls="year-tab-pane" aria-selected="false">
+              By Year</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="section-search">
+            <div class="tab-pane fade show active" id="date-tab-pane" role="tabpanel"
+            aria-labelledby="date-tab" tabindex="0">
+                <form action="{% url 'erp:'|add:com_document|add:'_list' %}" method="POST">
+                    {% csrf_token %}
+                    {{ form_date.as_p }}
+                    <input type="hidden" name="form_type" value="date">
+                    <input type="submit" value="Search">
+                </form>
+            </div>
+            <div class="tab-pane fade" id="year-tab-pane" role="tabpanel" 
+            aria-labelledby="year-tab" tabindex="0">
+                <form action="{% url 'erp:'|add:com_document|add:'_list' %}" method="POST">
+                    {% csrf_token %}
+                    {{ form_year.as_p }}
+                    <input type="hidden" name="form_type" value="year">
+                    <input type="submit" value="Search">
+                </form>
+            </div>
+        </div>
+    </div>
+    <br>
+    <div id="section-list">
+        <table class="table">
+            <thead>
+                <tr id="columns">
+                    {% block headers %}{% endblock headers %}
+                </tr>
+            </thead>
+            <tbody id="table_body">    
+                {% block rows %}{% endblock rows %}
+            </tbody>    
+        </table>
+    </div>
+
+{% endblock body %}
+
+{% block script %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="{% static 'js/calendar.js' %}"></script>
+    <script src="{% static 'js/document_list.js' %}"></script>
+
+{% endblock script %}

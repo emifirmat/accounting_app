@@ -36,9 +36,11 @@ def list_file_errors(error_type, row_index):
     """Catch and return all validation errors from a file row"""
     errors = []
     for field, messages in error_type.message_dict.items():
+        if field == "__all__":
+            field = "general"
         for message in messages:
             errors.append(f"Row {row_index + 2}, {field}: {message}") 
-    return f"{"\n".join(errors)}"
+    return "\n".join(errors)
 
 def check_column_len(df, length):
     """Control that the file has the expected number of columns"""

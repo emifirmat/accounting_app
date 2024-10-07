@@ -339,7 +339,8 @@ def sales_new_massive(request):
                                 raise ValueError(
                                     f"Invoice {new_invoice.type.type} "
                                     f"{new_invoice.point_of_sell.pos_number}-"
-                                    f"{new_invoice.number} already exists."
+                                    f"{new_invoice.number} already exists or "
+                                    f"repeated in file."
                                 )
                         # Control that invoice's info for new line is consistent
                         else:                        
@@ -477,6 +478,7 @@ def sales_list(request):
         invoice_list = Sale_invoice.objects.filter(issue_date__year=financial_year.year)
 
     return render(request, "erp/sales_list.html", {
+        "com_document": "invoice",
         "invoice_list": invoice_list,
         "form_date": form_date,
         "form_year": form_year, 
@@ -585,7 +587,8 @@ def receivables_new_massive(request):
                         except IntegrityError:
                             raise ValueError(
                                 f"Receipt {new_receipt.point_of_sell.pos_number}-"
-                                f"{new_receipt.number} already exists."
+                                f"{new_receipt.number} already exists or "
+                                f"repeated in file."
                             )
                         # Update invoice collected status
                         else:
@@ -658,4 +661,55 @@ def receivables_search(request):
     return render(request, "erp/document_search.html", {
         "com_document": "receipt",
         "form": form,
+    })
+
+
+def receivables_list(request):
+    """Show a list of receipts in a specific range webpage"""
+    # Get list general case, it gets overwritten if it changes
+    financial_year = current_year()
+    if not financial_year:
+        return HttpResponseRedirect(reverse("company:year"))
+    
+    if request.method == "POST":
+        # Search between dates
+        if request.POST["form_type"] == "date":
+            form_year = SearchByYearForm()
+            form_date = SearchByDateForm(request.POST)
+            if form_date.is_valid():
+                date_from = form_date.cleaned_data["date_from"]
+                date_to = form_date.cleaned_data["date_to"]
+                # Add input control
+                if date_from > date_to:
+                    form_date.add_error(
+                        "date_from", "'From' should be older than 'To'."
+                    )
+                receipt_list = Sale_receipt.objects.filter(
+                        issue_date__range=(date_from, date_to)
+                    )
+        # Search by year
+        elif request.POST["form_type"] == "year":
+            form_year = SearchByYearForm(request.POST)
+            form_date = SearchByDateForm()
+            if form_year.is_valid():
+                try:
+                    input_year=form_year.cleaned_data["year"]
+                    financial_year = FinancialYear.objects.get(year=input_year)
+                except ObjectDoesNotExist:
+                    form_year.add_error(
+                        "year", f"The year {input_year} doesn't exist in the records."
+                    )
+                    # Go back to current year in search
+                    financial_year = FinancialYear.objects.get(current=True)
+                receipt_list = Sale_receipt.objects.filter(issue_date__year=financial_year.year)
+    else:
+        form_date = SearchByDateForm()
+        form_year = SearchByYearForm()
+        receipt_list = Sale_receipt.objects.filter(issue_date__year=financial_year.year)
+
+    return render(request, "erp/receivables_list.html", {
+        "com_document": "receipt",
+        "receipt_list": receipt_list,
+        "form_date": form_date,
+        "form_year": form_year, 
     })

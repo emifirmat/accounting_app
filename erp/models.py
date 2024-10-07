@@ -182,7 +182,7 @@ class Sale_invoice(CommercialDocumentModel):
         return round(total_sum, 2)
     
     def __str__(self):
-        return f"{self.issue_date} | {self.type.type} | {self.point_of_sell}-{self.number}"
+        return f"{self.issue_date} | {self.type.type} {self.point_of_sell}-{self.number}"
     
     def clean(self):
         """Add date validator for invoice"""
@@ -244,7 +244,7 @@ class Purchase_invoice(CommercialDocumentModel):
         ordering = ["-issue_date", "sender", "type", "point_of_sell", "number"]
 
     def __str__(self):
-        return f"{self.issue_date} | {self.type.type} | {self.point_of_sell}-{self.number}"
+        return f"{self.issue_date} | {self.type.type} {self.point_of_sell}-{self.number}"
 
 class Purchase_invoice_line(CommercialDocumentLineModel):
     """Product/service detail of the purchase invoice"""

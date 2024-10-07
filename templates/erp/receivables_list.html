@@ -1,0 +1,32 @@
+{% extends "erp/document_list.html" %}
+{% load static %}
+
+    {% block headers %}
+        <th scope="col" data-col="date" data-reverse="false">Date</th>
+        <th scope="col" data-col="pos" data-reverse="false">Point of sell</th>
+        <th scope="col" data-col="number" data-reverse="false">Number</th>
+        <th scope="col" data-col="client-tax" data-reverse="false">Client Tax N°</th>
+        <th scope="col" data-col="client-name" data-reverse="false">Client Name</th>
+        <th scope="col" data-col="rel-invoice" data-reverse="false">Related Invoice</th>
+        <th scope="col" data-col="total" data-reverse="false">Total</th>
+    {% endblock headers %}
+            
+    {% block rows %}
+        {% for receipt in receipt_list %}
+            <tr class="{{ com_document }}">
+                <td class="idate">{{ receipt.issue_date|date:"d/m/Y" }}</td>
+                <td class="ipos">{{ receipt.point_of_sell }}</td>
+                <td class="inumber">{{ receipt.number }}</td>
+                <td class="ctax">{{ receipt.recipient.tax_number }}</td>
+                <td class="cname">{{ receipt.recipient.name }}</td>
+                <td class="cname">{{ receipt.related_invoice|stringformat:"s"|slice:"13:" }}</td>
+                <td class="itotal">$ {{ receipt.total_amount }}</td>
+            </tr>
+        {% empty %}
+            <p>There isn't any {{ com_document }} in this period of time. Try adding 
+            <a href="{% url 'erp:receivables_new' %}">new {{ com_document }}s</a> 
+            or changing the dates in search.
+            </p>
+        {% endfor %}
+    {% endblock rows %}
+                
