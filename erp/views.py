@@ -626,12 +626,13 @@ def receivables_edit(request, rec_pk):
 
     if request.method == "POST":
         receipt_form = SaleReceiptForm(instance=receipt, data=request.POST)
+        # keep old ri before updating instance
+        old_r_invoice = receipt.related_invoice
 
         if receipt_form.is_valid():
             receipt_edited = receipt_form.save()
             invoice = receipt_edited.related_invoice
-            old_r_invoice = receipt.related_invoice
-            
+
             # If related invoice was modified, I have to update old invoice first.
             if old_r_invoice != invoice:
                 old_r_invoice.collected = update_invoice_collected_status(

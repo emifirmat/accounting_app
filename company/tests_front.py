@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .models import Company, FinancialYear
-from erp.tests.test_utils import go_to_section
+from utils.utils_tests import go_to_section
 
 class CompanyFrontTestCase(StaticLiveServerTestCase):
     @classmethod

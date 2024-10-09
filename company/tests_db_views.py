@@ -4,32 +4,12 @@ from django.db import IntegrityError
 from django.test import TestCase, tag
 from django.urls import reverse
 
-from .models import Company, Calendar, FinancialYear
+from .models import Company, FinancialYear
+from utils.base_tests import BackBaseTest
 
 # Create your tests here.
 @tag("company_db_views")
-class CompanyTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        """Populate DB for testing ERP models"""
-        cls.company = Company.objects.create(
-            tax_number = "20361382480",
-            name = "Test Company SRL",
-            address = "fake street 123, fakycity, Argentina",
-            email = "testcompany@email.com",
-            phone = "5493465406182",
-            creation_date = datetime.date(1991, 3, 10),
-            closing_date = datetime.date(2024, 6, 30),
-        )
-
-        cls.financial_year = FinancialYear.objects.create(
-            year = "2024",
-            current = True,
-        )
-
-        cls.calendar = Calendar.objects.create(
-            starting_date = cls.company,
-        )
+class CompanyTestCase(BackBaseTest):
 
     def test_company_model_content(self):
         self.assertEqual(self.company.id, 1)
@@ -89,48 +69,29 @@ class CompanyTestCase(TestCase):
     def test_financialYear_model_constraint(self):
         with self.assertRaises(IntegrityError):
             FinancialYear.objects.create(year = "2025", current = True)
-    
-    def test_calendar__model_content(self):
-        calendars = Calendar.objects.all()
-        self.assertEqual(calendars.count(), 1)
-        self.assertEqual(self.calendar.starting_date, self.company)
-        self.assertEqual(
-            str(self.calendar),
-            f"From {self.company.creation_date} to {self.calendar.ending_date}."
-        )
 
     """Web Pages"""
     def test_company_settings_webpage_get(self):
-        response = self.client.get("/company/settings")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "company/settings.html")
-        # Company already exists
-        self.assertContains(response, "20361382480")
+        self.check_page_get_response(
+            "/company/settings",
+            "company:settings",
+            "company/settings.html",
+            "20361382480"
+        )
         
+    def test_company_settings_webpage_get_no_company(self):
         self.company.delete()
-        response = self.client.get(reverse("company:settings"))
-        # Company doesn't exist
-        self.assertNotContains(response, "20361382480")
+        self.check_page_get_response(
+            "/company/settings",
+            "company:settings",
+            "company/settings.html",
+            wrong_content="20361382480" # Company doesn't exist
+        )
 
-    def test_company_settings_webpage_post(self):
-        # Modify existing company
-        response = self.client.post(reverse("company:settings"), {
-            "tax_number": "20361382482",
-            "name": "New Test Company SRL",
-            "address": "fake street 123, fakycity, Argentina",
-            "email": "testcompany@email.com",
-            "phone": "5493465406182",
-            "creation_date": "03/10/1991",
-            "closing_date": "30/06/2024",
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(Company.objects.all().count(), 1)
-        company = Company.objects.all().first()
-        self.assertEqual(company.tax_number, "20361382482")
-        
+    def test_company_settings_webpage_post_create(self):  
         # Create new company
         self.company.delete()
-        response = self.client.post(reverse("company:settings"), {
+        post_object = {
             "tax_number": "20346936115",
             "name": "Other Test Company SRL",
             "address": "Other fake street 123, fakycity, Argentina",
@@ -138,15 +99,37 @@ class CompanyTestCase(TestCase):
             "phone": "5493465406182",
             "creation_date": "15/09/2000",
             "closing_date": "31/12/2024",
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(Company.objects.all().count(), 1)
+        }
+        
+        self.check_page_post_response(
+            "company:settings",post_object, 302, (Company, 1)
+        )
+ 
         new_company = Company.objects.all().first()
         self.assertEqual(new_company.name, "OTHER TEST COMPANY SRL")
-        self.assertNotEqual(new_company.tax_number, "20361382482")
+        self.assertNotEqual(new_company.tax_number, "20361382482")    
 
+    def test_company_settings_webpage_post_edit(self):
+        # Modify existing company
+        post_object = {
+            "tax_number": "20361382482",
+            "name": "New Test Company SRL",
+            "address": "fake street 123, fakycity, Argentina",
+            "email": "testcompany@email.com",
+            "phone": "5493465406182",
+            "creation_date": "03/10/1991",
+            "closing_date": "30/06/2024",
+        }
+        
+        self.check_page_post_response(
+            "company:settings",post_object, 302, (Company, 1)
+        )
+        
+        company = Company.objects.all().first()
+        self.assertEqual(company.tax_number, "20361382482")
+        
     def test_company_settings_webpage_post_wrong_data(self):
-        response = self.client.post(reverse("company:settings"), {
+        post_object = {
             "tax_number": "20a61382482",
             "name": "New Test Company SRL",
             "address": "fake street 123, fakycity, Argentina",
@@ -154,52 +137,62 @@ class CompanyTestCase(TestCase):
             "phone": "5493465406182",
             "creation_date": "03/10/1991",
             "closing_date": "30/06/2024",
-        })
-        self.assertEqual(response.status_code, 200)
+        }
+        
+        response = self.check_page_post_response(
+            "company:settings",post_object, 200, (Company, 1)
+        )
+
         self.assertContains(response, "20a61382482 must be only digits.")
-        self.assertEqual(Company.objects.all().count(), 1)
-        company = Company.objects.all().first()
+        company = Company.objects.first()
         self.assertEqual(company.tax_number, "20361382480")
 
     def test_company_year_webpage_get(self):
-        response = self.client.get("/company/year")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "company/year.html")
-        # A year already exists
-        self.assertContains(response, "Financial year")
-        self.assertNotContains(response, "Please, create and/or select a year")
+        self.check_page_get_response(
+            "/company/year",
+            "company:year",
+            "company/year.html",
+            # A year already exists
+            "Financial year" ,
+            "Please, create and/or select a year",
+        )
         
+    def test_company_year_webpage_get_no_year(self):
         self.financial_year.delete()
-        response = self.client.get(reverse("company:year"))
-        # Year doesn't exist
-        self.assertContains(response, "Please, create and/or select a year")
-
+        
+        self.check_page_get_response(
+            "/company/year",
+            "company:year",
+            "company/year.html",
+            # Year doesn't exist
+            "Please, create and/or select a year"
+        )
+        
     def test_company_year_webpage_post(self):
         self.financial_year.delete()
         
         # Add a year
-        response = self.client.post(reverse("company:year"), {
-            "year": "2025",
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(FinancialYear.objects.all().count(), 1)
+        self.check_page_post_response(
+            "company:year", {"year": "2025"}, 302, (FinancialYear, 1)
+        )
+
         new_year = FinancialYear.objects.get(year="2025")
         self.assertEqual(new_year.year, "2025")
         self.assertEqual(new_year.current, True)
+        
         # Add a second year
-        response = self.client.post(reverse("company:year"), {
-            "year": "2026",
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(FinancialYear.objects.all().count(), 2)
+        self.check_page_post_response(
+            "company:year", {"year": "2026"}, 302, (FinancialYear, 2)
+        )
+        
         second_year = FinancialYear.objects.get(year="2026")
         self.assertEqual(second_year.year, "2026")
         self.assertEqual(second_year.current, False)
 
     def test_company_year_wrong_year(self):
-        response = self.client.post(reverse("company:year"), {
-                "year": "1990",
-            })
-        self.assertEqual(response.status_code, 200)
+        response = self.check_page_post_response(
+            "company:year", {"year": "1990"}, 200, (FinancialYear, 1)
+        )
+
         self.assertContains(response, "1990 is older than 1991")
 

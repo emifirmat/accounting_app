@@ -13,8 +13,11 @@ def update_invoice_collected_status(invoice):
     """Check and update invoice's collected attribute"""
     receipts = Sale_receipt.objects.filter(related_invoice=invoice
     ).aggregate(total=Sum("total_amount")) 
+    
+    # If there's no instance
+    receipt_total = receipts["total"] or 0
 
-    if invoice.total_lines_sum() - receipts["total"] == 0:
+    if invoice.total_lines_sum() - receipt_total == 0:
         return True
     else:
         return False
@@ -103,6 +106,7 @@ def get_object_from_subfield(column, model, columns, row, index, subfield,
     try:
         column_index = columns.index(column)
         value = row[column_index]
+        
         if value_function:
             value = value_function(value)
         # Create a dict to pass it dinamically as otherwise objects.get doesn't work.
