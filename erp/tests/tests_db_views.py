@@ -8,10 +8,10 @@ from django.urls import reverse
 
 
 # Create your tests here.
-from ..models import (Company_client, Supplier, Client_current_account,
-    Supplier_current_account, Payment_method, Payment_term, Sale_invoice,
-    Sale_invoice_line, Sale_receipt, Purchase_invoice, Purchase_invoice_line,
-    Purchase_receipt, Point_of_sell, Document_type)
+from ..models import (CompanyClient, Supplier, ClientCurrentAccount,
+    SupplierCurrentAccount, PaymentMethod, PaymentTerm, SaleInvoice,
+    SaleInvoiceLine, SaleReceipt, PurchaseInvoice, PurchaseInvoiceLine,
+    PurchaseReceipt, PointOfSell, DocumentType)
 from company.models import Company, FinancialYear
 
 from utils.utils_tests import (get_file, create_extra_pay_methods,
@@ -27,14 +27,14 @@ class ErpTestCase(BackBaseTest):
         """Populate DB for testing ERP models"""
         super().setUpTestData()
 
-        cls.c_client1 = Company_client.objects.create(
+        cls.c_client1 = CompanyClient.objects.create(
             tax_number = "20361382481",
             name = "Client1 SRL",
             address = "Client street, Client city, Chile",
             email = "client1@email.com",
             phone = "1234567890",
         )
-        cls.c_client2 = Company_client.objects.create(
+        cls.c_client2 = CompanyClient.objects.create(
             tax_number = "99999999999",
             name = "Client2 SA",
             address = "Client2 street, Client city, Argentina",
@@ -58,43 +58,43 @@ class ErpTestCase(BackBaseTest):
             phone = "987654321",
         )
 
-        cls.client_ca = Client_current_account.objects.create(
+        cls.client_ca = ClientCurrentAccount.objects.create(
             client = cls.c_client1,
         )
 
-        cls.supplier_ca = Supplier_current_account.objects.create(
+        cls.supplier_ca = SupplierCurrentAccount.objects.create(
             supplier = cls.supplier1,
             amount = "10999.99",
         )
 
-        cls.pos1 = Point_of_sell.objects.create(pos_number="1")
-        cls.pos2 = Point_of_sell.objects.create(pos_number="2")
+        cls.pos1 = PointOfSell.objects.create(pos_number="1")
+        cls.pos2 = PointOfSell.objects.create(pos_number="2")
 
-        cls.doc_type1 = Document_type.objects.create(
+        cls.doc_type1 = DocumentType.objects.create(
             type = "A",
             code = "001",
             type_description = "Invoice A",
             hide = False,
         )
-        cls.doc_type2 = Document_type.objects.create(
+        cls.doc_type2 = DocumentType.objects.create(
             type = "B",
             code = "2",
             type_description = "Invoice B",
             hide = False,
         )
-        cls.doc_type3 = Document_type.objects.create(
+        cls.doc_type3 = DocumentType.objects.create(
             type = "E",
             code = "19",
             type_description = "Invoice E",
         )
 
-        cls.pay_method1 = Payment_method.objects.create(pay_method = "Cash")
-        cls.pay_method2 = Payment_method.objects.create(pay_method = "Transfer")
+        cls.pay_method1 = PaymentMethod.objects.create(pay_method = "Cash")
+        cls.pay_method2 = PaymentMethod.objects.create(pay_method = "Transfer")
 
-        cls.pay_term1 = Payment_term.objects.create(pay_term = "0")
-        cls.pay_term2 = Payment_term.objects.create(pay_term = "30")
+        cls.pay_term1 = PaymentTerm.objects.create(pay_term = "0")
+        cls.pay_term2 = PaymentTerm.objects.create(pay_term = "30")
 
-        cls.sale_invoice1 = Sale_invoice.objects.create(
+        cls.sale_invoice1 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 21),
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
@@ -107,14 +107,14 @@ class ErpTestCase(BackBaseTest):
             collected = True,
         )
 
-        cls.sale_invoice1_line1 = Sale_invoice_line.objects.create(
+        cls.sale_invoice1_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = cls.sale_invoice1,
             description = "Test sale invoice",
             taxable_amount = Decimal("1000"),
             not_taxable_amount = Decimal("90.01"),
             vat_amount = Decimal("210"),
         )
-        cls.sale_invoice1_line2 = Sale_invoice_line.objects.create(
+        cls.sale_invoice1_line2 = SaleInvoiceLine.objects.create(
             sale_invoice = cls.sale_invoice1,
             description = "Other products",
             taxable_amount = Decimal("999"),
@@ -122,7 +122,7 @@ class ErpTestCase(BackBaseTest):
             vat_amount = Decimal("209.99"),
         )
 
-        cls.sale_receipt1 = Sale_receipt.objects.create(
+        cls.sale_receipt1 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
             point_of_sell = cls.pos1,
             number = "00000001",
@@ -133,7 +133,7 @@ class ErpTestCase(BackBaseTest):
             total_amount = Decimal("2509.01"),
         )
 
-        cls.purchase_invoice1 = Purchase_invoice.objects.create(
+        cls.purchase_invoice1 = PurchaseInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 13),
             type = cls.doc_type2,
             point_of_sell = "00231",
@@ -144,7 +144,7 @@ class ErpTestCase(BackBaseTest):
             payment_term = cls.pay_term2,
         )
 
-        cls.purchase_invoice_line1 = Purchase_invoice_line.objects.create(
+        cls.purchase_invoice_line1 = PurchaseInvoiceLine.objects.create(
             purchase_invoice = cls.purchase_invoice1,
             description = "Test purchase invoice",
             taxable_amount = Decimal("200"),
@@ -152,7 +152,7 @@ class ErpTestCase(BackBaseTest):
             vat_amount = Decimal("42"),
         )
 
-        cls.purchase_receipt1 = Purchase_receipt.objects.create(
+        cls.purchase_receipt1 = PurchaseReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 13),
             point_of_sell = "00231",
             number = "00000023",
@@ -165,7 +165,7 @@ class ErpTestCase(BackBaseTest):
 
     def create_extra_invoices(self):
         """Create extra invoices when a test demands it"""
-        self.sale_invoice2 = Sale_invoice.objects.create(
+        self.sale_invoice2 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             type = self.doc_type2,
             point_of_sell = self.pos1,
@@ -175,7 +175,7 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method2,
             payment_term = self.pay_term2,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice2,
             description = "Test 2 sale invoice",
             taxable_amount = Decimal("999.99"),
@@ -183,7 +183,7 @@ class ErpTestCase(BackBaseTest):
             vat_amount = Decimal("209.09"),
         )
 
-        self.sale_invoice3 = Sale_invoice.objects.create(
+        self.sale_invoice3 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 23),
             type = self.doc_type1,
             point_of_sell = self.pos1,
@@ -193,7 +193,7 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method1,
             payment_term = self.pay_term1,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice3,
             description = "Test 2 sale invoice",
             taxable_amount = Decimal("500"),
@@ -201,7 +201,7 @@ class ErpTestCase(BackBaseTest):
             vat_amount = Decimal("80"),
         )
 
-        self.sale_invoice4 = Sale_invoice.objects.create(
+        self.sale_invoice4 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 23),
             type = self.doc_type1,
             point_of_sell = self.pos1,
@@ -211,7 +211,7 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method2,
             payment_term = self.pay_term1,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice4,
             description = "Test 2 sale invoice",
             taxable_amount = Decimal("500"),
@@ -219,7 +219,7 @@ class ErpTestCase(BackBaseTest):
             vat_amount = Decimal("80"),
         )
 
-        self.sale_invoice5 = Sale_invoice.objects.create(
+        self.sale_invoice5 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 24),
             type = self.doc_type2,
             point_of_sell = self.pos1,
@@ -229,14 +229,14 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method1,
             payment_term = self.pay_term1,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice5,
             description = "Test 2 sale invoice",
             taxable_amount = Decimal("5"),
             not_taxable_amount = Decimal("5"),
             vat_amount = Decimal("5"),
         )
-        self.sale_invoice6 = Sale_invoice.objects.create(
+        self.sale_invoice6 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 24),
             type = self.doc_type2,
             point_of_sell = self.pos1,
@@ -246,14 +246,14 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method2,
             payment_term = self.pay_term2,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice6,
             description = "Test a sale invoice",
             taxable_amount = Decimal("6"),
             not_taxable_amount = Decimal("6"),
             vat_amount = Decimal("6"),
         )
-        self.sale_invoice7 = Sale_invoice.objects.create(
+        self.sale_invoice7 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 25),
             type = self.doc_type1,
             point_of_sell = self.pos2,
@@ -263,14 +263,14 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method1,
             payment_term = self.pay_term1,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice7,
             description = "Test b sale invoice",
             taxable_amount = Decimal("7"),
             not_taxable_amount = Decimal("7"),
             vat_amount = Decimal("7"),
         )
-        self.sale_invoice8 = Sale_invoice.objects.create(
+        self.sale_invoice8 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 25),
             type = self.doc_type1,
             point_of_sell = self.pos2,
@@ -280,14 +280,14 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method2,
             payment_term = self.pay_term1,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice8,
             description = "Test c sale invoice",
             taxable_amount = Decimal("8"),
             not_taxable_amount = Decimal("8"),
             vat_amount = Decimal("8"),   
         )
-        self.sale_invoice9 = Sale_invoice.objects.create(
+        self.sale_invoice9 = SaleInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 26),
             type=self.doc_type2,
             point_of_sell=self.pos2,
@@ -297,14 +297,14 @@ class ErpTestCase(BackBaseTest):
             payment_method=self.pay_method1,
             payment_term=self.pay_term1
         )
-        self.sale_invoice9_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice9_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice9,
             description = "Ninth sale invoice",
             taxable_amount = Decimal("9"),
             not_taxable_amount = Decimal("9"),
             vat_amount = Decimal("9"),
         )
-        self.sale_invoice10 = Sale_invoice.objects.create(
+        self.sale_invoice10 = SaleInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 26),
             type=self.doc_type2,
             point_of_sell=self.pos2,
@@ -314,7 +314,7 @@ class ErpTestCase(BackBaseTest):
             payment_method=self.pay_method2,
             payment_term=self.pay_term1
         )
-        self.sale_invoice10_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice10_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice10,
             description = "Tenth sale invoice",
             taxable_amount = Decimal("10"),
@@ -322,7 +322,7 @@ class ErpTestCase(BackBaseTest):
             vat_amount = Decimal("10"),
         )
 
-        self.sale_invoice11 = Sale_invoice.objects.create(
+        self.sale_invoice11 = SaleInvoice.objects.create(
             issue_date = datetime.date(2025, 6, 23),
             type = self.doc_type1,
             point_of_sell = self.pos1,
@@ -332,7 +332,7 @@ class ErpTestCase(BackBaseTest):
             payment_method = self.pay_method1,
             payment_term = self.pay_term1,
         )
-        Sale_invoice_line.objects.create(
+        SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice11,
             description = "Eleventh sale invoice",
             taxable_amount = Decimal("500"),
@@ -345,7 +345,7 @@ class ErpTestCase(BackBaseTest):
         self.create_extra_invoices() # Function dependant
         self.sale_invoice2.collected = True # Update invoice 2 status
         
-        self.sale_receipt2 = Sale_receipt.objects.create(
+        self.sale_receipt2 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 22),
             point_of_sell = self.pos1,
             number = "00000002",
@@ -355,7 +355,7 @@ class ErpTestCase(BackBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("600.01"),
         )
-        self.sale_receipt3 = Sale_receipt.objects.create(
+        self.sale_receipt3 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 23),
             point_of_sell = self.pos1,
             number = "00000003",
@@ -365,7 +365,7 @@ class ErpTestCase(BackBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("609"),
         )
-        self.sale_receipt4 = Sale_receipt.objects.create(
+        self.sale_receipt4 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 3, 24),
             point_of_sell = self.pos2,
             number = "00000001",
@@ -375,7 +375,7 @@ class ErpTestCase(BackBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("5"),
         )
-        self.sale_receipt5 = Sale_receipt.objects.create(
+        self.sale_receipt5 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 3, 24),
             point_of_sell = self.pos2,
             number = "00000002",
@@ -385,7 +385,7 @@ class ErpTestCase(BackBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("5"),
         )
-        self.sale_receipt6 = Sale_receipt.objects.create(
+        self.sale_receipt6 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 3, 24),
             point_of_sell = self.pos1,
             number = "00000004",
@@ -395,7 +395,7 @@ class ErpTestCase(BackBaseTest):
             recipient = self.c_client2,
             total_amount = Decimal("8"),
         )
-        self.sale_receipt7 = Sale_receipt.objects.create(
+        self.sale_receipt7 = SaleReceipt.objects.create(
             issue_date = datetime.date(2025, 7, 24),
             point_of_sell = self.pos1,
             number = "00000005",
@@ -408,7 +408,7 @@ class ErpTestCase(BackBaseTest):
 
 
     def test_company_client_content(self):
-        company_clients = Company_client.objects.all()
+        company_clients = CompanyClient.objects.all()
         self.assertEqual(company_clients.count(), 2)
         self.assertEqual(self.c_client1.tax_number, "20361382481")
         self.assertEqual(self.c_client1.name, "CLIENT1 SRL")
@@ -428,25 +428,25 @@ class ErpTestCase(BackBaseTest):
         self.assertEqual(str(self.supplier1), "SUPPLIER1 SA | 20361382482")
 
     def test_client_current_account_content(self):
-        client_ca_all = Client_current_account.objects.all()
+        client_ca_all = ClientCurrentAccount.objects.all()
         self.assertEqual(client_ca_all.count(), 1)
         self.assertEqual(self.client_ca.client, self.c_client1)
         self.assertEqual(self.client_ca.amount, 0)
 
     def test_supplier_current_account_content(self):
-        supplier_ca_all = Client_current_account.objects.all()
+        supplier_ca_all = ClientCurrentAccount.objects.all()
         self.assertEqual(supplier_ca_all.count(), 1)
         self.assertEqual(self.supplier_ca.supplier, self.supplier1)
         self.assertEqual(self.supplier_ca.amount, "10999.99")
 
     def test_company_point_of_sell_content(self):
-        pos_all = Point_of_sell.objects.all()
+        pos_all = PointOfSell.objects.all()
         self.assertEqual(pos_all.count(), 2)
         self.assertEqual(self.pos1.pos_number, "00001")
         self.assertEqual(str(self.pos1), "00001")
     
     def test_document_type_content(self):
-        doc_type_all = Document_type.objects.all()
+        doc_type_all = DocumentType.objects.all()
         self.assertEqual(doc_type_all.count(), 3)
         self.assertEqual(self.doc_type1.type, "A")
         self.assertEqual(self.doc_type1.code, "001")
@@ -456,7 +456,7 @@ class ErpTestCase(BackBaseTest):
 
     def test_document_type_validator(self):
         with self.assertRaises(ValidationError):
-            doc_3 = Document_type.objects.create(
+            doc_3 = DocumentType.objects.create(
                 type = "3",
                 code = "003",
                 type_description = "Invoice C",
@@ -464,19 +464,19 @@ class ErpTestCase(BackBaseTest):
             doc_3.full_clean()
     
     def test_payment_method_content(self):
-        payment_methods = Payment_method.objects.all()
+        payment_methods = PaymentMethod.objects.all()
         self.assertEqual(payment_methods.count(), 2)
         self.assertEqual(self.pay_method2.pay_method, "Transfer")
         self.assertEqual(str(self.pay_method2), "Transfer")
 
     def test_payment_term_content(self):
-        payment_terms = Payment_term.objects.all()
+        payment_terms = PaymentTerm.objects.all()
         self.assertEqual(payment_terms.count(), 2)
         self.assertEqual(self.pay_term2.pay_term, "30")
         self.assertEqual(str(self.pay_term2), "30 days")
     
     def test_sale_invoice_content(self):
-        invoices = Sale_invoice.objects.all()
+        invoices = SaleInvoice.objects.all()
         self.assertEqual(invoices.count(), 1)
         self.assertEqual(self.sale_invoice1.issue_date, datetime.date(2024, 1, 21))
         self.assertEqual(self.sale_invoice1.type, self.doc_type1)
@@ -500,7 +500,7 @@ class ErpTestCase(BackBaseTest):
             Decimal(2509.01))
 
     def test_sale_invoice_constraint(self):
-        sale_invoice2 = Sale_invoice.objects.create(
+        sale_invoice2 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 21),
             type = self.doc_type1,
             point_of_sell = self.pos1,
@@ -511,11 +511,11 @@ class ErpTestCase(BackBaseTest):
             payment_term = self.pay_term2,
         )
 
-        invoices = Sale_invoice.objects.all()
+        invoices = SaleInvoice.objects.all()
         self.assertEqual(invoices.count(), 2)
 
         with self.assertRaises(IntegrityError):
-            sale_invoice3 = Sale_invoice.objects.create(
+            sale_invoice3 = SaleInvoice.objects.create(
                 issue_date = datetime.date(2024, 1, 22),
                 type = self.doc_type1,
                 point_of_sell = self.pos1,
@@ -527,7 +527,7 @@ class ErpTestCase(BackBaseTest):
             )
 
     def test_sale_invoice_line_content(self):
-        invoice_lines = Sale_invoice_line.objects.all()
+        invoice_lines = SaleInvoiceLine.objects.all()
         self.assertEqual(invoice_lines.count(), 2)
         self.assertEqual(self.sale_invoice1_line1.sale_invoice, self.sale_invoice1)
         self.assertEqual(self.sale_invoice1_line1.description, "Test sale invoice")
@@ -551,7 +551,7 @@ class ErpTestCase(BackBaseTest):
             self.sale_invoice1_line1.full_clean()
 
     def test_sale_receipt_content(self):
-        sale_receipts = Sale_receipt.objects.all()
+        sale_receipts = SaleReceipt.objects.all()
         self.assertEqual(sale_receipts.count(), 1)
         self.assertEqual(self.sale_receipt1.issue_date, datetime.date(2024, 2, 21))
         self.assertEqual(self.sale_receipt1.point_of_sell.pos_number, "00001")
@@ -566,7 +566,7 @@ class ErpTestCase(BackBaseTest):
         )
 
     def test_sale_receipt_constraint(self):
-        sale_receipt2 = Sale_receipt.objects.create(
+        sale_receipt2 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
             point_of_sell = self.pos1,
             number = "2",
@@ -577,11 +577,11 @@ class ErpTestCase(BackBaseTest):
             total_amount = "1312.11",
         )
 
-        receipts = Sale_receipt.objects.all()
+        receipts = SaleReceipt.objects.all()
         self.assertEqual(receipts.count(), 2)
 
         with self.assertRaises(IntegrityError):
-            sale_receipt3 = Sale_receipt.objects.create(
+            sale_receipt3 = SaleReceipt.objects.create(
                 issue_date = datetime.date(2024, 2, 22),
                 point_of_sell = self.pos1,
                 number = "00000001",
@@ -593,7 +593,7 @@ class ErpTestCase(BackBaseTest):
             )
 
     def test_purchase_invoice_content(self):
-        invoices = Purchase_invoice.objects.all()
+        invoices = PurchaseInvoice.objects.all()
         self.assertEqual(invoices.count(), 1)
         self.assertEqual(self.purchase_invoice1.issue_date, datetime.date(2024, 1, 13))
         self.assertEqual(self.purchase_invoice1.type, self.doc_type2)
@@ -608,7 +608,7 @@ class ErpTestCase(BackBaseTest):
         )
 
     def test_purchase_invoice_constraint(self):
-        purchase_invoice2 = Purchase_invoice.objects.create(
+        purchase_invoice2 = PurchaseInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 13),
             type = self.doc_type2,
             point_of_sell = "231",
@@ -619,11 +619,11 @@ class ErpTestCase(BackBaseTest):
             payment_term = self.pay_term2,
         )
 
-        invoices = Purchase_invoice.objects.all()
+        invoices = PurchaseInvoice.objects.all()
         self.assertEqual(invoices.count(), 2)
 
         with self.assertRaises(IntegrityError):
-            purhcase_invoice3 = Purchase_invoice.objects.create(
+            purhcase_invoice3 = PurchaseInvoice.objects.create(
                 issue_date=datetime.date(2024, 1, 14),
                 type = self.doc_type2,
                 point_of_sell = "00231",
@@ -635,7 +635,7 @@ class ErpTestCase(BackBaseTest):
             )
 
     def test_purchase_invoice_line_content(self):
-        invoice_lines = Purchase_invoice.objects.all()
+        invoice_lines = PurchaseInvoice.objects.all()
         self.assertEqual(invoice_lines.count(), 1)
         self.assertEqual(self.purchase_invoice_line1.purchase_invoice, 
             self.purchase_invoice1)
@@ -652,7 +652,7 @@ class ErpTestCase(BackBaseTest):
         )
 
     def test_purchase_receipt_content(self):
-        purchase_receipts = Purchase_receipt.objects.all()
+        purchase_receipts = PurchaseReceipt.objects.all()
         self.assertEqual(purchase_receipts.count(), 1)
         self.assertEqual(self.purchase_receipt1.issue_date, datetime.date(2024, 2, 13))
         self.assertEqual(self.purchase_receipt1.point_of_sell, "00231")
@@ -667,7 +667,7 @@ class ErpTestCase(BackBaseTest):
         )
     
     def test_purchase_receipt_constraint(self):
-        purchase_receipt2 = Purchase_receipt.objects.create(
+        purchase_receipt2 = PurchaseReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 13),
             point_of_sell = "231",
             number = "2",
@@ -678,11 +678,11 @@ class ErpTestCase(BackBaseTest):
             total_amount = "1312.11",
         )
 
-        receipts = Purchase_receipt.objects.all()
+        receipts = PurchaseReceipt.objects.all()
         self.assertEqual(receipts.count(), 2)
 
         with self.assertRaises(IntegrityError):
-            purchase_receipt3 = Purchase_receipt.objects.create(
+            purchase_receipt3 = PurchaseReceipt.objects.create(
                 issue_date = datetime.date(2024, 2, 14),
                 point_of_sell = "00231",
                 number = "00000023",
@@ -719,7 +719,7 @@ class ErpTestCase(BackBaseTest):
         }
         
         self.check_page_post_response(["erp:person_new",
-            {"person_type": "client"}], post_object, 302, (Company_client, 3)
+            {"person_type": "client"}], post_object, 302, (CompanyClient, 3)
         )
         
     def test_client_new_post_error(self):
@@ -732,7 +732,7 @@ class ErpTestCase(BackBaseTest):
         }
         
         response = self.check_page_post_response(["erp:person_new",
-            {"person_type": "client"}], post_object, 200, (Company_client, 2)
+            {"person_type": "client"}], post_object, 200, (CompanyClient, 2)
         )
     
         # Check if error is displayed.
@@ -745,11 +745,11 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/clients/clients.csv")
 
         self.check_page_post_response(["erp:person_new_multiple",
-            {"person_type": "client"}], {"file": file}, 302, (Company_client, 8)
+            {"person_type": "client"}], {"file": file}, 302, (CompanyClient, 8)
         )
             
         # Test DB was updated correctly
-        client_great = Company_client.objects.get(tax_number="20123456780")
+        client_great = CompanyClient.objects.get(tax_number="20123456780")
         self.assertEqual(client_great.tax_number, "20123456780")
         self.assertEqual(client_great.name, "GREAT SUGAR SA")
         self.assertEqual(client_great.address, "Mutiple Street 1, Dublin, Ireland")
@@ -760,11 +760,11 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/clients/clients.xls")
         
         self.check_page_post_response(["erp:person_new_multiple",
-            {"person_type": "client"}], {"file": file}, 302, (Company_client, 8)
+            {"person_type": "client"}], {"file": file}, 302, (CompanyClient, 8)
         )
         
         # Test DB was updated correctly
-        client_great = Company_client.objects.get(tax_number="20123456780")
+        client_great = CompanyClient.objects.get(tax_number="20123456780")
         self.assertEqual(client_great.tax_number, "20123456780")
         self.assertEqual(client_great.name, "GREAT SUGAR SA")
         self.assertEqual(client_great.address, "Mutiple Street 1, Dublin, Ireland")
@@ -775,11 +775,11 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/clients/clients.xlsx")
    
         self.check_page_post_response(["erp:person_new_multiple",
-            {"person_type": "client"}], {"file": file}, 302, (Company_client, 8)
+            {"person_type": "client"}], {"file": file}, 302, (CompanyClient, 8)
         )
     
         # Test DB was updated correctly
-        client_great = Company_client.objects.get(tax_number="20123456780")
+        client_great = CompanyClient.objects.get(tax_number="20123456780")
         self.assertEqual(client_great.tax_number, "20123456780")
         self.assertEqual(client_great.name, "GREAT SUGAR SA")
         self.assertEqual(client_great.address, "Mutiple Street 1, Dublin, Ireland")
@@ -791,7 +791,7 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/clients/clients.pdf")
 
         page_content = self.check_page_post_response(["erp:person_new_multiple",
-            {"person_type": "client"}], {"file": file}, 400, (Company_client, 2)
+            {"person_type": "client"}], {"file": file}, 400, (CompanyClient, 2)
         )
         
         self.assertIn("Invalid file", page_content)        
@@ -801,7 +801,7 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/clients/clientsbad2.csv")
       
         page_content = self.check_page_post_response(["erp:person_new_multiple",
-            {"person_type": "client"}], {"file": file}, 400, (Company_client, 2)
+            {"person_type": "client"}], {"file": file}, 400, (CompanyClient, 2)
         )
         
         self.assertIn("tax number already exists", page_content)
@@ -812,7 +812,7 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/clients/clientsbad.csv")
    
         page_content = self.check_page_post_response(["erp:person_new_multiple",
-            {"person_type": "client"}], {"file": file}, 400, (Company_client, 2)
+            {"person_type": "client"}], {"file": file}, 400, (CompanyClient, 2)
         )
         
         for text in ["must be only digits", "value has at most", 
@@ -986,8 +986,8 @@ class ErpTestCase(BackBaseTest):
         }
 
         self.check_page_post_response("erp:sales_new", post_object, 302, 
-            (Sale_invoice, 2))  
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
+            (SaleInvoice, 2))  
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
 
 
     def test_sales_new_invoice_post_triple_line_webpage(self):
@@ -1023,8 +1023,8 @@ class ErpTestCase(BackBaseTest):
             "s_invoice_lines-2-vat_amount": Decimal("33"),
         }      
         self.check_page_post_response("erp:sales_new", post_object, 302, 
-            (Sale_invoice, 2))  
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 5)
+            (SaleInvoice, 2))  
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 5)
 
     def test_sales_new_invoice_post_wrong_year_webpage(self):
         post_object = {
@@ -1049,9 +1049,9 @@ class ErpTestCase(BackBaseTest):
             "s_invoice_lines-MAX_NUM_FORMS": "1000",
         }      
         response = self.check_page_post_response("erp:sales_new", post_object, 200, 
-            (Sale_invoice, 1))  
+            (SaleInvoice, 1))  
 
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
         self.assertIn("The selected date is not within the current year.", 
             response.context["form"].errors["issue_date"])
 
@@ -1079,9 +1079,9 @@ class ErpTestCase(BackBaseTest):
         }       
         
         response = self.check_page_post_response("erp:sales_new", post_object, 200, 
-            (Sale_invoice, 1))
+            (SaleInvoice, 1))
     
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
         self.assertContains(response, "be older than previous invoice.")
 
     def test_sales_new_invoice_post_blank_line_webpage(self):
@@ -1107,9 +1107,9 @@ class ErpTestCase(BackBaseTest):
             "s_invoice_lines-MAX_NUM_FORMS": "1000",
         }       
         response = self.check_page_post_response("erp:sales_new", post_object, 
-            200, (Sale_invoice, 1))  
+            200, (SaleInvoice, 1))  
         
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
 
     def test_sales_new_massive_invoice_get(self):
         self.check_page_get_response(
@@ -1122,13 +1122,13 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/sales/invoice_one_line.csv")
 
         self.check_page_post_response("erp:sales_new_massive", {"file": file}, 
-            302, (Sale_invoice, 2))
+            302, (SaleInvoice, 2))
 
         # Test DB was updated correctly
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
-        new_invoice = Sale_invoice.objects.get(
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
+        new_invoice = SaleInvoice.objects.get(
             type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
-        invoice_line = Sale_invoice_line.objects.get(sale_invoice = new_invoice)
+        invoice_line = SaleInvoiceLine.objects.get(sale_invoice = new_invoice)
         self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
         self.assertEqual(new_invoice.type, self.doc_type1)
         self.assertEqual(new_invoice.point_of_sell, self.pos2)
@@ -1147,13 +1147,13 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/sales/invoice_one_line.xls")
 
         self.check_page_post_response("erp:sales_new_massive", {"file": file}, 
-            302, (Sale_invoice, 2))
+            302, (SaleInvoice, 2))
         
         # Test DB was updated correctly
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
-        new_invoice = Sale_invoice.objects.get(
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
+        new_invoice = SaleInvoice.objects.get(
         type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
-        invoice_line = Sale_invoice_line.objects.get(sale_invoice = new_invoice)
+        invoice_line = SaleInvoiceLine.objects.get(sale_invoice = new_invoice)
         self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
         self.assertEqual(new_invoice.type, self.doc_type1)
         self.assertEqual(new_invoice.point_of_sell, self.pos2)
@@ -1172,13 +1172,13 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/sales/invoice_one_line.xlsx")
     
         self.check_page_post_response("erp:sales_new_massive", {"file": file}, 
-            302, (Sale_invoice, 2))
+            302, (SaleInvoice, 2))
         
         # Test DB was updated correctly
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
-        new_invoice = Sale_invoice.objects.get(
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
+        new_invoice = SaleInvoice.objects.get(
         type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
-        invoice_line = Sale_invoice_line.objects.get(sale_invoice = new_invoice)
+        invoice_line = SaleInvoiceLine.objects.get(sale_invoice = new_invoice)
         self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
         self.assertEqual(new_invoice.type, self.doc_type1)
         self.assertEqual(new_invoice.point_of_sell, self.pos2)
@@ -1197,22 +1197,22 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/sales/invoice_one_line.pdf")
         
         page_content = self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 400, (Sale_invoice, 1))
+            {"file": file}, 400, (SaleInvoice, 1))
         
         self.assertIn("Invalid file", page_content)
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
         
     def test_sales_new_massive_invoice_multiple_lines_post_xlsx(self):
         file = get_file("erp/tests/files/sales/invoice_multiple_lines.xlsx")
   
         self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 302, (Sale_invoice, 2))
+            {"file": file}, 302, (SaleInvoice, 2))
         
         # Test DB was updated correctly
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 5)
-        new_invoice = Sale_invoice.objects.get(
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 5)
+        new_invoice = SaleInvoice.objects.get(
         type=self.doc_type1, point_of_sell=self.pos2, number="00000001")
-        invoice_lines = Sale_invoice_line.objects.filter(sale_invoice=new_invoice)
+        invoice_lines = SaleInvoiceLine.objects.filter(sale_invoice=new_invoice)
         self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 15))
         self.assertEqual(new_invoice.type, self.doc_type1)
         self.assertEqual(new_invoice.point_of_sell, self.pos2)
@@ -1240,13 +1240,13 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/sales/invoices_mixed.xlsx")
     
         self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 302, (Sale_invoice, 6))
+            {"file": file}, 302, (SaleInvoice, 6))
             
         # Test DB was updated correctly
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 10)
-        new_invoice = Sale_invoice.objects.get(
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 10)
+        new_invoice = SaleInvoice.objects.get(
         type=self.doc_type1, point_of_sell=self.pos2, number="00000004")
-        invoice_lines = Sale_invoice_line.objects.filter(sale_invoice=new_invoice)
+        invoice_lines = SaleInvoiceLine.objects.filter(sale_invoice=new_invoice)
         self.assertEqual(new_invoice.issue_date, datetime.date(2024, 3, 16))
         self.assertEqual(new_invoice.type, self.doc_type1)
         self.assertEqual(new_invoice.point_of_sell, self.pos2)
@@ -1265,51 +1265,51 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/sales/invoice_one_line_repeated.csv")
      
         page_content = self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 400, (Sale_invoice, 1))
+            {"file": file}, 400, (SaleInvoice, 1))
         
         self.assertIn("Invoice A 00001-00000001 already exists or repeated",
             page_content
         )
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
     
     def test_sales_new_massive_invoice_post_wrong_data(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong.csv")
 
         page_content = self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 400, (Sale_invoice, 1)) 
+            {"file": file}, 400, (SaleInvoice, 1)) 
         
         self.assertIn("must be only digits", page_content)
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
 
     def test_sales_new_massive_invoice_post_wrong_sender(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong2.csv")
 
         page_content = self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 400, (Sale_invoice, 1))
+            {"file": file}, 400, (SaleInvoice, 1))
         
         self.assertIn("The input in row 2 and column sender doesn't exist",
             page_content)
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
     
     def test_sales_new_massive_invoice_post_wrong_data_3(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong3.csv")
     
         page_content = self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 400, (Sale_invoice, 1)) 
+            {"file": file}, 400, (SaleInvoice, 1)) 
         
         for text in ["must be a decimal number", "cannot be blank"]:
             self.assertIn(text, page_content)
 
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
 
     def test_sales_new_massive_invoice_post_wrong_date(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong_date.csv")
     
         page_content = self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 400, (Sale_invoice, 1))
+            {"file": file}, 400, (SaleInvoice, 1))
         
         self.assertIn("within the current year", page_content)
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
 
     def test_sales_new_massive_invoices_multiple_lines_post_wrong_data(self):
         create_extra_pay_methods()
@@ -1317,11 +1317,11 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/sales/invoices_mixed_wrong.csv")
   
         page_content = self.check_page_post_response("erp:sales_new_massive", 
-            {"file": file}, 400, (Sale_invoice, 1))
+            {"file": file}, 400, (SaleInvoice, 1))
 
         self.assertIn("Row 10: Your invoice's information doesn't match with row 9",
             page_content)
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 2)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
 
     def test_sales_invoice_multiline_webpage(self):
         self.check_page_get_response(
@@ -1385,9 +1385,9 @@ class ErpTestCase(BackBaseTest):
         
         self.check_page_post_response(
             ["erp:sales_edit", {"inv_pk": self.sale_invoice1.pk}], 
-            post_object, 302, (Sale_invoice, 1)
+            post_object, 302, (SaleInvoice, 1)
         ) 
-        self.assertEqual(Sale_invoice_line.objects.all().count(), 3)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
 
     def test_sales_list_get_webpage(self):
         self.check_page_get_response(
@@ -1511,7 +1511,7 @@ class ErpTestCase(BackBaseTest):
         }
 
         self.check_page_post_response("erp:receivables_new",post_object, 302,
-            (Sale_receipt, 2)) 
+            (SaleReceipt, 2)) 
         
         # Update sale invoice and test
         self.sale_invoice2.refresh_from_db()
@@ -1531,7 +1531,7 @@ class ErpTestCase(BackBaseTest):
         }
         
         response = self.check_page_post_response("erp:receivables_new", 
-            post_object, 200, (Sale_receipt, 1)) 
+            post_object, 200, (SaleReceipt, 1)) 
 
         self.assertContains(response, 
             "The selected date is not within the current year."
@@ -1550,7 +1550,7 @@ class ErpTestCase(BackBaseTest):
             "total_amount": "600.01"
         }      
         response = self.check_page_post_response("erp:receivables_new", 
-            post_object, 200, (Sale_receipt, 1)) 
+            post_object, 200, (SaleReceipt, 1)) 
         
         self.assertContains(response, "be older than previous receipt.")
 
@@ -1569,7 +1569,7 @@ class ErpTestCase(BackBaseTest):
         }
 
         response = self.check_page_post_response("erp:receivables_new", 
-            post_object, 200, (Sale_receipt, 1))
+            post_object, 200, (SaleReceipt, 1))
          
         self.assertContains(response, "Receipt total amount cannot be higher")
 
@@ -1586,7 +1586,7 @@ class ErpTestCase(BackBaseTest):
             "total_amount": "1209.02" # Total from invoice is $2509.02,
         }
         response = self.check_page_post_response("erp:receivables_new", 
-            post_object, 200, (Sale_receipt, 1))     
+            post_object, 200, (SaleReceipt, 1))     
 
         self.assertContains(response, 
             "The sum of your receipts cannot be higher"
@@ -1605,11 +1605,11 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/receivables/receipt_one.csv")
 
         self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 302, (Sale_receipt, 2))  
+            {"file": file}, 302, (SaleReceipt, 2))  
 
 
         # Test DB was updated correctly
-        new_receipt = Sale_receipt.objects.get(
+        new_receipt = SaleReceipt.objects.get(
             point_of_sell=self.pos1, number="00000002")
         self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 22))
         self.assertEqual(new_receipt.point_of_sell, self.pos1)
@@ -1627,10 +1627,10 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/receivables/receipt_one.xls")
 
         self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 302, (Sale_receipt, 2))
+            {"file": file}, 302, (SaleReceipt, 2))
         
         # Test DB was updated correctly
-        new_receipt = Sale_receipt.objects.get(
+        new_receipt = SaleReceipt.objects.get(
             point_of_sell=self.pos1, number="00000002")
         self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 22))
         self.assertEqual(new_receipt.point_of_sell, self.pos1)
@@ -1648,10 +1648,10 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/receivables/receipt_one.xlsx")
 
         self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 302, (Sale_receipt, 2))
+            {"file": file}, 302, (SaleReceipt, 2))
         
         # Test DB was updated correctly
-        new_receipt = Sale_receipt.objects.get(
+        new_receipt = SaleReceipt.objects.get(
             point_of_sell=self.pos1, number="00000002")
         self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 22))
         self.assertEqual(new_receipt.point_of_sell, self.pos1)
@@ -1668,7 +1668,7 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/receivables/receipt_one.pdf")
  
         page_content = self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 400, (Sale_receipt, 1))
+            {"file": file}, 400, (SaleReceipt, 1))
 
         self.assertIn("Invalid file", page_content)
 
@@ -1677,10 +1677,10 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/receivables/receipt_multiple.xlsx")
         
         self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 302, (Sale_receipt, 6))
+            {"file": file}, 302, (SaleReceipt, 6))
 
         # Test DB was updated correctly
-        new_receipt = Sale_receipt.objects.get(
+        new_receipt = SaleReceipt.objects.get(
         point_of_sell=self.pos1, number="00000003")
         self.assertEqual(new_receipt.issue_date, datetime.date(2024, 2, 23))
         self.assertEqual(new_receipt.point_of_sell, self.pos1)
@@ -1704,7 +1704,7 @@ class ErpTestCase(BackBaseTest):
         file = get_file("erp/tests/files/receivables/receipt_repeated.xlsx")
 
         page_content = self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 400, (Sale_receipt, 1))
+            {"file": file}, 400, (SaleReceipt, 1))
         
         self.assertIn("Receipt 00001-00000002 already exists or repeated",
             page_content
@@ -1721,7 +1721,7 @@ class ErpTestCase(BackBaseTest):
         )
         
         page_content = self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 400, (Sale_receipt, 1))
+            {"file": file}, 400, (SaleReceipt, 1))
 
         for text in ["must be only digits", "cannot be blank"]:
             self.assertIn(text, page_content)
@@ -1733,7 +1733,7 @@ class ErpTestCase(BackBaseTest):
         )
         
         page_content = self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 400, (Sale_receipt, 1))
+            {"file": file}, 400, (SaleReceipt, 1))
        
         self.assertIn("higher than invoice total", page_content)
 
@@ -1744,7 +1744,7 @@ class ErpTestCase(BackBaseTest):
         )
         
         page_content = self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 400, (Sale_receipt, 1))
+            {"file": file}, 400, (SaleReceipt, 1))
 
         self.assertIn("column ri_pos doesn't exist in the records.", 
             page_content
@@ -1757,7 +1757,7 @@ class ErpTestCase(BackBaseTest):
         )
         
         page_content = self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 400, (Sale_receipt, 1))
+            {"file": file}, 400, (SaleReceipt, 1))
     
         self.assertIn("selected date is not within the current year.",
             page_content
@@ -1770,7 +1770,7 @@ class ErpTestCase(BackBaseTest):
         )
         
         page_content = self.check_page_post_response("erp:receivables_new_massive", 
-            {"file": file}, 400, (Sale_receipt, 1))
+            {"file": file}, 400, (SaleReceipt, 1))
         
         self.assertIn("column recipient doesn't exist in the records.",
             page_content)
@@ -1806,7 +1806,7 @@ class ErpTestCase(BackBaseTest):
             }
 
         self.check_page_post_response(["erp:receivables_edit", {
-            "rec_pk": self.sale_receipt1.pk}], post_object, 302, (Sale_receipt, 
+            "rec_pk": self.sale_receipt1.pk}], post_object, 302, (SaleReceipt, 
             1)
         )
         
@@ -1832,7 +1832,7 @@ class ErpTestCase(BackBaseTest):
             }
            
         self.check_page_post_response(["erp:receivables_edit", {
-            "rec_pk": self.sale_receipt1.pk}], post_object, 302, (Sale_receipt, 
+            "rec_pk": self.sale_receipt1.pk}], post_object, 302, (SaleReceipt, 
             1)
         )
         

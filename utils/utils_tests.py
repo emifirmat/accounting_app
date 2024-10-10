@@ -9,24 +9,24 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
-from erp.models import Payment_term, Payment_method
+from erp.models import PaymentTerm, PaymentMethod
 
 
 """DB custom functions"""
 def create_extra_pay_terms():
     """Create additional payment terms for testing."""
-    Payment_term.objects.bulk_create([
-        Payment_term(pay_term="60"),
-        Payment_term(pay_term="90"),
-        Payment_term(pay_term="180"),
+    PaymentTerm.objects.bulk_create([
+        PaymentTerm(pay_term="60"),
+        PaymentTerm(pay_term="90"),
+        PaymentTerm(pay_term="180"),
     ])
 
 
 def create_extra_pay_methods():
     """Create additional payment methods for testing."""
-    Payment_method.objects.bulk_create([
-        Payment_method(pay_method="Debit Card"),
-        Payment_method(pay_method="Check"),
+    PaymentMethod.objects.bulk_create([
+        PaymentMethod(pay_method="Debit Card"),
+        PaymentMethod(pay_method="Check"),
     ])
 
 """Back end custom functinos"""

@@ -7,8 +7,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from company.models import Company
-from ..models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line, Sale_receipt)
+from ..models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
+    PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt)
 
 
 @tag("erp_api")
@@ -26,14 +26,14 @@ class APIErpTests(APITestCase):
             creation_date = datetime.date(1991, 3, 10),
             closing_date = datetime.date(2024, 6, 30),
         )
-        cls.client1 = Company_client.objects.create(
+        cls.client1 = CompanyClient.objects.create(
             tax_number = "20361382481",
             name = "Client1 SRL",
             address = "Client street, Client city, Chile",
             email = "client1@email.com",
             phone = "1234567890",
         )
-        cls.client2 = Company_client.objects.create(
+        cls.client2 = CompanyClient.objects.create(
             tax_number = "20361382482",
             name = "Client2 SRL",
             address = "Client street 2, Client city, Chile",
@@ -55,39 +55,39 @@ class APIErpTests(APITestCase):
             email = "supplier2@email.com",
             phone = "22222222222",
         )
-        cls.pay_method1 = Payment_method.objects.create(
+        cls.pay_method1 = PaymentMethod.objects.create(
             pay_method = "Cash",
         )
-        cls.pay_method2 = Payment_method.objects.create(
+        cls.pay_method2 = PaymentMethod.objects.create(
             pay_method = "Transfer",
         )
-        cls.pay_term1 = Payment_term.objects.create(
+        cls.pay_term1 = PaymentTerm.objects.create(
             pay_term = "30",
         )
-        cls.pay_term2 = Payment_term.objects.create(
+        cls.pay_term2 = PaymentTerm.objects.create(
             pay_term = "0",
         )
-        cls.pos1 = Point_of_sell.objects.create(
+        cls.pos1 = PointOfSell.objects.create(
             pos_number = "00001",
         )
-        cls.pos2 = Point_of_sell.objects.create(
+        cls.pos2 = PointOfSell.objects.create(
             pos_number = "00002",
         )
-        cls.pos3 = Point_of_sell.objects.create(
+        cls.pos3 = PointOfSell.objects.create(
             pos_number = "00003",
         )
-        cls.doc_type1 = Document_type.objects.create(
+        cls.doc_type1 = DocumentType.objects.create(
             code = "1",
             type = "FA",
             type_description = "FACTURAS A",
             hide = False,
         )
-        cls.doc_type2 = Document_type.objects.create(
+        cls.doc_type2 = DocumentType.objects.create(
             code = "2",
             type = "FB",
             type_description = "FACTURAS B",
         )
-        cls.sale_invoice = Sale_invoice.objects.create(
+        cls.sale_invoice = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 21),
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
@@ -97,7 +97,7 @@ class APIErpTests(APITestCase):
             payment_method = cls.pay_method1,
             payment_term = cls.pay_term1,
         )
-        cls.sale_invoice_line = Sale_invoice_line.objects.create(
+        cls.sale_invoice_line = SaleInvoiceLine.objects.create(
             sale_invoice = cls.sale_invoice,
             description = "A test product",
             taxable_amount = Decimal(900),
@@ -105,7 +105,7 @@ class APIErpTests(APITestCase):
             vat_amount = Decimal(100),
             total_amount = Decimal(1000),
         )
-        cls.sale_invoice2 = Sale_invoice.objects.create(
+        cls.sale_invoice2 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             type = cls.doc_type1,
             point_of_sell = cls.pos1,
@@ -115,7 +115,7 @@ class APIErpTests(APITestCase):
             payment_method = cls.pay_method2,
             payment_term = cls.pay_term2,
         )
-        cls.sale_receipt = Sale_receipt.objects.create(
+        cls.sale_receipt = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             point_of_sell = cls.pos1,
             number = "00000001",
@@ -125,7 +125,7 @@ class APIErpTests(APITestCase):
             description = "First payment 60%",
             total_amount = Decimal(600),
         )
-        cls.sale_receipt2 = Sale_receipt.objects.create(
+        cls.sale_receipt2 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 1, 23),
             point_of_sell = cls.pos1,
             number = "00000002",
@@ -140,7 +140,7 @@ class APIErpTests(APITestCase):
     def test_company_client_api(self):
         response = self.client.get(reverse("erp:clients_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Company_client.objects.count(), 2)
+        self.assertEqual(CompanyClient.objects.count(), 2)
         self.assertContains(response, "20361382481")
 
     def test_detail_company_client_api(self):
@@ -166,7 +166,7 @@ class APIErpTests(APITestCase):
     def test_payment_methods_api(self):
         response = self.client.get(reverse("erp:payment_methods_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Payment_method.objects.count(), 2)
+        self.assertEqual(PaymentMethod.objects.count(), 2)
         self.assertContains(response, "Transfer")
     
     def test_payment_method_api(self):
@@ -179,7 +179,7 @@ class APIErpTests(APITestCase):
     def test_payment_terms_api(self):
         response = self.client.get(reverse("erp:payment_terms_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Payment_term.objects.count(), 2)
+        self.assertEqual(PaymentTerm.objects.count(), 2)
         self.assertContains(response, "30")
 
     def test_payment_term_api(self):
@@ -192,7 +192,7 @@ class APIErpTests(APITestCase):
     def test_points_of_sell_api(self):
         response = self.client.get(reverse("erp:pos_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Point_of_sell.objects.count(), 3)
+        self.assertEqual(PointOfSell.objects.count(), 3)
         self.assertContains(response, "00003")
 
     def test_point_of_sell_api(self):
@@ -205,7 +205,7 @@ class APIErpTests(APITestCase):
     def test_doc_types_api(self):
         response = self.client.get(reverse("erp:doc_types_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Document_type.objects.count(), 2)
+        self.assertEqual(DocumentType.objects.count(), 2)
         self.assertContains(response, "FACTURAS A")
 
     def test_doc_type_api(self):
@@ -218,7 +218,7 @@ class APIErpTests(APITestCase):
     def test_sale_invoices_api(self):
         response = self.client.get(reverse("erp:sale_invoices_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Sale_invoice.objects.count(), 2)
+        self.assertEqual(SaleInvoice.objects.count(), 2)
         self.assertContains(response, "00000001")
         self.assertContains(response, "00000002")
 
@@ -232,7 +232,7 @@ class APIErpTests(APITestCase):
     def test_sale_receipts_api(self):
         response = self.client.get(reverse("erp:sale_receipts_api"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Sale_receipt.objects.count(), 2)
+        self.assertEqual(SaleReceipt.objects.count(), 2)
         self.assertContains(response, "00000001")
         self.assertContains(response, "400")
         self.assertContains(response, "00000002")

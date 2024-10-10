@@ -2,8 +2,8 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 
-from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice, Sale_receipt)
+from .models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
+    PointOfSell, DocumentType, SaleInvoice, SaleReceipt)
 from .serializers import (CClientSerializer, SupplierSerializer, 
     PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer,
     DocTypesSerializer, SaleInvoicesSerializer, SaleReceiptsSerializer)
@@ -11,13 +11,13 @@ from .serializers import (CClientSerializer, SupplierSerializer,
 
 class CompanyClientAPI(generics.ListAPIView):
     """Show API list of clients"""
-    queryset = Company_client.objects.all()
+    queryset = CompanyClient.objects.all()
     serializer_class = CClientSerializer
 
 
 class DetailCompanyClientAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific client"""
-    queryset = Company_client.objects.all()
+    queryset = CompanyClient.objects.all()
     serializer_class = CClientSerializer
 
 
@@ -35,7 +35,7 @@ class DetailSupplierAPI(generics.RetrieveUpdateDestroyAPIView):
 
 class PaymentMethodAPI(generics.ListCreateAPIView):
     """CRUD API of payment methods"""
-    queryset = Payment_method.objects.all()
+    queryset = PaymentMethod.objects.all()
     serializer_class = PaymentMethodSerializer
 
     def create(self, request, *args, **kwargs):
@@ -57,13 +57,13 @@ class PaymentMethodAPI(generics.ListCreateAPIView):
 
 class DetailPaymentMethodAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific payment method"""
-    queryset = Payment_method.objects.all()
+    queryset = PaymentMethod.objects.all()
     serializer_class = PaymentMethodSerializer
 
 
 class PaymentTermAPI(generics.ListCreateAPIView):
     """CRUD API of payment terms"""
-    queryset = Payment_term.objects.all()
+    queryset = PaymentTerm.objects.all()
     serializer_class = PaymentTermSerializer
 
     def create(self, request, *args, **kwargs):
@@ -85,52 +85,52 @@ class PaymentTermAPI(generics.ListCreateAPIView):
 
 class DetailPaymentTermAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific payment term"""
-    queryset = Payment_term.objects.all()
+    queryset = PaymentTerm.objects.all()
     serializer_class = PaymentTermSerializer
 
 
 class PointOfSellAPI(generics.ListCreateAPIView):
     """CRUD API of Point of sells"""
-    queryset = Point_of_sell.objects.all()
+    queryset = PointOfSell.objects.all()
     serializer_class = PointOfSellSerializer
 
 
 class DetailPointOfSellAPI(generics.RetrieveUpdateAPIView):
     """CRUD API of specific POS"""
-    queryset = Point_of_sell.objects.all()
+    queryset = PointOfSell.objects.all()
     serializer_class = PointOfSellSerializer
 
 
 class DocTypesAPI(generics.ListAPIView):
     """View API of doc types"""
-    queryset = Document_type.objects.all()
+    queryset = DocumentType.objects.all()
     serializer_class = DocTypesSerializer
 
 
 class DocTypeAPI(generics.RetrieveUpdateAPIView):
     """Vies API of especific doc type"""
-    queryset = Document_type.objects.all()
+    queryset = DocumentType.objects.all()
     serializer_class = DocTypesSerializer
 
 
 class SaleInvoicesAPI(generics.ListCreateAPIView):
     """CRUD API of sale invoices"""
-    queryset = Sale_invoice.objects.all()
+    queryset = SaleInvoice.objects.all()
     serializer_class = SaleInvoicesSerializer
 
 
 class SaleInvoiceAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale invoice"""
-    queryset = Sale_invoice.objects.all()
+    queryset = SaleInvoice.objects.all()
     serializer_class = SaleInvoicesSerializer
 
 class SaleReceiptsAPI(generics.ListCreateAPIView):
     """CRUD API of sale receipts"""
-    queryset = Sale_receipt.objects.all()
+    queryset = SaleReceipt.objects.all()
     serializer_class = SaleReceiptsSerializer
 
 
 class SaleReceiptAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale receipt"""
-    queryset = Sale_receipt.objects.all()
+    queryset = SaleReceipt.objects.all()
     serializer_class = SaleReceiptsSerializer

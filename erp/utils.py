@@ -6,12 +6,12 @@ from django.http import HttpResponseBadRequest
 
 
 from company.models import Company
-from .models import (Sale_invoice, Sale_invoice_line, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Company_client, Sale_receipt)
+from .models import (SaleInvoice, SaleInvoiceLine, PaymentMethod, PaymentTerm,
+    PointOfSell, DocumentType, CompanyClient, SaleReceipt)
 
 def update_invoice_collected_status(invoice):
     """Check and update invoice's collected attribute"""
-    receipts = Sale_receipt.objects.filter(related_invoice=invoice
+    receipts = SaleReceipt.objects.filter(related_invoice=invoice
     ).aggregate(total=Sum("total_amount")) 
     
     # If there's no instance
@@ -74,26 +74,26 @@ def get_sale_invoice_objects(total_fields, total_fields_row, index,
     commercial_document=""):
     """Get all objects from fields that are related with other models"""
     
-    get_object_from_subfield("point_of_sell", Point_of_sell, total_fields,
+    get_object_from_subfield("point_of_sell", PointOfSell, total_fields,
         total_fields_row, index, "pos_number", value_function=lambda x: x.zfill(5))
     get_object_from_subfield("sender", Company, total_fields,
         total_fields_row, index, "tax_number")
-    get_object_from_subfield("recipient", Company_client, total_fields,
+    get_object_from_subfield("recipient", CompanyClient, total_fields,
         total_fields_row, index, "tax_number")    
     
     if commercial_document == "invoice":
-        get_object_from_subfield("type", Document_type, total_fields,
+        get_object_from_subfield("type", DocumentType, total_fields,
         total_fields_row, index, "code", value_function=lambda x: x.zfill(3))
-        get_object_from_subfield("payment_method", Payment_method, total_fields,
+        get_object_from_subfield("payment_method", PaymentMethod, total_fields,
         total_fields_row, index, "pay_method", 
         value_function=lambda x: x.capitalize())
-        get_object_from_subfield("payment_term", Payment_term, total_fields,
+        get_object_from_subfield("payment_term", PaymentTerm, total_fields,
         total_fields_row, index, "pay_term")
       
     elif commercial_document == "receipt":
-        get_object_from_subfield("ri_type", Document_type, total_fields,
+        get_object_from_subfield("ri_type", DocumentType, total_fields,
         total_fields_row, index, "code", value_function=lambda x: x.zfill(3))
-        get_object_from_subfield("ri_pos", Point_of_sell, total_fields,
+        get_object_from_subfield("ri_pos", PointOfSell, total_fields,
         total_fields_row, index, "pos_number", value_function=lambda x: x.zfill(5))
         
     return total_fields_row

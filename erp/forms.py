@@ -5,8 +5,8 @@ from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
 
 from company.models import Company
-from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line, Sale_receipt)
+from .models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
+    PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt)
 from .validators import validate_is_digit, validate_file_extension
 
 
@@ -14,7 +14,7 @@ from .validators import validate_is_digit, validate_file_extension
 class CclientForm(forms.ModelForm):
     """Form for a client"""
     class Meta:
-        model = Company_client
+        model = CompanyClient
         fields = ["name", "address", "email", "phone", "tax_number"]
         help_texts = {
             "tax_number": "Only numbers.",
@@ -62,7 +62,7 @@ class SupplierForm(forms.ModelForm):
 class PaymentTermForm(forms.ModelForm):
     """Add a new payment term"""
     class Meta:
-        model = Payment_term
+        model = PaymentTerm
         fields = "__all__"
         labels = {
             "pay_term": "New payment term",
@@ -72,7 +72,7 @@ class PaymentTermForm(forms.ModelForm):
 class PaymentMethodForm(forms.ModelForm):
     "Add a new payment method"
     class Meta:
-        model = Payment_method
+        model = PaymentMethod
         fields = "__all__"
         labels = {
             "pay_method": "New payment method",
@@ -82,7 +82,7 @@ class PaymentMethodForm(forms.ModelForm):
 class PointOfSellForm(forms.ModelForm):
     """Add a new company's point of sell"""
     class Meta:
-        model = Point_of_sell
+        model = PointOfSell
         fields = ["pos_number",]
         labels = {
             "pos_number": "Point of sell",
@@ -95,7 +95,7 @@ class PointOfSellForm(forms.ModelForm):
 class SaleInvoiceForm(forms.ModelForm):
     """Create a new invoice"""
     class Meta:
-        model = Sale_invoice
+        model = SaleInvoice
         fields = ["issue_date", "type", "point_of_sell", "number", "sender", "recipient",
             "payment_method", "payment_term"]
         help_texts = {
@@ -129,13 +129,13 @@ class SaleInvoiceForm(forms.ModelForm):
             self.fields["sender"].disabled = True
 
         # In type field, show only visible types
-        self.fields["type"].queryset = Document_type.objects.filter(hide=False)
+        self.fields["type"].queryset = DocumentType.objects.filter(hide=False)
 
 
 class SaleInvoiceLineForm(forms.ModelForm):
     """Create a new line of products details for an especific invoice"""
     class Meta:
-        model = Sale_invoice_line
+        model = SaleInvoiceLine
         fields = ["description", "not_taxable_amount", "taxable_amount",
             "vat_amount"]
         help_texts = {
@@ -147,7 +147,7 @@ class SaleInvoiceLineForm(forms.ModelForm):
 
 
 SaleInvoiceLineFormSet = inlineformset_factory(
-    Sale_invoice, Sale_invoice_line, form=SaleInvoiceLineForm, extra=1, 
+    SaleInvoice, SaleInvoiceLine, form=SaleInvoiceLineForm, extra=1, 
     can_delete=True, min_num=1, validate_min=True
 )
 
@@ -223,7 +223,7 @@ class SearchByDateForm(forms.Form):
 class SaleReceiptForm(forms.ModelForm):
     """Create a new receipt"""
     class Meta:
-        model = Sale_receipt
+        model = SaleReceipt
         fields = ["issue_date", "point_of_sell", "number", "related_invoice",
                 "sender", "recipient", "description", "total_amount"]
         help_texts = {

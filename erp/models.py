@@ -62,7 +62,7 @@ class CommercialDocumentLineModel(models.Model):
         return super(CommercialDocumentLineModel, self).save(*args, **kwargs)
 
 
-class Company_client(PersonModel):
+class CompanyClient(PersonModel):
     """Create a company's client"""
     pass
 
@@ -70,15 +70,15 @@ class Supplier(PersonModel):
     """Create a company's supplier"""
     pass    
 
-class Client_current_account(CurrentAccountModel):
+class ClientCurrentAccount(CurrentAccountModel):
     """Track client's current account"""
-    client = models.ForeignKey(Company_client, on_delete=models.CASCADE)
+    client = models.ForeignKey(CompanyClient, on_delete=models.CASCADE)
     
     def __str__(self):
         return f"{self.client}: $ {self.amount}"
     
 
-class Supplier_current_account(CurrentAccountModel):
+class SupplierCurrentAccount(CurrentAccountModel):
     """Track suppliers's current account"""
     """Amount is the amount of a transaction, not the total"""
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
@@ -87,7 +87,7 @@ class Supplier_current_account(CurrentAccountModel):
         return f"{self.supplier}: $ {self.amount}"
     
 
-class Point_of_sell(models.Model):
+class PointOfSell(models.Model):
     """Company's point of sell"""
     pos_number = models.CharField(max_length=5, unique=True, validators=[
         validate_is_digit
@@ -98,13 +98,13 @@ class Point_of_sell(models.Model):
     def save(self, *args, **kwargs):
         # Complete numbers with 0
         self.pos_number = self.pos_number.zfill(5)
-        return super(Point_of_sell, self).save(*args, **kwargs)
+        return super(PointOfSell, self).save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.pos_number}"
 
 
-class Document_type(models.Model):
+class DocumentType(models.Model):
     """Type of the document"""
     code = models.CharField(max_length=3, unique=True, validators=[
         validate_is_digit,
@@ -127,10 +127,10 @@ class Document_type(models.Model):
         self.code = self.code.zfill(3)
         self.type = self.type.upper()
         self.type_description = self.type_description.upper()
-        return super(Document_type, self).save(*args, **kwargs)
+        return super(DocumentType, self).save(*args, **kwargs)
 
 
-class Payment_method(models.Model):
+class PaymentMethod(models.Model):
     """Establish payment methods for invoices"""
     pay_method = models.CharField(max_length=50, unique=True)
 
@@ -140,10 +140,10 @@ class Payment_method(models.Model):
     def save(self, *args, **kwargs):
         # Format fields
         self.type = self.pay_method.capitalize()
-        return super(Payment_method, self).save(*args, **kwargs)
+        return super(PaymentMethod, self).save(*args, **kwargs)
     
 
-class Payment_term(models.Model):
+class PaymentTerm(models.Model):
     """Establish payment terms for invoices"""
     pay_term = models.CharField(max_length=3, unique=True, validators=[
         validate_is_digit
@@ -153,14 +153,14 @@ class Payment_term(models.Model):
         return f"{self.pay_term} days"
 
 
-class Sale_invoice(CommercialDocumentModel):
+class SaleInvoice(CommercialDocumentModel):
     """Create a sale invoice"""
-    type = models.ForeignKey(Document_type, on_delete=models.PROTECT)
-    point_of_sell = models.ForeignKey(Point_of_sell, on_delete=models.PROTECT)
+    type = models.ForeignKey(DocumentType, on_delete=models.PROTECT)
+    point_of_sell = models.ForeignKey(PointOfSell, on_delete=models.PROTECT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(Company_client, on_delete=models.PROTECT)
-    payment_method = models.ForeignKey(Payment_method, on_delete=models.PROTECT)
-    payment_term = models.ForeignKey(Payment_term, on_delete=models.PROTECT)
+    recipient = models.ForeignKey(CompanyClient, on_delete=models.PROTECT)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.PROTECT)
     collected = models.BooleanField(default=False)
 
     class Meta:
@@ -189,17 +189,17 @@ class Sale_invoice(CommercialDocumentModel):
         super().clean()
         validate_invoices_date_number_correlation(__class__, self)
         
-class Sale_invoice_line(CommercialDocumentLineModel):
+class SaleInvoiceLine(CommercialDocumentLineModel):
     """Product/service detail of the sale invoice"""
-    sale_invoice = models.ForeignKey(Sale_invoice, on_delete=models.CASCADE,
+    sale_invoice = models.ForeignKey(SaleInvoice, on_delete=models.CASCADE,
         related_name="s_invoice_lines")
 
-class Sale_receipt(CommercialDocumentModel):
+class SaleReceipt(CommercialDocumentModel):
     """Create a sale receipt"""
-    point_of_sell = models.ForeignKey(Point_of_sell, on_delete=models.PROTECT)
-    related_invoice = models.ForeignKey(Sale_invoice, on_delete=models.RESTRICT)
+    point_of_sell = models.ForeignKey(PointOfSell, on_delete=models.PROTECT)
+    related_invoice = models.ForeignKey(SaleInvoice, on_delete=models.RESTRICT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(Company_client, on_delete=models.PROTECT)
+    recipient = models.ForeignKey(CompanyClient, on_delete=models.PROTECT)
     description = models.CharField(max_length=280)
     total_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
@@ -224,17 +224,17 @@ class Sale_receipt(CommercialDocumentModel):
         validate_receipt_date_number_correlation(__class__, self)
         validate_receipt_total_amount(__class__, self)
 
-class Purchase_invoice(CommercialDocumentModel):
+class PurchaseInvoice(CommercialDocumentModel):
     """Record a purchase invoice"""
     # POS is different from Sale invoice, as dif suppliers have dif POS.
-    type = models.ForeignKey(Document_type, on_delete=models.PROTECT)
+    type = models.ForeignKey(DocumentType, on_delete=models.PROTECT)
     point_of_sell = models.CharField(max_length=5, validators=[
         validate_is_digit
     ])
     sender = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     recipient = models.ForeignKey(Company, on_delete=models.PROTECT)
-    payment_method = models.ForeignKey(Payment_method, on_delete=models.PROTECT)
-    payment_term = models.ForeignKey(Payment_term, on_delete=models.PROTECT)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.PROTECT)
 
     class Meta:
         constraints = [
@@ -246,19 +246,19 @@ class Purchase_invoice(CommercialDocumentModel):
     def __str__(self):
         return f"{self.issue_date} | {self.type.type} {self.point_of_sell}-{self.number}"
 
-class Purchase_invoice_line(CommercialDocumentLineModel):
+class PurchaseInvoiceLine(CommercialDocumentLineModel):
     """Product/service detail of the purchase invoice"""
-    purchase_invoice = models.ForeignKey(Purchase_invoice, on_delete=models.CASCADE,
+    purchase_invoice = models.ForeignKey(PurchaseInvoice, on_delete=models.CASCADE,
         related_name="p_invoice_lines")
 
 
-class Purchase_receipt(CommercialDocumentModel):
+class PurchaseReceipt(CommercialDocumentModel):
     """Record a purchase receipt"""
     # POS is different from Sale invoice, as dif suppliers have dif POS.
     point_of_sell = models.CharField(max_length=5, validators=[
         validate_is_digit
     ])
-    related_invoice = models.ForeignKey(Purchase_invoice, on_delete=models.RESTRICT)
+    related_invoice = models.ForeignKey(PurchaseInvoice, on_delete=models.RESTRICT)
     sender = models.ForeignKey(Supplier, on_delete=models.CASCADE)
     recipient = models.ForeignKey(Company, on_delete=models.PROTECT)
     description = models.CharField(max_length=280)

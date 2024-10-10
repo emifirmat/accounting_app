@@ -2,13 +2,13 @@
 from rest_framework import serializers
 
 from company.models import Company
-from .models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice, Sale_receipt)
+from .models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
+    PointOfSell, DocumentType, SaleInvoice, SaleReceipt)
 
 
 class CClientSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Company_client
+        model = CompanyClient
         fields = "__all__"
 
     def validate_tax_number(self, value):
@@ -36,34 +36,34 @@ class SupplierSerializer(serializers.ModelSerializer):
     
 class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Payment_method
+        model = PaymentMethod
         fields = "__all__"
 
 
 class PaymentTermSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Payment_term
+        model = PaymentTerm
         fields = "__all__"
 
 
 class PointOfSellSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Point_of_sell
+        model = PointOfSell
         fields = "__all__"
 
 
 class DocTypesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Document_type
+        model = DocumentType
         fields = "__all__"
 
 
 class SaleInvoicesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Sale_invoice
+        model = SaleInvoice
         fields = "__all__"
 
 class SaleReceiptsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Sale_receipt
+        model = SaleReceipt
         fields = "__all__"

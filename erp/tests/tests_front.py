@@ -17,8 +17,8 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 
 
 from company.models import Company, FinancialYear
-from ..models import (Company_client, Supplier, Payment_method, Payment_term,
-    Point_of_sell, Document_type, Sale_invoice, Sale_invoice_line, Sale_receipt)
+from ..models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
+    PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt)
 from utils.utils_tests import (go_to_section, element_has_selected_option, 
     edit_person_click_on_person, edit_person_click_on_edit, fill_field,
     delete_person_click_on_delete, pay_conditions_click_default,
@@ -62,7 +62,7 @@ class FrontBaseTest(StaticLiveServerTestCase):
             closing_date = datetime.date(2024, 6, 30),
         )
         
-        self.c_client1 = Company_client.objects.create(
+        self.c_client1 = CompanyClient.objects.create(
             tax_number = "20361382481",
             name = "Client1 SRL",
             address = "Client street, Client city, Chile",
@@ -70,7 +70,7 @@ class FrontBaseTest(StaticLiveServerTestCase):
             phone = "1234567890",
         )
 
-        self.c_client2 = Company_client.objects.create(
+        self.c_client2 = CompanyClient.objects.create(
             tax_number = "99999999999",
             name = "Client2 SA",
             address = "Client2 street, Client city, Chile",
@@ -94,13 +94,13 @@ class FrontBaseTest(StaticLiveServerTestCase):
             phone = "987654321",
         )
 
-        self.pos1 = Point_of_sell.objects.create(pos_number = "00001")
+        self.pos1 = PointOfSell.objects.create(pos_number = "00001")
 
-        self.pay_method1 = Payment_method.objects.create(pay_method = "Cash")
-        self.pay_method2 = Payment_method.objects.create(pay_method = "Transfer")
+        self.pay_method1 = PaymentMethod.objects.create(pay_method = "Cash")
+        self.pay_method2 = PaymentMethod.objects.create(pay_method = "Transfer")
 
-        self.pay_term1 = Payment_term.objects.create(pay_term = "0")
-        self.pay_term2 = Payment_term.objects.create(pay_term = "30")
+        self.pay_term1 = PaymentTerm.objects.create(pay_term = "0")
+        self.pay_term2 = PaymentTerm.objects.create(pay_term = "30")
 
 
 """Tests"""
@@ -253,8 +253,8 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_payment_term_d")
     def test_payment_conditions_term_default(self):
         # Clean payment cond instances and go to Payment Conditions page.
-        Payment_term.objects.all().delete()
-        Payment_method.objects.all().delete()
+        PaymentTerm.objects.all().delete()
+        PaymentMethod.objects.all().delete()
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
         # Click on default
@@ -270,8 +270,8 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_payment_method_d")
     def test_payment_conditions_method_default(self):
         # Clean payment cond instances and go to Payment Conditions page.
-        Payment_term.objects.all().delete()
-        Payment_method.objects.all().delete()
+        PaymentTerm.objects.all().delete()
+        PaymentMethod.objects.all().delete()
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
         # Click on default
@@ -343,7 +343,7 @@ class ErpFrontTestCase(FrontBaseTest):
     def test_payment_terms_view_list_and_delete(self):
         # Create data
         create_extra_pay_terms()
-        self.assertEqual(Payment_term.objects.all().count(), 5)
+        self.assertEqual(PaymentTerm.objects.all().count(), 5)
 
         # Go to Payment Conditions page.
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
@@ -363,13 +363,13 @@ class ErpFrontTestCase(FrontBaseTest):
 
         # Delete an entry
         pay_conditions_delete_confirm_button(self.driver, path)
-        self.assertEqual(Payment_term.objects.all().count(), 4)
+        self.assertEqual(PaymentTerm.objects.all().count(), 4)
 
     @tag("erp_payment_method_v")
     def test_payment_methods_view_list_and_delete(self):
         # Create data
         create_extra_pay_methods()
-        self.assertEqual(Payment_method.objects.all().count(), 4)
+        self.assertEqual(PaymentMethod.objects.all().count(), 4)
     
 
         # Go to Payment Conditions page.
@@ -390,7 +390,7 @@ class ErpFrontTestCase(FrontBaseTest):
 
         # Delete an entry
         pay_conditions_delete_confirm_button(self.driver, path)
-        self.assertEqual(Payment_method.objects.all().count(), 3)
+        self.assertEqual(PaymentMethod.objects.all().count(), 3)
 
 
     @tag("erp_pos_n")
@@ -505,23 +505,23 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         FinancialYear.objects.create(year="2024", current=True)
         
-        self.pos2 = Point_of_sell.objects.create(pos_number = "00002")
+        self.pos2 = PointOfSell.objects.create(pos_number = "00002")
 
-        self.doc_type1 = Document_type.objects.create(
+        self.doc_type1 = DocumentType.objects.create(
             type = "A",
             code = "001",
             type_description = "Invoice A",
             hide = False,
         )
         
-        self.doc_type2 = Document_type.objects.create(
+        self.doc_type2 = DocumentType.objects.create(
             type = "B",
             code = "002",
             type_description = "Invoice B",
             hide = False,
         )
 
-        self.sale_invoice1 = Sale_invoice.objects.create(
+        self.sale_invoice1 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 21), 
             type = self.doc_type1, 
             point_of_sell = self.pos1,
@@ -534,14 +534,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             collected = True, 
         )
         
-        self.sale_invoice1_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice1_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice1,
             description = "Test sale invoice",
             taxable_amount = Decimal("1000"),
             not_taxable_amount = Decimal("90.01"),
             vat_amount = Decimal("210"),
         )
-        self.sale_invoice1_line2 = Sale_invoice_line.objects.create(
+        self.sale_invoice1_line2 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice1,
             description = "Other products",
             taxable_amount = Decimal("999"),
@@ -549,7 +549,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             vat_amount = Decimal("209.99"),
         )
 
-        self.sale_receipt1 = Sale_receipt.objects.create(
+        self.sale_receipt1 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
             point_of_sell = self.pos1,
             number = "00000001",
@@ -563,7 +563,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
     def create_extra_invoices(self):
         """Add extra invoices in necessary tests"""
-        self.sale_invoice2 = Sale_invoice.objects.create(
+        self.sale_invoice2 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             type = self.doc_type2,
             point_of_sell = self.pos1,
@@ -574,7 +574,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_term = self.pay_term2,
         )
 
-        self.sale_invoice3 = Sale_invoice.objects.create(
+        self.sale_invoice3 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 23),
             type = self.doc_type1,
             point_of_sell = self.pos1,
@@ -584,7 +584,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_method = self.pay_method1,
             payment_term = self.pay_term1
         )
-        self.sale_invoice4 = Sale_invoice.objects.create(
+        self.sale_invoice4 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 23),
             type=self.doc_type1,
             point_of_sell = self.pos1,
@@ -594,7 +594,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_method=self.pay_method2, 
             payment_term = self.pay_term1
         )
-        self.sale_invoice5 = Sale_invoice.objects.create(
+        self.sale_invoice5 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 24),
             type = self.doc_type2,
             point_of_sell = self.pos1,
@@ -604,7 +604,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_method = self.pay_method1, 
             payment_term = self.pay_term1
         )
-        self.sale_invoice6 = Sale_invoice.objects.create(
+        self.sale_invoice6 = SaleInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 24),
             type=self.doc_type2,
             point_of_sell=self.pos1,
@@ -614,7 +614,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_method=self.pay_method2, 
             payment_term=self.pay_term1
         )
-        self.sale_invoice7 = Sale_invoice.objects.create(
+        self.sale_invoice7 = SaleInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 25),
             type=self.doc_type1,
             point_of_sell=self.pos2,
@@ -624,7 +624,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_method=self.pay_method1, 
             payment_term=self.pay_term1
         )
-        self.sale_invoice8 = Sale_invoice.objects.create(
+        self.sale_invoice8 = SaleInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 25),
             type=self.doc_type1,
             point_of_sell=self.pos2,
@@ -634,7 +634,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_method=self.pay_method2,
             payment_term=self.pay_term1
         )
-        self.sale_invoice9 = Sale_invoice.objects.create(
+        self.sale_invoice9 = SaleInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 26),
             type=self.doc_type2,
             point_of_sell=self.pos2,
@@ -644,7 +644,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_method=self.pay_method1,
             payment_term=self.pay_term1
         )
-        self.sale_invoice10 = Sale_invoice.objects.create(
+        self.sale_invoice10 = SaleInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 26),
             type=self.doc_type2,
             point_of_sell=self.pos2,
@@ -655,63 +655,63 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             payment_term=self.pay_term1
         )
         
-        self.sale_invoice2_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice2_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice2,
             description = "Second sale invoice",
             taxable_amount = Decimal("999.99"),
             not_taxable_amount = Decimal("0.02"),
             vat_amount = Decimal("209.09"),
         )
-        self.sale_invoice3_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice3_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice3,
             description = "Third sale invoice",
             taxable_amount = Decimal("3"),
             not_taxable_amount = Decimal("3"),
             vat_amount = Decimal("3"),
         )
-        self.sale_invoice4_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice4_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice4,
             description = "Forth sale invoice",
             taxable_amount = Decimal("4"),
             not_taxable_amount = Decimal("4"),
             vat_amount = Decimal("4"),
         )
-        self.sale_invoice5_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice5_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice5,
             description = "Fifth sale invoice",
             taxable_amount = Decimal("5"),
             not_taxable_amount = Decimal("5"),
             vat_amount = Decimal("5"),
         )
-        self.sale_invoice6_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice6_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice6,
             description = "Sixth sale invoice",
             taxable_amount = Decimal("6"),
             not_taxable_amount = Decimal("6"),
             vat_amount = Decimal("6"),
         )
-        self.sale_invoice7_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice7_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice7,
             description = "Seventh sale invoice",
             taxable_amount = Decimal("7"),
             not_taxable_amount = Decimal("7"),
             vat_amount = Decimal("7"),
         )
-        self.sale_invoice8_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice8_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice8,
             description = "Eighth sale invoice",
             taxable_amount = Decimal("8"),
             not_taxable_amount = Decimal("8"),
             vat_amount = Decimal("8"),
         )
-        self.sale_invoice9_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice9_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice9,
             description = "Ninth sale invoice",
             taxable_amount = Decimal("9"),
             not_taxable_amount = Decimal("9"),
             vat_amount = Decimal("9"),
         )
-        self.sale_invoice10_line1 = Sale_invoice_line.objects.create(
+        self.sale_invoice10_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice10,
             description = "Tenth sale invoice",
             taxable_amount = Decimal("10"),
@@ -724,7 +724,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.create_extra_invoices() # Function dependant
         self.sale_invoice2.collected = True # Update imvoice 2 status
         
-        self.sale_receipt2 = Sale_receipt.objects.create(
+        self.sale_receipt2 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 22),
             point_of_sell = self.pos1,
             number = "00000002",
@@ -734,7 +734,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("600.01"),
         )
-        self.sale_receipt3 = Sale_receipt.objects.create(
+        self.sale_receipt3 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 23),
             point_of_sell = self.pos1,
             number = "00000003",
@@ -744,7 +744,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("609"),
         )
-        self.sale_receipt4 = Sale_receipt.objects.create(
+        self.sale_receipt4 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 3, 24),
             point_of_sell = self.pos2,
             number = "00000001",
@@ -754,7 +754,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("5"),
         )
-        self.sale_receipt5 = Sale_receipt.objects.create(
+        self.sale_receipt5 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 3, 24),
             point_of_sell = self.pos2,
             number = "00000002",
@@ -764,7 +764,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             recipient = self.c_client1,
             total_amount = Decimal("5"),
         )
-        self.sale_receipt6 = Sale_receipt.objects.create(
+        self.sale_receipt6 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 3, 24),
             point_of_sell = self.pos1,
             number = "00000004",
@@ -1118,7 +1118,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         WebDriverWait(self.driver, 20).until(
             EC.staleness_of(path)
         )
-        self.assertEqual(Sale_invoice.objects.all().count(), 9)
+        self.assertEqual(SaleInvoice.objects.all().count(), 9)
 
     @tag("erp_front_invoice_edit")
     def test_sales_invoice_edit(self):
@@ -1506,7 +1506,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         search_fill_field(self.driver, "id_number", "1 ")
         
         path = self.driver.find_element(By.ID, "receipt-list")
-        receipt_list = first_input_search(self.driver, path, "id_number", "1", 2)
+        receipt_list = first_input_search(self.driver, path, "id_number", "1 ",
+            2)
      
         self.assertIn("00002-00000001", receipt_list[0].text)
 
@@ -1583,7 +1584,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         search_fill_field(self.driver, "id_related_invoice", "1 ")
         path = self.driver.find_element(By.ID, "receipt-list")
         receipt_list = first_input_search(self.driver, path, "id_related_invoice",
-            "1", 6)
+            "1 ", 6)
 
         self.assertIn("00001", receipt_list[0].text)
         
@@ -1649,7 +1650,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         path = self.driver.find_element(By.ID, "receipt-list")
         receipt_list = first_input_search(self.driver, path, "id_related_invoice",
-            "3", 1)
+            "3 ", 1)
         
         self.assertIn("00001-00000004", receipt_list[0].text)        
 
@@ -1694,7 +1695,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         WebDriverWait(self.driver, 20).until(
             EC.staleness_of(path)
         )
-        self.assertEqual(Sale_receipt.objects.all().count(), 5)
+        self.assertEqual(SaleReceipt.objects.all().count(), 5)
         self.sale_invoice2.refresh_from_db()
         time.sleep(0.5)
         self.assertEqual(self.sale_invoice2.collected, False)
@@ -1764,7 +1765,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Receivables")
         
         # Check DB update
-        self.assertEqual(Sale_receipt.objects.all().count(), 0)
+        self.assertEqual(SaleReceipt.objects.all().count(), 0)
         self.sale_invoice1.refresh_from_db()
         self.assertEqual(self.sale_invoice1.collected, False) 
         
