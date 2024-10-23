@@ -60,6 +60,7 @@ def get_file(file_path):
 
 
 """Selenium custom functions"""
+# General actions
 def go_to_section(driver, module, section_index):
     """
     Go to a section of the navbar.
@@ -72,77 +73,68 @@ def go_to_section(driver, module, section_index):
     path = driver.find_element(By.ID, f"{module}-menu")
     path.find_elements(By.CLASS_NAME, "dropdown-item")[section_index].click()
 
-def edit_person_click_on_person(driver, person_index):
+def go_to_link(driver, selector, parent_selector_name, url, link_index=0):
     """
-    Click on client/supplier in edit section
+    Simplify the necessary code to click a link and wait till the page change.
     Parameters:
     - driver: WebDriver.
-    - person_number: Index of the client/supplier I want to click.
-    """
-    path = driver.find_elements(By.CLASS_NAME, "specific-person")
-    path[person_index].click()
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.ID, "person-details"))
-    )
+    - selector: WebDrvier's selector. IE: By.TAG_NAME, By.CLASS_NAME, etc.
+    - parent_selector_name: Selector's name of parent element.
+    - url: Url that should change after clicking.
+    - link_index: Index of link element. Default: 0.
 
-def edit_person_click_on_edit(driver):
-    """Click in edit button after clicking a client/supplier in edit section"""
-    path = driver.find_element(By.ID, "person-details")
-    path.find_element(By.TAG_NAME, "button").click()
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.ID, "person-edit-form"))
-    )
-
-def fill_field(path, field, value):
     """
-    While editing a client/supplier, fill a field.
+    path = driver.find_element(selector, parent_selector_name)
+    path.find_elements(By.TAG_NAME, "a")[link_index].click()
+    WebDriverWait(driver, 10).until(EC.url_changes(url))
+
+def click_and_wait(driver, element_id, waiting_time=0.5):
+    """
+    Click an element and wait a certain time.
+    Parameters:
+    - driver: WebDriver
+    - element_id: id of the element I want to click.
+    - waiting_time: Time to wait after clicking. Default 2.
+    """
+    driver.find_element(By.ID, element_id).click()
+    time.sleep(waiting_time)
+
+def click_and_redirect(driver, selector, selector_name, current_url, 
+        parent_element=None):
+    """
+    Do a click on an element and wait until current url changes.
+    Paramenters:
+    - driver: WebDriver.
+    - selector: Selector name for finding the target element.
+    - selector_name: Selector's name of the element, necessary for searching it.
+    - current_url: Current url before clicking.
+    - parent_element: Parent element of the target one. Default: None.
+    """
+    root = parent_element or driver
+    root.find_element(selector, selector_name).click()
+    WebDriverWait(driver, 10).until(EC.url_changes(current_url))
+
+def fill_field(driver, path, field, value):
+    """
+    Pick, clean and fill a field. It waits until the value is loaded on page.
     Parameters: 
-    - path: parent element of field; 
-    - field: tax_number, etc.;
+    - driver: WebDriver
+    - path: parent element of field.
+    - field: tax_number, etc.
     - value: value of the field to submit.  
     """
+    # Clear and add value in input
     selected_field = path.find_element(By.NAME, field)
     selected_field.clear()
     selected_field.send_keys(value)
-    path.find_element(By.TAG_NAME, "button").click()
-
-def delete_person_click_on_delete(driver):
-    """In delete client/supplier section, click on delete button"""
-    path = driver.find_element(By.ID, "person-details")
-    path.find_element(By.TAG_NAME, "button").click()
-    WebDriverWait(driver, 10).until(EC.alert_is_present())
-
-def pay_conditions_click_default(driver, condition_index):  
-    """
-    In payment conditions sections, cLick on default button.
-    Paramenters: 
-    - driver: WebDriver.
-    - conditions_index: 0 is term, 1 is method.
-    """
-    path = driver.find_elements(By.CLASS_NAME, "default-button")
-    path[condition_index].click()
     
-    WebDriverWait(driver, 10).until(EC.alert_is_present())
-    driver.switch_to.alert.accept()
+    # Wait until input was added
+    selected_field = path.find_element(By.NAME, field)
+    input_value = selected_field.get_attribute("value")
 
-def pay_conditions_delete_confirm_button(driver, path):
-    """
-    In payment conditions section, click on delete and confirm.
-    Paramenters: 
-    - driver: web driver; 
-    - path: location of delete button.
-    """
-    delete_button = path.find_elements(By.CLASS_NAME, "delete-item")[1]
-    delete_button.click()  
     WebDriverWait(driver, 10).until(
-        EC.text_to_be_present_in_element(
-            (By.ID, "view-list"),
-            "Confirm"
-        )
+        lambda driver: input_value == value
     )
-    # Click in confirm
-    delete_button.click()
-    WebDriverWait(driver, 10).until(EC.staleness_of(delete_button))
 
 def element_has_selected_option(locator, option_text):
     """
@@ -175,6 +167,82 @@ def pick_option_by_index(driver, element_id, index, expected_value):
         element_has_selected_option((By.ID, element_id), expected_value)
     )
 
+def get_columns_data(row, start=0, end=-1):
+    """
+    Return all the data from columns.
+    Parameters: 
+    - row: row element container of each cell.
+    - start: Starting column.
+    - end: ending column.
+    """
+    row_data = row.find_elements(By.TAG_NAME, "td")
+    for i in range(start, end):
+        yield row_data[i]
+
+
+
+# By section functions
+
+def edit_person_click_on_person(driver, person_index): #TODO
+    """
+    Click on client/supplier in edit section
+    Parameters:
+    - driver: WebDriver.
+    - person_number: Index of the client/supplier I want to click.
+    """
+    path = driver.find_elements(By.CLASS_NAME, "specific-person")
+    path[person_index].click()
+    WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.ID, "person-details"))
+    )
+
+def edit_person_click_on_edit(driver): #TODO
+    """Click in edit button after clicking a client/supplier in edit section"""
+    path = driver.find_element(By.ID, "person-details")
+    path.find_element(By.TAG_NAME, "button").click()
+    WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.ID, "person-edit-form"))
+    )
+
+
+def delete_person_click_on_delete(driver): # TODO
+    """In delete client/supplier section, click on delete button"""
+    path = driver.find_element(By.ID, "person-details")
+    path.find_element(By.TAG_NAME, "button").click()
+    WebDriverWait(driver, 10).until(EC.alert_is_present())
+
+def pay_conditions_click_default(driver, condition_index):  # TODO
+    """
+    In payment conditions sections, cLick on default button.
+    Paramenters: 
+    - driver: WebDriver.
+    - conditions_index: 0 is term, 1 is method.
+    """
+    path = driver.find_elements(By.CLASS_NAME, "default-button")
+    path[condition_index].click()
+    
+    WebDriverWait(driver, 10).until(EC.alert_is_present())
+    driver.switch_to.alert.accept()
+
+def pay_conditions_delete_confirm_button(driver, path):
+    """
+    In payment conditions section, click on delete and confirm.
+    Paramenters: 
+    - driver: web driver; 
+    - path: location of delete button.
+    """
+    delete_button = path.find_elements(By.CLASS_NAME, "delete-item")[1]
+    delete_button.click()  
+    WebDriverWait(driver, 10).until(
+        EC.text_to_be_present_in_element(
+            (By.ID, "view-list"),
+            "Confirm"
+        )
+    )
+    # Click in confirm
+    delete_button.click()
+    WebDriverWait(driver, 10).until(EC.staleness_of(delete_button))
+
 def search_fill_field(driver, element_id, value):
     """
     While searching, fill the field to search.
@@ -191,91 +259,28 @@ def search_fill_field(driver, element_id, value):
         ActionChains(driver).send_keys(char).perform()
         time.sleep(0.05)
 
-def search_clear_field(driver, element_id):
+def search_clear_field(driver, element_id, first_element_list=None):
     """
-    While searching, clear the searched field.
+    Clear the searched field using ActionChains and explicit backspace.
     Parameters: 
-    - driver: Webdriver; 
-    - element_id: id of field I want to clear;
+    - driver: Webdriver.
+    - element_id: id of field I want to clear.
+    - first_element_list: First element of the list that should be cleared at
+    the end. Optional (if there are multiple fields completed, WebDriverWait 
+    won't work).
     """
     field = driver.find_element(By.ID, element_id)
-    # I use action chains as sometimes there's conflict with regular click and
-    # clear method."
     action = ActionChains(driver).move_to_element(field).click(field)
-    for i in range(len(field.get_attribute("value"))):
+    for char in field.get_attribute("value"):
         action.send_keys(Keys.BACKSPACE).perform()
         time.sleep(0.05)
+    if first_element_list:
+        WebDriverWait(driver, 10).until(EC.staleness_of(first_element_list))
 
-def get_columns_data(row, start=0, end=-1):
-    """
-    Return all the data from columns in one go.
-    Parameters: 
-    - row: row element container of each cell.
-    - start: Starting column.
-    - end: ending column.
-    """
-    row_data = row.find_elements(By.TAG_NAME, "td")
-    for i in range(start, end):
-        yield row_data[i]
-
-def click_and_wait(driver, element_id, waiting_time=0.5):
-    """
-    Click an element and wait a certain time.
-    Parameters:
-    - driver: WebDriver
-    - element_id: id of the element I want to click.
-    - waiting_time: Time to wait after clicking. Default 2.
-    """
-    driver.find_element(By.ID, element_id).click()
-    time.sleep(waiting_time)
-
-def webdriverwait_count(driver, doc_list, count):
-    """
-    Custom webdriverwait to compare number of elements
-    Parameters: 
-    - driver: WebDriver;
-    - doc_list: List I want to compare;
-    - count: Expected length of the list;
-    Returns:
-    - Bool
-    """
-    try:
-        WebDriverWait(driver, 1).until(
-            lambda d: len(doc_list) == count
-        )
-        return True
-    except TimeoutException:
-        return False
-
-
-def manual_explicit_wait(driver, path, count):
-    """
-    Manual and dynamic explicit wait for searching tests that takes time to load.
-    If js doesn't load, it waits 0.5 secs as many times as the tries_limit.
-    Parameters: 
-    - driver: WebDriver;
-    - path: Parent of the list to check count; 
-    - count: Expected count.
-    Returns:
-    - Updated version of doc_list
-    - Value error: When couldn't find the match.
-    """
-    # Update list before waiting
-    doc_list = path.find_elements(By.TAG_NAME, 'li')
-    
-    if webdriverwait_count(driver, doc_list, count):
-        return doc_list
-    else:
-        raise ValueError(
-            f"manual_explicit_waiting used unsuccesfully."
-            f"Expected list len: {count}, list_len output: "
-            f"{len(doc_list)}."
-        )
-
-def first_input_search(driver, path, id_element, input, count):
+def search_first_input(driver, path, id_element, input, count):
     """
     As it's the first input, sometimes selenium doesn't load the script properly,
-    so that, it refresh the input up to 3 times.
+    so that, it refreshes the input up to 3 times.
     Note: Wait for script to be ready, time.sleeps and looping explicit waits 
     were attemped before and they didn't work or they're time consuming.
     Parameters:
@@ -287,9 +292,33 @@ def first_input_search(driver, path, id_element, input, count):
     """
     for i in range(3):
         try:
-            return manual_explicit_wait(driver, path, count)
+            return web_driver_wait_count(driver, path, count)
         except ValueError:
             search_clear_field(driver, id_element)
             search_fill_field(driver, id_element, input)
-    return manual_explicit_wait(driver, path, count)
+    return web_driver_wait_count(driver, path, count)
 
+# WebDriver functions
+def web_driver_wait_count(driver, path, count):
+    """
+    Custom webdriverwait that compares the number of elements in a list with the
+    expected count. It returns the updated list or it raises a ValueError. 
+    Parameters: 
+    - driver: WebDriver;
+    - path: Parent of the list to check count; 
+    - count: Expected count.
+    Returns:
+    - Updated version of doc_list
+    - Value error: When couldn't find the match.
+    """
+    # Update list before waiting
+    doc_list = path.find_elements(By.TAG_NAME, 'li')
+    
+    try: 
+        WebDriverWait(driver, 1).until(lambda d: len(doc_list) == count)
+        return doc_list
+    except TimeoutException:
+        raise ValueError(
+            f"web_driver_wait_count failed. Expected list len: {count}, "
+            f"list_len output: {len(doc_list)}."
+        )

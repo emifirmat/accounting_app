@@ -2,13 +2,13 @@
 {% load static %}
 
 {% block title %}
-    Receipt {{ receipt.point_of_sell }}-{{ receipt.number }}
+    Receipt {{ receipt }}
 {% endblock title %}
 
 {% block body %}
 
     <h2>Receipt N° {{ receipt.point_of_sell }}-{{ receipt.number }}</h2>
-    <a id="edit-button" href="{% url 'erp:receivables_edit' receipt.id %}">Edit</a>
+    <a id="edit-button" class="edit-button" href="{% url 'erp:receivables_edit' receipt.id %}">Edit</a>
     <button id="delete-button" data-document="receipt" data-id="{{ receipt.id }}"
     data-pos="{{ receipt.point_of_sell }}" data-number="{{ receipt.number }}"
     data-invoice="{{ receipt.related_invoice.id }}">Delete</button>
@@ -78,4 +78,5 @@
     <script src="{% static 'js/document_detail.js' %}"></script>
     <script src="{% static 'js/document_delete.js' %}"></script>
     <script src="{% static 'js/crud.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
 {% endblock script %}

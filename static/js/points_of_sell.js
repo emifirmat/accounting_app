@@ -44,8 +44,10 @@ async function showPOSList() {
     
     // Add item from the list
     list.forEach(item => {
-        const listItem = document.createElement('li');
-        listItem.innerHTML = item.pos_number;
+        const listItem = createElementComplete({
+            tagName: 'li',
+            innerHTML: item.pos_number
+        });
         listSection.append(listItem);
     })
 }
@@ -54,7 +56,6 @@ async function disablePOS() {
     // Disable a POS
     const POSNumber = event.target.innerHTML.trim()
     const confirmElement = confirm(`Are you sure that you want to disable the POS number ${POSNumber}?`);
-    const csrfToken = getCookie('csrftoken'); // crud.js
     const POSList = await getList('/erp/api/points_of_sell'); // crud.js
     let POSId;
 

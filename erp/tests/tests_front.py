@@ -21,10 +21,11 @@ from ..models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
     PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt)
 from utils.utils_tests import (go_to_section, element_has_selected_option, 
     edit_person_click_on_person, edit_person_click_on_edit, fill_field,
-    delete_person_click_on_delete, pay_conditions_click_default,
+    delete_person_click_on_delete, pay_conditions_click_default, go_to_link,
     pay_conditions_delete_confirm_button, pick_option_by_index, search_fill_field,
     search_clear_field, create_extra_pay_terms, create_extra_pay_methods,
-    get_columns_data, manual_explicit_wait, click_and_wait, first_input_search)
+    get_columns_data, web_driver_wait_count, click_and_wait, search_first_input,
+    click_and_redirect)
 
 
 class FrontBaseTest(StaticLiveServerTestCase):
@@ -144,6 +145,7 @@ class ErpFrontTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Supplier Current Account")
         """
 
+    @tag("erp_client_edit")
     def test_client_edit(self):
         # Go to edit client page
         self.driver.get(f"{self.live_server_url}/erp/client/edit")
@@ -153,18 +155,21 @@ class ErpFrontTestCase(FrontBaseTest):
         edit_person_click_on_person(self.driver, 1)
         edit_person_click_on_edit(self.driver)
         
-        # Alter data, add company's tax number
         path = self.driver.find_element(By.ID, "person-edit-form")
-        fill_field(path, "tax_number", "20361382480")
+        
+        # Alter data, add company's tax number
+        fill_field(self.driver, path, "tax_number", "20361382480")
+        path.find_element(By.TAG_NAME, "button").click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "edit-message"),
                 "The tax number you're trying to add belongs to the company."
             )
         )
+        
         # Alter data again, add a correct id 
-        path = self.driver.find_element(By.ID, "person-edit-form")
-        fill_field(path, "tax_number", "12345678901")
+        fill_field(self.driver, path, "tax_number", "12345678901")
+        path.find_element(By.TAG_NAME, "button").click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "person-list"),
@@ -197,6 +202,7 @@ class ErpFrontTestCase(FrontBaseTest):
         self.assertNotIn("20361382480", path[0].text)
         self.assertEqual(len(path), 1)
         
+    @tag("erp_front_supplier_edit")
     def test_supplier_edit(self):
         # Go to edit supplier page
         self.driver.get(f"{self.live_server_url}/erp/supplier/edit")
@@ -206,21 +212,25 @@ class ErpFrontTestCase(FrontBaseTest):
         edit_person_click_on_person(self.driver, 0)
         edit_person_click_on_edit(self.driver)
 
-        # Alter data, add company's tax number
+        
         path = self.driver.find_element(By.ID, "person-edit-form")
-        fill_field(path, "tax_number", "20361382480")
+        
+        # Alter data, add company's tax number
+        fill_field(self.driver, path, "tax_number", "20361382480")
+        path.find_element(By.TAG_NAME, "button").click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "edit-message"),
                 "The tax number you're trying to add belongs to the company."
             )
         )
+
         # Alter data again, add a correct id 
-        fill_field(path, "tax_number", "12345678901")
+        fill_field(self.driver, path, "tax_number", "12345678901")
+        path.find_element(By.TAG_NAME, "button").click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "person-list"),
-                "12345678901"
+                (By.ID, "person-list"), "12345678901"
             )
         )
     
@@ -262,8 +272,7 @@ class ErpFrontTestCase(FrontBaseTest):
 
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"),
-                "Default for term loaded successfully."
+                (By.ID, "message-section"), "Default for term loaded successfully."
             )
         )
 
@@ -279,8 +288,7 @@ class ErpFrontTestCase(FrontBaseTest):
 
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"),
-                "Default for method loaded successfully."
+                (By.ID, "message-section"), "Default for method loaded successfully."
             )
         )
 
@@ -293,21 +301,21 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.find_elements(By.CLASS_NAME, "add-button")[0].click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "new-term"),
-                "New payment term"
+                (By.ID, "new-term"), "New payment term"
             )
         )
         
-        # Add and submit data in form
-        path = self.driver.find_element(By.ID, "new-term")
-        fill_field(path, "pay_term",180)
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
         
+        path = self.driver.find_element(By.ID, "new-term")
+        # Add and submit data in form
+        fill_field(self.driver, path, "pay_term", "180")
+        path.find_element(By.TAG_NAME, "button").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        # Accept alert
         self.driver.switch_to.alert.accept()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"),
-                "New term added successfully"
+                (By.ID, "message-section"), "New term added successfully"
             )
         )
 
@@ -321,21 +329,21 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.find_elements(By.CLASS_NAME, "add-button")[1].click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "new-method"),
-                "New payment method"
+                (By.ID, "new-method"), "New payment method"
             )
         )
         
-        # Add and submit data in form
         path = self.driver.find_element(By.ID, "new-method")
-        fill_field(path, "pay_method", "Hand")
+        
+        # Add and submit data in form
+        fill_field(self.driver, path, "pay_method", "Hand")
+        path.find_element(By.TAG_NAME, "button").click()
         WebDriverWait(self.driver, 10).until(EC.alert_is_present())
-
+        # Accept alarm
         self.driver.switch_to.alert.accept()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"),
-                "New method added successfully"
+                (By.ID, "message-section"), "New method added successfully"
             )
         )
 
@@ -354,8 +362,7 @@ class ErpFrontTestCase(FrontBaseTest):
         # Check title and list
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "view-title"),
-                "Payment terms"
+                (By.ID, "view-title"), "Payment terms"
             )
         )
         path = self.driver.find_element(By.ID, "view-list")
@@ -398,17 +405,18 @@ class ErpFrontTestCase(FrontBaseTest):
         # Go to POS page.
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
 
-        # Write new pos in form
         path = self.driver.find_element(By.ID, "new-pos-form")
-        fill_field(path, "pos_number", "00003")
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
         
-        self.driver.switch_to.alert.accept()
+        # Write new pos in form        
+        fill_field(self.driver, path, "pos_number", "00003")
+        path.find_element(By.TAG_NAME, "button").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+    
         # Check if it was added
+        self.driver.switch_to.alert.accept()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"),
-                "Point of Sell added succesfully."
+                (By.ID, "message-section"), "Point of Sell added succesfully."
             )
         )
 
@@ -437,13 +445,11 @@ class ErpFrontTestCase(FrontBaseTest):
 
         # click on disable a pos
         self.driver.find_element(By.ID, "dropdown-disable-menu").click()
-        
         self.driver.find_elements(By.CSS_SELECTOR, ".dropdown-item.pos")[0].click()
         WebDriverWait(self.driver, 10).until(EC.alert_is_present())
         
-        # Confirm
+        # Confirm and Check if it was disabled
         self.driver.switch_to.alert.accept()
-        # Check if it was disabled
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "message-section"),
@@ -459,14 +465,14 @@ class ErpFrontTestCase(FrontBaseTest):
     def test_doc_types_visibility(self):
         # Go to Document Types page.
         self.driver.get(f"{self.live_server_url}/erp/document_types")
-        
-        # Click on unhide on docs 001 and 002
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element((By.ID, "invisible-list"), "002")
         )
+
+        # Click on unhide on docs 001 and 002
         path = self.driver.find_element(By.ID, "invisible-list")
         unhide_buttons = path.find_elements(By.TAG_NAME, "button")
-        # User JS click as regular click doesn't work
+        # Use JS click as regular click doesn't work
         self.driver.execute_script("arguments[0].click();", unhide_buttons[1])
         self.driver.execute_script("arguments[0].click();", unhide_buttons[0])
         WebDriverWait(self.driver, 10).until(
@@ -477,15 +483,16 @@ class ErpFrontTestCase(FrontBaseTest):
         )
         
         # Check that docs are not in invisible list
-        self.assertNotIn("002", path.text)
-        self.assertNotIn("001", path.text)
-        # Check that doc 001 is in visible list
+        for code in ["001", "002"]:
+            self.assertNotIn(code, path.text)
+        
+        # Check that docs 001 and 002 are in visible list
         path = self.driver.find_element(By.ID, "visible-list")
-        self.assertIn("001", path.text)
+        for code in ["001", "002"]:
+            self.assertIn(code, path.text)
         
         # Move back doc 002 to invisible list
-        hide_buttons = path.find_elements(By.TAG_NAME, "button")
-        hide_buttons[1].click()
+        path.find_elements(By.TAG_NAME, "button")[1].click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "invisible-list"),
@@ -825,27 +832,22 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         pick_option_by_index(self.driver, "id_point_of_sell", 2, "00002")
         self.assertEqual(number_field.get_attribute("value"), "3")
 
+    @tag("erp_new_invoice_link_t")
     def test_sales_new_invoice_link_type(self):
-        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/new")
+        url = f"{self.live_server_url}/erp/sales/invoices/new"
+        self.driver.get(url)
 
-        # Click on Go to type link
-        path = self.driver.find_element(By.ID, "invoice-form")
-        path.find_elements(By.TAG_NAME, "a")[0].click()
-        WebDriverWait(self.driver, 20).until(
-            EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/new")
-        )
+        # Click on "Go to type" link-
+        go_to_link(self.driver, By.ID, "invoice-form", url, 0)
         self.assertEqual(self.driver.title, "Document Types")
 
     def test_sales_new_invoice_link_pos(self):
         # Go to Sales new invoice page.
-        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/new")
+        url = f"{self.live_server_url}/erp/sales/invoices/new"
+        self.driver.get(url)
 
-        # Click on Go to type link
-        path = self.driver.find_element(By.ID, "invoice-form")
-        path.find_elements(By.TAG_NAME, "a")[1].click()
-        WebDriverWait(self.driver, 20).until(
-            EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/new")
-        )
+        # Click on "Go to pos" link-
+        go_to_link(self.driver, By.ID, "invoice-form", url, 1)
         self.assertEqual(self.driver.title, "Points of Sell")
         
     @tag("erp_new_invoice_line")
@@ -857,7 +859,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         button = path.find_element(By.ID, "new-line")
         # JS click as regular one doesn't work.
         self.driver.execute_script("arguments[0].click();", button)
-        WebDriverWait(self.driver, 20).until(
+        WebDriverWait(self.driver, 10).until(
             EC.visibility_of_element_located(
                 (By.ID, "id_s_invoice_lines-1-description")
             )
@@ -865,7 +867,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Click again. JS click as regular one doesn't work.
         self.driver.execute_script("arguments[0].click();", button)
-        WebDriverWait(self.driver, 20).until(
+        WebDriverWait(self.driver, 10).until(
             EC.visibility_of_element_located(
                 (By.ID, "id_s_invoice_lines-2-description")
             )
@@ -879,27 +881,24 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_type", 3)
         
+        path = self.driver.find_element(By.ID, "invoice-list")
+        
         # Search by type
         search_fill_field(self.driver, "id_type", "a")
-        path = self.driver.find_element(By.ID, "invoice-list")
-        invoice_list = first_input_search(self.driver, path, "id_type", "a", 5)
+        invoice_list = search_first_input(self.driver, path, "id_type", "a", 5)
 
         self.assertIn("A | ", invoice_list[0].text)
         
-        search_clear_field(self.driver, "id_type")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(invoice_list[0]))
+        search_clear_field(self.driver, "id_type", invoice_list[0])
         
         # Test Pos
         search_fill_field(self.driver, "id_pos", " 2")
-        # Web driver gives fake error, I use manual wait
-        invoice_list = manual_explicit_wait(self.driver, path, 4)
+        invoice_list = web_driver_wait_count(self.driver, path, 4)
         
         self.assertIn("B | 00002-", invoice_list[0].text)
         
-        search_clear_field(self.driver, "id_pos")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(invoice_list[0]))
-        
-        
+        search_clear_field(self.driver, "id_pos", invoice_list[0])
+             
     @tag("erp_front_search_2")
     def test_sales_new_search_invoice_one_field_part_2(self):
         self.create_extra_invoices()
@@ -908,46 +907,29 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_pos")
 
+        path = self.driver.find_element(By.ID, "invoice-list")
+
         # Test Number
         search_fill_field(self.driver, "id_number", "1 ")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"00001-00000001")
-        )
-
-        path = self.driver.find_element(By.ID, "invoice-list")
-        invoice_list = path.find_elements(By.TAG_NAME, "li")
-        self.assertEqual(len(invoice_list), 4)
+        invoice_list = search_first_input(self.driver, path, "id_number", "1", 4)
         
-        search_clear_field(self.driver, "id_number")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(invoice_list[0]))
+        self.assertIn("-00000001", invoice_list[0].text)
+        
+        search_clear_field(self.driver, "id_number", invoice_list[0])
 
         # Test Client tax number
         search_fill_field(self.driver, "id_client_tax_number", "13 ")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"), "00002-00000002")
-        )
+        invoice_list = web_driver_wait_count(self.driver, path, 6)
         
-        invoice_list = path.find_elements(By.TAG_NAME, "li")
-        last_invoice_in_list = invoice_list[-1]
-        first_invoice_in_list = invoice_list[0]
-        self.assertEqual(len(invoice_list), 6)
+        self.assertIn("20361382481", invoice_list[0].text)
         
-        search_clear_field(self.driver, "id_client_tax_number")
-        # Check all invoices disappeared
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(last_invoice_in_list))
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(first_invoice_in_list))
+        search_clear_field(self.driver, "id_client_tax_number", invoice_list[0])
         
         # Test Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT2 SA")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"CLIENT2 SA")
-        )
+        invoice_list = web_driver_wait_count(self.driver, path, 4)
 
-        invoice_list = path.find_elements(By.TAG_NAME, "li")
-        self.assertEqual(len(invoice_list), 4)
+        self.assertIn("CLIENT2 SA", invoice_list[0].text)
 
     @tag("erp_front_search_3")
     def test_sales_new_search_invoice_one_field_part_3(self):
@@ -957,23 +939,19 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_number")
 
+        path = self.driver.find_element(By.ID, "invoice-list")
+        
         # Test Year
         search_fill_field(self.driver, "id_year", "20")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"CLIENT1 SRL")
-        )
-
-        path = self.driver.find_element(By.ID, "invoice-list")
-        invoice_list = path.find_elements(By.TAG_NAME, "li")
-        self.assertEqual(len(invoice_list), 10)
+        invoice_list = search_first_input(self.driver, path, "id_year", "20", 10)
+       
+        self.assertIn("2024", invoice_list[0].text)
         
-        search_clear_field(self.driver, "id_year")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(invoice_list[0]))
+        search_clear_field(self.driver, "id_year", invoice_list[0])
         
         # Test month
         search_fill_field(self.driver, "id_month", "13")
-        invoice_list = manual_explicit_wait(self.driver, path, 0)
+        invoice_list = web_driver_wait_count(self.driver, path, 0)
         
         path = self.driver.find_element(By.ID, "invoice-list")
         self.assertIn("Couldn't match any invoice.", path.text)
@@ -986,41 +964,31 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_client_tax_number")
 
-        # Test multiple fields
-        # Type
-        search_fill_field(self.driver, "id_type", "a ")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"), "00002-00000002")
-        )
-
         path = self.driver.find_element(By.ID, "invoice-list")
-        invoice_list = path.find_elements(By.TAG_NAME, "li")
-        self.assertEqual(len(invoice_list), 5)
-        last_invoice_in_list = path.find_elements(By.TAG_NAME, "li")[-1]
         
-        # POS
+        # Test multiple fields: 1) Type
+        search_fill_field(self.driver, "id_type", "a ")
+        invoice_list = search_first_input(self.driver, path, "id_type", "a ", 5)
+ 
+        self.assertIn("A | ", invoice_list[0].text)
+        
+        # 2) POS
         search_fill_field(self.driver, "id_pos", " 2")
-        WebDriverWait(self.driver, 20).until(
-            EC.staleness_of(last_invoice_in_list)
-        )
-        last_invoice_in_list = path.find_elements(By.TAG_NAME, "li")[-1]
+        invoice_list = web_driver_wait_count(self.driver, path, 2)
+
+        self.assertIn("A | 00002", invoice_list[0].text)
         
         # Number
-        search_fill_field(self.driver, "id_number", "1 ")
-        WebDriverWait(self.driver, 20).until(
-            EC.staleness_of(last_invoice_in_list)
-        )
+        search_fill_field(self.driver, "id_number", " 1 ")
+        invoice_list = web_driver_wait_count(self.driver, path, 1)
 
-        invoice_list = path.find_elements(By.TAG_NAME, "li")
-        first_invoice_in_list = invoice_list[0]
-        self.assertEqual(len(invoice_list), 1)
+        self.assertIn("A | 00002-00000001", invoice_list[0].text)
         
         # Clear all fields
         for field_id in ["id_type", "id_pos", "id_number"]:
             search_clear_field(self.driver, field_id)
-        WebDriverWait(self.driver, 20).until(
-            EC.staleness_of(first_invoice_in_list)
+        WebDriverWait(self.driver, 10).until(
+            EC.staleness_of(invoice_list[0])
         )
 
     @tag("erp_front_search_multiple_2")
@@ -1031,56 +999,48 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_client_name")
 
+        path = self.driver.find_element(By.ID, "invoice-list")
+
         # Client tax field
         search_fill_field(self.driver, "id_client_tax_number", "99999")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"),"CLIENT2 SA")
-        )
+        invoice_list = search_first_input(self.driver, path, "id_client_tax_number",
+            "99999", 4)
         
-        path = self.driver.find_element(By.ID, "invoice-list")
-        invoice_list = path.find_elements(By.TAG_NAME, "li")
-        self.assertEqual(len(invoice_list), 4)
+        self.assertIn("99999999999", invoice_list[0].text)
 
         # Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT1 Srl")
-        WebDriverWait(self.driver, 20).until(
-            EC.staleness_of(invoice_list[-1])
-        )
+        invoice_list = web_driver_wait_count(self.driver, path, 0)
 
+        # No match
         path = self.driver.find_element(By.ID, "invoice-list")
         self.assertIn("Couldn't match any invoice.", path.text)
 
     @tag("erp_front_search_edit")
     def test_sales_new_search_invoice_edit(self):
         self.create_extra_invoices()
-        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
+        url = f"{self.live_server_url}/erp/sales/invoices/search"
+        self.driver.get(url)
 
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_year")
 
-        # Search invoice 1
-        # type
-        search_fill_field(self.driver, "id_type", "a ")
         path = self.driver.find_element(By.ID, "invoice-list")
         
-        invoice_list = first_input_search(self.driver, path, "id_type", "a", 5)
+        # Search invoice 1: type
+        search_fill_field(self.driver, "id_type", "a ")
+        invoice_list = search_first_input(self.driver, path, "id_type", "a", 5)
+        
         self.assertIn("A | ", invoice_list[0].text)
    
         # pos
         search_fill_field(self.driver, "id_pos", "1")
-        WebDriverWait(self.driver, 20).until(
-            EC.staleness_of(invoice_list[-1])
-        )
-        
-        path = self.driver.find_element(By.ID, "invoice-list")
+        invoice_list = web_driver_wait_count(self.driver, path, 3)
+
+        self.assertIn("A | 00001", invoice_list[0].text)
         
         # Click on edit button
-        edit_button = path.find_element(By.CLASS_NAME, "edit-button")
-        ActionChains(self.driver).move_to_element(edit_button).click(edit_button).perform()
-        WebDriverWait(self.driver, 20).until(
-            EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/search")
-        )
+        click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url, path)
         self.assertEqual(self.driver.title, "Edit Invoice")
         
     @tag("erp_front_search_delete")
@@ -1094,7 +1054,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Search invoice A | 00001-00000003
         # Type
         search_fill_field(self.driver, "id_type", "a ")
-        WebDriverWait(self.driver, 20).until(
+        WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "invoice-list"), "A | 00001-00000001")
         )
@@ -1104,7 +1064,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # POS
         search_fill_field(self.driver, "id_pos", "1")
-        invoice_list = manual_explicit_wait(self.driver, path, 3)
+        invoice_list = web_driver_wait_count(self.driver, path, 3)
         self.assertIn("A | 00001", invoice_list[0].text)
         
         # Click on delete button   
@@ -1112,26 +1072,92 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         delete_button = path.find_elements(By.CLASS_NAME, "delete-button")[1]
         self.driver.execute_script('arguments[0].click();', delete_button)
         # Accept emergent alert
-        WebDriverWait(self.driver, 20).until(EC.alert_is_present())
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
         self.driver.switch_to.alert.accept()
         # Wait for invoice list to disappear
-        WebDriverWait(self.driver, 20).until(
+        WebDriverWait(self.driver, 10).until(
             EC.staleness_of(path)
         )
         self.assertEqual(SaleInvoice.objects.all().count(), 9)
+
+    @tag("erp_front_search_delete_conflict")
+    def test_sales_new_search_invoice_delete_conflict(self):
+        self.create_extra_invoices()
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
+
+        # Click to load invoices in js.
+        click_and_wait(self.driver, "id_pos")
+
+        path = self.driver.find_element(By.ID, "invoice-list")
+
+        # Search invoice A | 00001-00000001
+        # Type
+        search_fill_field(self.driver, "id_type", " a")
+        invoice_list = search_first_input(self.driver, path, "id_type", " a", 5)       
+        
+        self.assertIn("A | ", invoice_list[0].text)
+        
+        # POS
+        search_fill_field(self.driver, "id_pos", "1")
+        invoice_list = web_driver_wait_count(self.driver, path, 3)
+        self.assertIn("A | 00001", invoice_list[0].text)
+
+        # Number
+        search_fill_field(self.driver, "id_number", "1")
+        invoice_list = web_driver_wait_count(self.driver, path, 1)
+        self.assertNotIn("A | 00001-00000002", invoice_list[0].text)
+        
+        # Click on delete button   
+        path = self.driver.find_element(By.ID, "invoice-list")     
+        delete_button = path.find_element(By.CLASS_NAME, "delete-button")
+        self.driver.execute_script('arguments[0].click();', delete_button)
+        # Accept emergent alert
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        # Wait for popup to appear
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.CLASS_NAME, "popup"))
+        )
+        # Cancel pop up
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[1].click()
+
+        #  Delete again  
+        path = self.driver.find_element(By.ID, "invoice-list")     
+        delete_button = path.find_element(By.CLASS_NAME, "delete-button")
+        self.driver.execute_script('arguments[0].click();', delete_button)
+        
+        # Accept emergent alert
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        # Wait for popup to appear
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(
+                (By.CLASS_NAME, "popup")
+        ))
+        # Accept pop up
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        accept_button = path.find_elements(By.TAG_NAME, "button")[0]
+        accept_button.click()
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(
+                (By.ID, "rr-title")
+        ))
+
+        self.assertEqual(self.driver.title, "Related Receipts")
+        self.assertEqual(SaleInvoice.objects.all().count(), 10)
+
 
     @tag("erp_front_invoice_edit")
     def test_sales_invoice_edit(self):
         # Go to invoice 2 webpage.
         self.create_extra_invoices()
-        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice2.pk}")
-        self.assertEqual(self.driver.title, "Invoice 00001-00000001")
+        url = f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice2.pk}"
+        self.driver.get(url)
+        self.assertEqual(self.driver.title, "Invoice B 00001-00000001")
 
         # Click on edit button
-        self.driver.find_element(By.ID, "edit-button").click()
-        WebDriverWait(self.driver, 15).until(
-            EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice2.pk}")
-        )
+        click_and_redirect(self.driver, By.ID, "edit-button", url)
         self.assertEqual(self.driver.title, "Edit Invoice")
 
         # Add line
@@ -1146,12 +1172,9 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         )
 
         # Go back to invoice detail
-        invoice_link = self.driver.find_element(By.ID, "invoice-link")
-        ActionChains(self.driver).move_to_element(invoice_link).click(invoice_link).perform()
-        WebDriverWait(self.driver, 10).until(
-            EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice2.pk}/edit")
-        )
-        self.assertEqual(self.driver.title, "Invoice 00001-00000001")
+        url = f"{url}/edit"
+        go_to_link(self.driver, By.ID, "invoice-link", url)
+        self.assertEqual(self.driver.title, "Invoice B 00001-00000001")
 
     @tag("erp_front_edit_invoice_number")
     def test_sales_invoice_edit_numbers(self):
@@ -1176,7 +1199,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Go to invoice 1 webpage.
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice7.pk}")
-        self.assertEqual(self.driver.title, "Invoice 00002-00000001")
+        self.assertEqual(self.driver.title, "Invoice A 00002-00000001")
 
         # Click on delete button
         self.driver.find_element(By.ID, "delete-button").click()
@@ -1184,10 +1207,72 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.driver.switch_to.alert.accept()
         
         # Wait 
-        WebDriverWait(self.driver, 15).until(
+        WebDriverWait(self.driver, 10).until(
             EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice7.pk}")
         )
         self.assertEqual(self.driver.title, "Sales")
+
+    @tag("erp_front_invoice_delete_conflict")
+    def test_sales_invoice_delete_conflict(self):
+        # Go to invoice 1 webpage.
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}")
+        self.assertEqual(self.driver.title, "Invoice A 00001-00000001")
+
+        # Click on delete button
+        self.driver.find_element(By.ID, "delete-button").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+        
+        # Wait for popup and cancel.
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.CLASS_NAME, "popup"))
+        )
+        # Cancel pop up
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[1].click()
+
+        #  Delete again  
+        self.driver.find_element(By.ID, "delete-button").click()
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        self.driver.switch_to.alert.accept()
+    
+        # Wait for popup to appear and accept
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located(
+                (By.CLASS_NAME, "popup")
+        ))
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[0].click()
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "rr-title"))
+        )
+
+        self.assertEqual(self.driver.title, "Related Receipts")
+        self.assertEqual(SaleInvoice.objects.all().count(), 1)
+
+    @tag("erp_front_invoice_rel_receipts_link_inv")
+    def test_sales_invoice_rel_receipts_links_invoice(self):
+        # Go to invoice 1 rel receipts webpage.
+        url = f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}"
+        url += f"/related_receipts"
+        self.driver.get(url)
+        self.assertEqual(self.driver.title, "Related Receipts")
+
+        # Check invoice link
+        go_to_link(self.driver, By.CLASS_NAME, "container", url, 0)
+        self.assertEqual(self.driver.title, "Invoice A 00001-00000001")
+
+    @tag("erp_front_invoice_rel_receipts_link_rec")
+    def test_sales_invoice_rel_receipts_links_receipt(self):
+        # Go to invoice 1 rel receipts webpage.
+        url = f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}"
+        url += f"/related_receipts"
+        self.driver.get(url)
+        self.assertEqual(self.driver.title, "Related Receipts")
+
+        # Check receipt link
+        go_to_link(self.driver, By.CLASS_NAME, "container", url, 1)
+        self.assertEqual(self.driver.title, "Receipt 00001-00000001")
 
     @tag("erp_front_show_list_tabs")
     def test_sales_show_list_tabs(self):
@@ -1196,18 +1281,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Click on year tab
         self.driver.find_element(By.ID, "year-tab").click()
-        WebDriverWait(self.driver, 20).until(
-            EC.visibility_of_element_located(
-                (By.ID, "id_year")
-            )
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "id_year"))
         )
         
         # Click on date tab
         self.driver.find_element(By.ID, "date-tab").click()
-        WebDriverWait(self.driver, 20).until(
-            EC.visibility_of_element_located(
-                (By.ID, "id_date_from")
-            )
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "id_date_from"))
         )
 
 
@@ -1436,112 +1517,88 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         WebDriverWait(self.driver, 10).until(
             # Rel invoices are ordered from newest to oldest
             element_has_selected_option((By.ID, "id_related_invoice"),
-                "2024-01-26 | B 00002-00000001")
+                "B 00002-00000001")
         )
         self.assertEqual(recipient_field.get_attribute('value'), str(self.c_client2.pk))
 
         # Pick another rel invoice and check recipient field changes again
         rel_invoice_field.select_by_index(3)
         WebDriverWait(self.driver, 10).until(
-            element_has_selected_option((By.ID, "id_related_invoice"),
-                "2024-01-25 | A 00002-00000001")
+            element_has_selected_option(
+                (By.ID, "id_related_invoice"), "A 00002-00000001"
+            )
         )        
         self.assertEqual(recipient_field.get_attribute("value"), str(self.c_client1.pk))
 
     def test_receivables_new_receipt_link_pos(self):
         # Go to Receivables new receipt page.
-        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/new")
+        url = f"{self.live_server_url}/erp/receivables/receipts/new"
+        self.driver.get(url)
 
         # Click on Go to type link
-        path = self.driver.find_element(By.ID, "receipt-form")
-        path.find_element(By.TAG_NAME, "a").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/new")
-        )
+        go_to_link(self.driver, By.ID, "receipt-form", url)
         self.assertEqual(self.driver.title, "Points of Sell")
     
     @tag("erp_front_receipt_search")
     def test_receivables_new_search_receipt_one_field_part_1(self):
         self.create_extra_receipts()
-        
-        # Go to search page.
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
       
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_related_invoice", 3)
 
+        path = self.driver.find_element(By.ID, "receipt-list")
+
         # Search related invoice.
         search_fill_field(self.driver, "id_related_invoice", "3")
-        path = self.driver.find_element(By.ID, "receipt-list")
-        
-        receipt_list = first_input_search(self.driver, path, "id_related_invoice",
+        receipt_list = search_first_input(self.driver, path, "id_related_invoice",
             "3", 1)
+
         self.assertIn("00001-00000004", receipt_list[0].text)
 
-        search_clear_field(self.driver, "id_related_invoice")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(receipt_list[0]))
+        search_clear_field(self.driver, "id_related_invoice", receipt_list[0])
         
         # Search Pos
         search_fill_field(self.driver, "id_pos", " 2")
-        receipt_list = path.find_elements(By.TAG_NAME, "li")
-        # Sometime it loads the space but not the 2, so I wait more.
-        receipt_list = manual_explicit_wait(self.driver, path, 2)
+        receipt_list = web_driver_wait_count(self.driver, path, 2)
 
         self.assertIn("00002", receipt_list[0].text)
         
-        search_clear_field(self.driver, "id_pos")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(receipt_list[0]))
+        search_clear_field(self.driver, "id_pos", receipt_list[0])     
         
       
     @tag("erp_front_receipt_search_2")
     def test_receivables_new_search_receipt_one_field_part_2(self):
         self.create_extra_receipts()
-        # Go to Sales search receipt page.
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
         
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_pos")
 
+        path = self.driver.find_element(By.ID, "receipt-list")
+        
         # Test Number
         search_fill_field(self.driver, "id_number", "1 ")
-        
-        path = self.driver.find_element(By.ID, "receipt-list")
-        receipt_list = first_input_search(self.driver, path, "id_number", "1 ",
+        receipt_list = search_first_input(self.driver, path, "id_number", "1 ",
             2)
      
         self.assertIn("00002-00000001", receipt_list[0].text)
 
-        search_clear_field(self.driver, "id_number")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(receipt_list[0]))
+        search_clear_field(self.driver, "id_number", receipt_list[0])
 
         # Test Client tax number
         search_fill_field(self.driver, "id_client_tax_number", "13 ")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "receipt-list"), "00002-00000002")
-        )
-
-        receipt_list = path.find_elements(By.TAG_NAME, "li")
-        last_receipt_in_list = receipt_list[-1]
-        first_receipt_in_list = receipt_list[0]
-        self.assertEqual(len(receipt_list), 5)
+        receipt_list = web_driver_wait_count(self.driver, path, 5)
         
-        search_clear_field(self.driver, "id_client_tax_number")
-        # Check if all invoices disappeared
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(last_receipt_in_list))
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(first_receipt_in_list))
+        self.assertIn("20361382481", receipt_list[0].text)
+        
+        search_clear_field(self.driver, "id_client_tax_number", receipt_list[0])
         
         # Test Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT2 SA")
-        WebDriverWait(self.driver, 20).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "receipt-list"),"CLIENT2 SA")
-        )
-
-        receipt_list = path.find_elements(By.TAG_NAME, "li")
-        self.assertEqual(len(receipt_list), 1)
-
-   
+        receipt_list = web_driver_wait_count(self.driver, path, 1)
+        
+        self.assertIn(" 99999999999", receipt_list[0].text)
 
     @tag("erp_front_receipt_search_3")
     def test_receivables_new_search_receipt_one_field_part_3(self):
@@ -1552,20 +1609,19 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_number")
         
+        path = self.driver.find_element(By.ID, "receipt-list")
+
         # Search Year
         search_fill_field(self.driver, "id_year", "20")
-        
-        path = self.driver.find_element(By.ID, "receipt-list")
-        receipt_list = first_input_search(self.driver, path, "id_year", "20", 6)
+        receipt_list = search_first_input(self.driver, path, "id_year", "20", 6)
       
         self.assertIn("2024", receipt_list[0].text)
         
-        search_clear_field(self.driver, "id_year")
-        WebDriverWait(self.driver, 20).until(EC.staleness_of(receipt_list[0]))
+        search_clear_field(self.driver, "id_year", receipt_list[0])
         
         # Search month
         search_fill_field(self.driver, "id_month", "13")
-        receipt_list = manual_explicit_wait(self.driver, path, 0)
+        receipt_list = web_driver_wait_count(self.driver, path, 0)
 
         path = self.driver.find_element(By.ID, "receipt-list")
         self.assertIn("Couldn't match any receipt.", path.text)
@@ -1573,40 +1629,35 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
     @tag("erp_front_receipt_search_multiple")
     def test_receivables_new_search_receipt_multiple_field(self): 
         self.create_extra_receipts()
-        # Go to Sales search receipt page.
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
         
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_client_tax_number")
 
+        path = self.driver.find_element(By.ID, "receipt-list")
+
         # Search multiple fields
         # Related Invoice
         search_fill_field(self.driver, "id_related_invoice", "1 ")
-        path = self.driver.find_element(By.ID, "receipt-list")
-        receipt_list = first_input_search(self.driver, path, "id_related_invoice",
+        receipt_list = search_first_input(self.driver, path, "id_related_invoice",
             "1 ", 6)
 
         self.assertIn("00001", receipt_list[0].text)
         
         # POS
         search_fill_field(self.driver, "id_pos", " 1")
-        # WebDriver doesn't work, I use manual explicit wait.
-        receipt_list = manual_explicit_wait(self.driver, path, 4)
+        receipt_list = web_driver_wait_count(self.driver, path, 4)
         
         # Number
         search_fill_field(self.driver, "id_number", "2 ")
-        # Let list update again
-        WebDriverWait(self.driver, 20).until(
-            EC.staleness_of(receipt_list[-1])
-        )
-        
-        receipt_list = path.find_elements(By.TAG_NAME, "li")
-        self.assertEqual(len(receipt_list), 1)
+        receipt_list = web_driver_wait_count(self.driver, path, 1)
+
+        self.assertIn("00001-00000002", receipt_list[0].text)
         
         # Clear all fields
         for field_id in ["id_related_invoice", "id_pos", "id_number"]:
             search_clear_field(self.driver, field_id)
-        WebDriverWait(self.driver, 20).until(
+        WebDriverWait(self.driver, 10).until(
             EC.staleness_of(receipt_list[0])
         )
 
@@ -1620,18 +1671,18 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_client_name")
 
+        path = self.driver.find_element(By.ID, "receipt-list")
+        
         # Client tax field
         search_fill_field(self.driver, "id_client_tax_number", "99999")
-        
-        path = self.driver.find_element(By.ID, "receipt-list")
-        receipt_list = first_input_search(self.driver, path, 
+        receipt_list = search_first_input(self.driver, path, 
             "id_client_tax_number", "99999", 1)
 
         self.assertIn("CLIENT2 SA", receipt_list[0].text)
         
         # Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT1 SA")
-        receipt_list = manual_explicit_wait(self.driver, path, 0)
+        receipt_list = web_driver_wait_count(self.driver, path, 0)
         
         path = self.driver.find_element(By.ID, "receipt-list")
         self.assertIn("Couldn't match any receipt.", path.text)
@@ -1639,27 +1690,24 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
     @tag("erp_front_receipt_search_edit")
     def test_receivables_new_search_receipt_edit(self):
         self.create_extra_receipts()
-        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
+        url = f"{self.live_server_url}/erp/receivables/receipts/search"
+        self.driver.get(url)
 
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_year")
 
+        path = self.driver.find_element(By.ID, "receipt-list")
+
         # Search receipt 1
         # search related invoice
         search_fill_field(self.driver, "id_related_invoice", "3 ")
-        
-        path = self.driver.find_element(By.ID, "receipt-list")
-        receipt_list = first_input_search(self.driver, path, "id_related_invoice",
+        receipt_list = search_first_input(self.driver, path, "id_related_invoice",
             "3 ", 1)
         
         self.assertIn("00001-00000004", receipt_list[0].text)        
 
         # Click on edit button
-        edit_button = path.find_element(By.CLASS_NAME, "edit-button")
-        self.driver.execute_script("arguments[0].click()", edit_button)
-        WebDriverWait(self.driver, 20).until(
-            EC.url_changes(f"{self.live_server_url}/erp/receivables/receipts/search")
-        )
+        click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url)
         self.assertEqual(self.driver.title, "Edit Receipt") 
 
     @tag("erp_front_receipt_search_delete")
@@ -1670,59 +1718,48 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_month")
 
+        path = self.driver.find_element(By.ID, "receipt-list")
+        
         # Search receipt 00001-00000002
         # Related invoice
         search_fill_field(self.driver, "id_related_invoice", "00001-00000001")
-        
-        path = self.driver.find_element(By.ID, "receipt-list")
-        receipt_list = first_input_search(self.driver, path, "id_related_invoice",
+        receipt_list = search_first_input(self.driver, path, "id_related_invoice",
             "00001-00000001", 3)
         
         self.assertIn("00001-00000001", receipt_list[0].text)
         
         # number
         search_fill_field(self.driver, "id_number", "2")
-        # WebDriver doesn't work, I use manual explicit wait.
-        receipt_list = manual_explicit_wait(self.driver, path, 1)
+        receipt_list = web_driver_wait_count(self.driver, path, 1)
   
         # Click on delete button   
         delete_button = path.find_element(By.CLASS_NAME, "delete-button")
         self.driver.execute_script('arguments[0].click();', delete_button)
         # Accept emergent alert
-        WebDriverWait(self.driver, 20).until(EC.alert_is_present())
+        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
         self.driver.switch_to.alert.accept()
         # Wait for receipt list to disappear
-        WebDriverWait(self.driver, 20).until(
-            EC.staleness_of(path)
-        )
+        WebDriverWait(self.driver, 10).until(EC.staleness_of(path))
+        
         self.assertEqual(SaleReceipt.objects.all().count(), 5)
         self.sale_invoice2.refresh_from_db()
-        time.sleep(0.5)
+        time.sleep(0.1)
         self.assertEqual(self.sale_invoice2.collected, False)
 
     @tag("erp_front_receipt_edit")
     def test_receivable_receipt_edit(self):
         # Go to receipt 1 webpage.
-        self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt1.pk}")
-        WebDriverWait(self.driver, 15).until(
-            EC.visibility_of_element_located((By.ID, "edit-button"))
-        )
+        url = f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt1.pk}"
+        self.driver.get(url)
         self.assertEqual(self.driver.title, "Receipt 00001-00000001")
 
         # Click on edit button
-        self.driver.find_element(By.ID, "edit-button").click()
-        WebDriverWait(self.driver, 15).until(
-            EC.url_changes(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt1.pk}")
-        )
+        click_and_redirect(self.driver, By.ID, "edit-button", url)
         self.assertEqual(self.driver.title, "Edit Receipt")
 
         # Go back to receipt detail
-        receipt_link = self.driver.find_element(By.ID, "receipt-link")
-        ActionChains(self.driver).move_to_element(receipt_link).click(receipt_link).perform()
-        # I don't use url changes as sometimes new page's DOM isn't loaded
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "delete-button"))
-        )
+        url = f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt1.pk}/edit"
+        go_to_link(self.driver, By.ID, "receipt-link", url)
         self.assertEqual(self.driver.title, "Receipt 00001-00000001")
 
     @tag("erp_front_edit_receipt_number")
@@ -1745,7 +1782,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(number_field.get_attribute('value'), "1")
 
     @tag("erp_front_receipt_delete")
-    def test_sales_receipt_delete(self):
+    def test_receivables_receipt_delete(self):
         # Go to receipt 1 webpage.
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt1.pk}")
         self.assertEqual(self.driver.title, "Receipt 00001-00000001")
@@ -1759,7 +1796,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.driver.switch_to.alert.accept()
         
         # Wait 
-        WebDriverWait(self.driver, 15).until(
+        WebDriverWait(self.driver, 10).until(
             EC.url_changes(f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt1.pk}")
         )
         self.assertEqual(self.driver.title, "Receivables")
@@ -1776,18 +1813,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Click on year tab
         self.driver.find_element(By.ID, "year-tab").click()
-        WebDriverWait(self.driver, 20).until(
-            EC.visibility_of_element_located(
-                (By.ID, "id_year")
-            )
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "id_year"))
         )
         
         # Click on date tab
         self.driver.find_element(By.ID, "date-tab").click()
-        WebDriverWait(self.driver, 20).until(
-            EC.visibility_of_element_located(
-                (By.ID, "id_date_from")
-            )
+        WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "id_date_from"))
         )
     
 

@@ -16,13 +16,17 @@ async function showDocTypesList() {
     iList.innerHTML = '';
 
     for (const docType of dTList) {
-        const buttonElement = document.createElement('button');
         const spanElement = document.createElement('span');
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `${docType.code} | ${docType.type_description}`;
-        
-        buttonElement.addEventListener('click', () =>
-            changeDocTypeVisibility(docType.id, docType.hide));
+        const buttonElement = createElementComplete({ // utils.js
+            tagName: 'button',
+            eventName: 'click',
+            eventFunction: () => changeDocTypeVisibility(docType.id, docType.hide),
+        });
+        const listItem = createElementComplete({ // utils.js
+            tagName: 'li',
+            innerHTML: `${docType.code} | ${docType.type_description}`
+        })
+
         spanElement.append(listItem, buttonElement);
 
         if (docType.hide === false) {

@@ -35,6 +35,9 @@ urlpatterns = [
     path("sales/invoices/search", views.sales_search, name="sales_search"),
     # Edit an invoice webpage
     path("sales/invoices/<int:inv_pk>/edit", views.sales_edit, name="sales_edit"),
+    # Show an invoice's related receipts webpage
+    path("sales/invoices/<int:inv_pk>/related_receipts", views.sales_related_receipts, 
+        name="sales_rel_receipts"),
     # Show invoice list
     path("sales/invoices/list", views.sales_list, name="invoice_list"),
     # Receivables index webpage
@@ -47,12 +50,13 @@ urlpatterns = [
     path("receivables/receipts/<int:rec_pk>", views.receivables_receipt, 
         name="receivables_receipt"),
     # Edit a receipt webpage
-    path("receivables/receipts/<int:rec_pk>/edit", views.receivables_edit, name="receivables_edit"),
+    path("receivables/receipts/<int:rec_pk>/edit", views.receivables_edit, 
+        name="receivables_edit"),
     # Search receipts webpage
-    path("receivables/receipts/search", views.receivables_search, name="receivables_search"),
+    path("receivables/receipts/search", views.receivables_search, 
+        name="receivables_search"),
     # Show receipt list
     path("receivables/receipts/list", views.receivables_list, name="receipt_list"),
-
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),

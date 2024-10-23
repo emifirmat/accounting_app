@@ -23,9 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Call function from document_delete.js and redirect
-    deleteButton.addEventListener('click', async () => {
-        if (await deleteComDocument(comDocument, comDocObject)) { // document_delete.js
-            setTimeout(() => window.location.href = redirectUrl, 500);
-        }
-    });
+    deleteButton.addEventListener('click', async () => 
+        await deleteComDocument(comDocument, comDocObject, redirectUrl) // document_delete.js
+    );
 })

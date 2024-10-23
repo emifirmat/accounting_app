@@ -60,8 +60,10 @@ async function searchInvoices(...fields) {
     invoiceListSection.innerHTML = '';
     
     if (filteredInvoiceList.length === 0) {
-        const pElement = document.createElement('p');
-        pElement.innerHTML = "Couldn't match any invoice.";
+        const pElement = createElementComplete({
+            tagName: 'p',
+            innerHTML: "Couldn't match any invoice."
+        });
 
         invoiceListSection.append(pElement);
     } else {
@@ -69,22 +71,21 @@ async function searchInvoices(...fields) {
         for (let invoice of filteredInvoiceList) {
             // Create list item and buttons in html
             const liElement = document.createElement('li');
-            const editButtonElement = document.createElement('button');
-            const deleteButtonElement = document.createElement('button');
-
-            // Buttons
-            editButtonElement.innerHTML = "Edit";
-            deleteButtonElement.innerHTML = "Delete";
-            editButtonElement.className = "edit-button";
-            deleteButtonElement.className = "delete-button";
-            
-            editButtonElement.addEventListener('click', () => {
-                window.location.href = `/erp/sales/invoices/${invoice.id}/edit`;
+            const editButtonElement = createElementComplete({ // utils.js
+                tagName: 'button',
+                innerHTML: 'Edit',
+                className: 'edit-button',
+                eventName: 'click',
+                eventFunction: () =>
+                    window.location.href = `/erp/sales/invoices/${invoice.id}/edit`
             });
-            deleteButtonElement.addEventListener('click', async () => {
-                if (await deleteComDocument('invoice', invoice)) { // document_delete.js
-                    setTimeout(() => location.reload(), 500);
-                }
+            const deleteButtonElement = createElementComplete({ 
+                tagName: 'button',
+                innerHTML: 'Delete',
+                className: 'delete-button',
+                eventName: 'click',
+                eventFunction: async () => 
+                    await deleteComDocument('invoice', invoice) // document_delete.js
             });
 
             // List item

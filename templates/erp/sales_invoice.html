@@ -2,13 +2,13 @@
 {% load static %}
 
 {% block title %}
-    Invoice {{ invoice.point_of_sell }}-{{ invoice.number }}
+    Invoice {{ invoice }}
 {% endblock title %}
 
 {% block body %}
 
     <h2>Invoice N° {{ invoice.point_of_sell }}-{{ invoice.number }}</h2>
-    <a id="edit-button" href="{% url 'erp:sales_edit' invoice.pk %}">Edit</a>
+    <a id="edit-button" class="edit-button" href="{% url 'erp:sales_edit' invoice.pk %}">Edit</a>
     <button id="delete-button" data-document="invoice" data-id="{{ invoice.id }}" 
     data-type="{{ invoice.type.type }}" data-pos="{{ invoice.point_of_sell }}" 
     data-number="{{ invoice.number }}">Delete</button>
@@ -97,4 +97,5 @@
     <script src="{% static 'js/document_detail.js' %}"></script>
     <script src="{% static 'js/document_delete.js' %}"></script>
     <script src="{% static 'js/crud.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
 {% endblock script %}

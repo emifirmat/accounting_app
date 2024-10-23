@@ -19,7 +19,7 @@
                 <td class="inumber">{{ receipt.number }}</td>
                 <td class="ctax">{{ receipt.recipient.tax_number }}</td>
                 <td class="cname">{{ receipt.recipient.name }}</td>
-                <td class="cname">{{ receipt.related_invoice|stringformat:"s"|slice:"13:" }}</td>
+                <td class="cname">{{ receipt.related_invoice }}</td>
                 <td class="itotal">$ {{ receipt.total_amount }}</td>
             </tr>
         {% empty %}

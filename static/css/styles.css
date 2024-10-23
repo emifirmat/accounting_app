@@ -16,24 +16,35 @@
     display: none;
 }
 
-/* Popup container */
+/* Popup (appears on center) */
 .popup {
-    display: inline-block;
-    cursor: pointer;
-  }
-
-/* The actual popup (appears on top) */
-.popup .popuptext {
-    width: 200px;
+    display: block; /* it forces child elements to align vertically*/
+    
     background-color: #555;
     color: #fff;
     text-align: center;
     border-radius: 6px;
-    padding: 10px 5px;
+    padding: 15px 10px;
+    /* center pop up and show it at the front*/
     position: fixed;
-    z-index: 1;
     top: 50%;
     left: 50%;
-    animation-name: fadeIn;
-    animation-duration: 3s;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    /* animation default */
+    animation-fill-mode: forwards;
   }
+
+/* Popup buttons container */
+.popup-footer {
+    display: flex;
+    justify-content: space-between; /* align buttons*/
+    gap: 10px; /* space between buttons*/
+    margin-top: 10px
+}
+
+.popup-button {
+    cursor: pointer;
+    flex: 1; /* same space ocupied by buttons*/
+    height: auto;
+}

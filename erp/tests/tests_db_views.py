@@ -488,7 +488,7 @@ class ErpTestCase(BackBaseTest):
         self.assertEqual(self.sale_invoice1.payment_term, self.pay_term1)
         self.assertEqual(self.sale_invoice1.collected, True)
         self.assertEqual(
-            str(self.sale_invoice1), f"2024-01-21 | A 00001-00000001"
+            str(self.sale_invoice1), f"A 00001-00000001"
         )
 
     def test_sale_invoice_get_abosulte_url(self):
@@ -562,7 +562,7 @@ class ErpTestCase(BackBaseTest):
         self.assertEqual(self.sale_receipt1.recipient, self.c_client1)
         self.assertEqual(self.sale_receipt1.total_amount, Decimal("2509.01"))
         self.assertEqual(
-            str(self.sale_receipt1), f"2024-02-21 | 00001-00000001"
+            str(self.sale_receipt1), f"00001-00000001"
         )
 
     def test_sale_receipt_constraint(self):
@@ -604,7 +604,7 @@ class ErpTestCase(BackBaseTest):
         self.assertEqual(self.purchase_invoice1.payment_method, self.pay_method2)
         self.assertEqual(self.purchase_invoice1.payment_term, self.pay_term2)
         self.assertEqual(
-            str(self.purchase_invoice1), f"2024-01-13 | B 00231-00083051"
+            str(self.purchase_invoice1), f"B 00231-00083051"
         )
 
     def test_purchase_invoice_constraint(self):
@@ -663,7 +663,7 @@ class ErpTestCase(BackBaseTest):
         self.assertEqual(self.purchase_receipt1.recipient, self.company)
         self.assertEqual(self.purchase_receipt1.total_amount, Decimal("242"))
         self.assertEqual(
-            str(self.purchase_receipt1), f"2024-02-13 | 00231-00000023"
+            str(self.purchase_receipt1), f"00231-00000023"
         )
     
     def test_purchase_receipt_constraint(self):
@@ -1388,6 +1388,24 @@ class ErpTestCase(BackBaseTest):
             post_object, 302, (SaleInvoice, 1)
         ) 
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
+
+    def test_sales_invoice_related_receipts(self):
+        self.check_page_get_response(
+            f"/erp/sales/invoices/{self.sale_invoice1.pk}/related_receipts", 
+            ["erp:sales_rel_receipts", {"inv_pk": self.sale_invoice1.pk}],
+            "erp/sales_related_receipts.html", 
+            ["Related Receipts", "Receipt N° 00001-00000001", "A 00001-00000001"]
+        )
+
+    def test_sales_invoice_related_receipts_no(self):
+        self.create_extra_invoices()
+        self.check_page_get_response(
+            f"/erp/sales/invoices/{self.sale_invoice2.pk}/related_receipts", 
+            ["erp:sales_rel_receipts", {"inv_pk": self.sale_invoice2.pk}],
+            "erp/sales_related_receipts.html", 
+            ["Related Receipts", "There isn't any related receipt.",
+                "B 00001-00000001"]
+        )
 
     def test_sales_list_get_webpage(self):
         self.check_page_get_response(

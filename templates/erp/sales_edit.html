@@ -4,7 +4,7 @@
 
 {% block edit_title %}
     <h3 id="document-title" data-document="invoice">Edit Invoice</h3>
-    <p><a id="invoice-link" href="{{ invoice.get_absolute_url }}">Go back</a> to invoice detail.</p>    
+    <p id="invoice-link"><a  href="{{ invoice.get_absolute_url }}">Go back</a> to invoice detail.</p>    
 {% endblock edit_title %}
 
 {% block edit_form_action %}{% url 'erp:sales_edit' invoice.pk %}{% endblock edit_form_action %}

@@ -116,7 +116,6 @@ async function showCondition(pCondition = '') {
 
         pConditionList.forEach(item => {
             const listItem = document.createElement('li');
-            let deleteButton = document.createElement('button');
             
             // Customize item
             if (pCondition === "method") {
@@ -126,14 +125,18 @@ async function showCondition(pCondition = '') {
             }
 
             // Customize delete button
-            deleteButton.className = 'delete-item';
-            deleteButton.innerHTML = 'Delete';
-            deleteButton.addEventListener('click', () => {
-                // Ask for confirmation in the button
-                deleteButton.innerHTML = "Confirm";
-                deleteButton.addEventListener('click', () => deleteItem(item.id,
-                    pCondition));
-            })
+            const deleteButton = createElementComplete({
+                tagName: 'button',
+                className: 'delete-item',
+                innerHTML: 'Delete',
+                eventName: 'click',
+                eventFunction: () => {
+                    // Ask for confirmation in the button
+                    deleteButton.innerHTML = "Confirm";
+                    deleteButton.addEventListener('click', () => deleteItem(
+                        item.id, pCondition));
+                }
+            });
             
             sectionList.append(listItem, deleteButton);
         })

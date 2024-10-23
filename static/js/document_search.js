@@ -93,51 +93,56 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
     cDocumentListSection.innerHTML = '';
     
     if (filteredCDocumentList.length === 0) {
-        const pElement = document.createElement('p');
-        pElement.innerHTML = `Couldn't match any ${comDocument}.`;
+        const pElement = createElementComplete({
+            tagName: 'p',
+            innerHTML: `Couldn't match any ${comDocument}.`
+        });
 
         cDocumentListSection.append(pElement);
     } else {
     
         for (let cDocument of filteredCDocumentList) {
-            // Create list item and buttons in html
-            const liElement = document.createElement('li');
-            const editButtonElement = document.createElement('button');
-            const deleteButtonElement = document.createElement('button');
-
-            // Buttons
-            editButtonElement.innerHTML = "Edit";
-            deleteButtonElement.innerHTML = "Delete";
-            editButtonElement.className = "edit-button";
-            deleteButtonElement.className = "delete-button";
+            // Create list item and buttons in html     
             let baseUrl = '';
             let itemContent = '';
 
             if (comDocument === 'invoice') {
-                baseUrl = `/erp/sales/invoices`;
+                baseUrl = `/erp/sales`;
+                endUrl = `/invoices/${cDocument.id}`
                 itemContent = `${cDocument.issue_date.substring(0, 10)} |
                  ${cDocument.type} | ${cDocument.point_of_sell}-${cDocument.number} |
                  ${cDocument.recipient} | ${cDocument.recipient_name}`
             } else if (comDocument === 'receipt') {
-                baseUrl = `/erp/receivables/receipts`;
+                baseUrl = `/erp/receivables`;
+                endUrl = `/receipts/${cDocument.id}`
                 itemContent = `${cDocument.issue_date.substring(0, 10)} | 
                 ${cDocument.point_of_sell}-${cDocument.number} | 
                 ${cDocument.recipient} | ${cDocument.recipient_name} |
                 ${cDocument.related_invoice_info}`
             }
-            
-            editButtonElement.addEventListener('click', () => {
-                window.location.href = `${baseUrl}/${cDocument.id}/edit`;
-            });
-            deleteButtonElement.addEventListener('click', async () => {
-                if (await deleteComDocument(comDocument, cDocument)) { // document_delete.js
-                    setTimeout(() => location.reload(), 500);
-                }
-            });
 
-            // List item
-            liElement.innerHTML = `<a href="${baseUrl}/${cDocument.id}">
-            <p>${itemContent}</p></a>`;
+            const liElement = createElementComplete({
+                tagName: 'li',
+                innerHTML: `<a href="${baseUrl}${endUrl}"><p>`+
+                    `${itemContent}</p></a>`
+            });
+            const editButtonElement = createElementComplete({
+                tagName: 'button',
+                innerHTML: 'Edit',
+                className: 'edit-button',
+                eventName: 'click',
+                eventFunction: () => 
+                    window.location.href = `${baseUrl}${endUrl}/edit`
+            });
+            const deleteButtonElement = createElementComplete({
+                tagName: 'button',
+                innerHTML: 'Delete',
+                className: 'delete-button',
+                eventName: 'click',
+                eventFunction: async () => 
+                    // document_delete.js
+                    await deleteComDocument(comDocument, cDocument, baseUrl)
+            });
             
             cDocumentListSection.append(liElement, editButtonElement,
                 deleteButtonElement);

@@ -26,7 +26,7 @@ async function showDetail(event) {
 async function getPersonDetails(personId) {
     // Get details from API
     const person = document.querySelector('#title').dataset.title;
-    return getList(`/erp/api/${person}s/${personId}`);
+    return await getList(`/erp/api/${person}s/${personId}`);
 }
 
 function showPersonDetails(personDetails, detailSection, formSection=null) {
@@ -34,36 +34,44 @@ function showPersonDetails(personDetails, detailSection, formSection=null) {
     detailSection.innerHTML = '';
 
     // Add client or supplier details in section
-    const divElement = document.createElement('div');
-    const buttonElement = document.createElement('button');
-    
-    // Client or supplier details
-    divElement.innerHTML = `
-    <p>Number: ${personDetails.id}</p>
-    <p>Name: ${personDetails.name}</p>
-    <p>Address: ${personDetails.address}</p>
-    <p>Email: ${personDetails.email}</p>
-    <p>Phone: ${personDetails.phone}</p>
-    <p>Tax_number: ${personDetails.tax_number}</p>
-    `;
+    const divElement = createElementComplete({ // utils.js
+        tagName: 'div',
+        innerHTML:`
+        <p>Number: ${personDetails.id}</p>
+        <p>Name: ${personDetails.name}</p>
+        <p>Address: ${personDetails.address}</p>
+        <p>Email: ${personDetails.email}</p>
+        <p>Phone: ${personDetails.phone}</p>
+        <p>Tax_number: ${personDetails.tax_number}</p>
+        `
+    });
     
     // Button element
+    let buttonName;
+    let buttonEventFunction;
+
     if (formSection) {
-        buttonElement.innerHTML = 'Edit';
-        buttonElement.addEventListener('click', () => {
-            editPersonForm(personDetails, detailSection, formSection);
-        })
+        buttonName = 'Edit';
+        buttonEventFunction = () => 
+            showEditPersonForm(personDetails, detailSection, formSection);
     } else {
-        buttonElement.innerHTML = 'Delete';
-        buttonElement.addEventListener('click', () => {
-            deletePerson(personDetails.id, detailSection);
-        })
+        buttonName = 'Delete'
+        buttonEventFunction = () => deletePerson(personDetails.id, detailSection);
     }
 
+    const buttonElement = createElementComplete({
+        tagName: 'button',
+        innerHTML: buttonName,
+        eventName: 'click',
+        eventFunction: buttonEventFunction
+    });
+    
     detailSection.append(divElement, buttonElement);
 }
 
-function editPersonForm(personDetails, detailSection, formSection) {
+function showEditPersonForm(personDetails, detailSection, formSection) {
+    // Create a prefill form for edition.
+    
     detailSection.style.display = 'none';
     formSection.style.display = 'block';
 
@@ -82,70 +90,63 @@ function editPersonForm(personDetails, detailSection, formSection) {
     })
 }
 
-function confirmEdition(personId, form) { 
-    const csrftoken = getCookie('csrftoken');
+async function confirmEdition(personId, form) { 
     const messageElement = document.querySelector('#edit-message')
     let person = document.querySelector('#title').dataset.title
 
     // modify data
     const url = `/erp/api/${person}s/${personId}`;
-    fetch(`/erp/api/${person}s/${personId}`, {
-        method: 'PUT',
-        headers: {
-            'X-CSRFToken': csrftoken,
-            'Content-Type': 'application/json'   
-        },
-        body: JSON.stringify({
+    const formBody = {
             name: form.elements['name'].value,
             address: form.elements['address'].value,
             email: form.elements['email'].value,
             phone: form.elements['phone'].value,
             tax_number: form.elements['tax_number'].value
-        }),
-        mode: 'same-origin'
-    })
-    .then(response => 
-        response.json().then(data => ({
-            status: response.status,
-            ok: response.ok,
-            json: data
-        }))
-    )    
-    .then(result => {
-        if (!result.ok) {
-            // Wrong input, leave a message to user for fixing
-            const errorMsg = result.json;
-            if (errorMsg.tax_number) {
-                messageElement.innerHTML = 
-                    errorMsg.tax_number[0].replace('company_client', 'A client');
-            } else {
-                messageElement.innerHTML = `Please, check that neither of the fields
-                have invalid characters.`;
-            }
+    }
+    
+    // Show results message
+    
+    const errorMessage = await modifyData(url, formBody); // crud.js
+    
+    if(errorMessage) {
+        if(errorMessage.tax_number[0]) {
+            // Tax number
+            messageElement.innerHTML = errorMessage.tax_number[0]
         } else {
-            messageElement.innerHTML = `${person.charAt(0).toUpperCase() + person.slice(1)}
-            number ${personId} edited succesfully.`;
-            setTimeout(() => location.reload(), 1000);
+            // Other errors
+            messageElement.innerHTML = `Please, check that neither of the fields
+                have invalid characters.`;
         }
-    })
+        // End function
+        return
+    }
+    
+    // Person data modified successfully
+    messageElement.innerHTML = 
+        `${person.charAt(0).toUpperCase() + person.slice(1)} ` +
+        `number ${personId} edited succesfully.`;
+    setTimeout(() => location.reload(), 1000);
+
 }
 
+
 async function deletePerson(personId, detailSection) {
+    
     const person = document.querySelector('#title').dataset.title;
     const personCamel = person.charAt(0).toUpperCase() + person.slice(1);
     const confirmDelete = 
         confirm(`Are you sure that you want to delete ${person} number ${personId}?`);
 
-    if (confirmDelete === true) {
-        const url = `/erp/api/${person}s/${personId}`;
-        await deleteInstance(url, {person}); // crud.js
-        
-        detailSection.style.display = 'none';
-        document.querySelector('#delete-message').innerHTML = 
-            `${personCamel} deleted successfully.`;
-        setTimeout(() => location.reload(), 1000);
+    if (!confirmDelete) return
 
-    }
+    const url = `/erp/api/${person}s/${personId}`;
+    await deleteInstance(url, {person}); // crud.js
+    
+    detailSection.style.display = 'none';
+    document.querySelector('#delete-message').innerHTML = 
+        `${personCamel} deleted successfully.`;
+    setTimeout(() => location.reload(), 1000);
+    
 }
 
 

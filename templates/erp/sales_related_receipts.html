@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}Related Receipts{% endblock title%}
+
+{% block body %}
+
+    <h2 id="rr-title">Related Receipts</h2>
+    <p>The following receipts are linked to invoice <a href="{{ invoice.get_absolute_url}}">
+        {{ invoice }}</a>.
+    </p>
+    <hr>
+    
+    <ul>
+        {% for receipt in receipts %}
+            <li><a href="{{ receipt.get_absolute_url }}">Receipt N° {{ receipt }}</a></li>
+        {% empty %}
+            <li>There isn't any related receipt.</li>
+        {% endfor %}
+    </ul>
+
+{% endblock body %}

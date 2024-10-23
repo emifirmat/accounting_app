@@ -2,19 +2,18 @@
 async function getList(url) {
     // Get list or instance
     try {
-        return fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(errorMessage => {
-                    throw new Error(errorMessage.detail);
-                });  
-            } else {
-                return response.json();
-            }
-        })
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            const errorMessage = await response.json();
+            throw new Error(errorMessage.detail || 'Unknown error.');
+        } else {
+            return response.json();
+        }
     }
     catch(error) {
-        console.error('Error', error);
+        console.error('Error: ', error.message);
+        throw error;
     }
 }
 
@@ -25,9 +24,11 @@ async function getSubFields(url, getResult=(result) => result) {
 }
 
 async function postData(url, bodyData, msg="Data posted successfully.") {
+    // Make a POST
     const csrftoken = getCookie('csrftoken');
+  
     try {
-        fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': csrftoken,
@@ -36,27 +37,56 @@ async function postData(url, bodyData, msg="Data posted successfully.") {
             body: JSON.stringify(bodyData),
             mode: "same-origin"
         })
-        .then(response => {
-            if(!response.ok) {
-                return response.json().then(errorMessage => {
-                    throw new Error(errorMessage.detail);
-                });  
-            } else {
-                console.log(msg);
-            }
-        })
+                
+        if(!response.ok) {
+            const errorMessage = await response.json();
+            throw new Error(errorMessage.detail || "Unknown error.");
+        } else {
+            console.log(msg);
+        }
+
     } catch(error) {
-        console.error('Error', error);
+        console.error('Error: ', error.message);
+        throw error;
     }
 }
 
+async function modifyData(url, formBody) { 
+    // Modify an instance through PUT.
+    const csrftoken = getCookie('csrftoken');
+
+    // modify data  
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Content-Type': 'application/json'   
+            },
+            body: JSON.stringify(formBody),
+            mode: 'same-origin'
+        })
+        
+        if(!response.ok) {
+            // Return error message
+            return await response.json();
+        } else {
+            // Don't return anything and handle it in conatiner functions
+            return;
+        }
+    } catch (error) {
+        console.error('Error: ' + error);
+        throw error;
+    }
+
+}
 
 async function changeOneAttribute(url, attributeName, attributeValue,
     msg=`The attribute '${attributeName}' was modified successfully.`) {
     // Modify the attribute of a model
     
     try {
-        return fetch(url, {
+        const response = await fetch(url, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -65,42 +95,44 @@ async function changeOneAttribute(url, attributeName, attributeValue,
                 [attributeName]: attributeValue,
             })
         })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(errorMessage => {
-                    throw new Error(errorMessage.detail);
-                });         
-            } else {
-                console.log(msg);
-                return true;
-            }
-        })
+        
+        if (!response.ok) {
+            const errorMessage = await response.json()
+            throw new Error(errorMessage.detail || 'Unknown error.');
+        } else {
+            console.log(msg);
+            return true;
+        }
+        
     } catch (error) {
-        console.error('Error' + error);
+        console.error('Error: ' + error.message);
+        throw error;
     }
-
 }
 
 async function deleteInstance(url, instanceName) {
     // Delete the instance of a model
 
     try {
-        return fetch(url, {
-            method: 'DELETE',
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(errorMessage => {
-                    throw new Error(errorMessage.detail);
-                });   
+        const response = await fetch(url, {method: 'DELETE'})
+        
+        if(!response.ok) {
+            if (response.status == 409) {
+                // Return false so I can handle RestrictErrors in other functions.
+                return false;
             } else {
-                // Create pop up of confirmation
-                console.log(`The ${instanceName} has been deleted successfully.`);
+                const errorMessage = await response.json();
+                throw new Error(errorMessage.detail || 'Unknown error.');
             }
-         })
-    } catch (error) {
-        console.error('Error' + error);
+        } else {
+            console.log(`The ${instanceName} has been deleted successfully.`);
+            return true;
+        }    
+    } catch(error) {
+        console.error('Error: ' + error.message);
+        throw error;
     }
+    
 }
 
 

@@ -23,11 +23,13 @@ function addNewLine (lineFormIndex) {
     let lineFormTemplate = document.querySelector('#line-form-template').innerHTML;
     const newLineForm = lineFormTemplate.replace(/__prefix__/g, lineFormIndex);
     
-    let divElement = document.createElement('div');
-    divElement.className = "invoice-line";
+    const divElement = createElementComplete({
+        tagName: 'div',
+        className: 'invoice-line',
+        innerHTML: `<br>${newLineForm}`
+    })
     
     // Add template and update names
-    divElement.innerHTML = `<br>${newLineForm}`;
     formSetSection.append(divElement);
 
 }

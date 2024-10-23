@@ -182,7 +182,7 @@ class SaleInvoice(CommercialDocumentModel):
         return round(total_sum, 2)
     
     def __str__(self):
-        return f"{self.issue_date} | {self.type.type} {self.point_of_sell}-{self.number}"
+        return f"{self.type.type} {self.point_of_sell}-{self.number}"
     
     def clean(self):
         """Add date validator for invoice"""
@@ -216,7 +216,7 @@ class SaleReceipt(CommercialDocumentModel):
         return reverse("erp:receivables_receipt", args=[self.pk])
     
     def __str__(self):
-        return f"{self.issue_date} | {self.point_of_sell}-{self.number}"
+        return f"{self.point_of_sell}-{self.number}"
     
     def clean(self):
         """Add date validator for receipt"""
@@ -244,7 +244,7 @@ class PurchaseInvoice(CommercialDocumentModel):
         ordering = ["-issue_date", "sender", "type", "point_of_sell", "number"]
 
     def __str__(self):
-        return f"{self.issue_date} | {self.type.type} {self.point_of_sell}-{self.number}"
+        return f"{self.type.type} {self.point_of_sell}-{self.number}"
 
 class PurchaseInvoiceLine(CommercialDocumentLineModel):
     """Product/service detail of the purchase invoice"""
@@ -274,4 +274,4 @@ class PurchaseReceipt(CommercialDocumentModel):
         ordering = ["-issue_date", "sender", "point_of_sell", "number"]
     
     def __str__(self):
-        return f"{self.issue_date} | {self.point_of_sell}-{self.number}"
+        return f"{self.point_of_sell}-{self.number}"

@@ -434,6 +434,17 @@ def sales_edit(request, inv_pk):
         "line_formset": line_formset,
     })
 
+def sales_related_receipts(request, inv_pk):
+    """Show a list of specific invoice's related receipts."""
+    invoice = SaleInvoice.objects.get(pk=inv_pk)
+    receipts = SaleReceipt.objects.filter(related_invoice=invoice)
+
+    return render(request, "erp/sales_related_receipts.html", {
+        "invoice": invoice,
+        "receipts": receipts,
+    })
+
+
 def sales_list(request):
     """Show a list of invoices in a specific range webpage"""
     # Get list general case, it gets overwritten if it changes
