@@ -55,61 +55,6 @@ async function deleteComDocument(commercialDocument, cDocObject, redirectUrl)
     }    
 }
 
-function showPopUp(mode, redirectUrl, content) {
-    // If a receipt/invoice was deleted, show a pop up
-    
-    // element to append the popup
-    const mainSection = document.querySelector('main');
-
-    const divElement = createElementComplete({
-        tagName: 'div',
-        className: 'popup',
-        innerHTML: `<span class="popup-text">${content}</span>`
-    });      
-    
-    mainSection.append(divElement);
-
-    if(mode == 'button') {
-        // Use buttons
-        
-        divElement.style.animation = 'none';
-        
-        // New container for both buttons
-        const newDivElement = createElementComplete({
-            tagName: 'div',
-            className: 'popup-footer',
-        });
-
-        divElement.append(newDivElement);
-
-        ['Accept', 'Cancel'].forEach(element => {
-            const buttonElement = createElementComplete({
-                tagName: 'button',
-                className: 'popup-button',
-                innerHTML: element,
-                eventName: 'click',
-                eventFunction: () => 
-                    redirectDelete(element, divElement, redirectUrl)
-            });
-            
-            newDivElement.append(buttonElement);
-        }) 
-
-    } else if (mode == 'animation') {
-        // Use animation and remove
-        divElement.style.animationName = 'fadeIn';
-        divElement.style.animationDuration = '3s';
-        divElement.addEventListener('animationend', () => {
-            if(redirectUrl) {
-                window.location.href = redirectUrl;
-            } else {
-                location.reload();
-            }
-        })
-    }
-   
-}
-
 function generateDeleteMsg(commercialDocument, cDocObject) {
     // Msg for Delete confirmation, it makes code cleaner.
     
@@ -119,13 +64,3 @@ function generateDeleteMsg(commercialDocument, cDocObject) {
     return msg.replace('  ', ' ');
 }
 
-function redirectDelete(button, divElement, redirectUrl) {
-    // Redirect to invoice's related receipts.
-
-    if(button === 'Accept') {
-        window.location.href = redirectUrl;
-    } else if (button === 'Cancel') {
-        divElement.remove();
-        return;
-    }
-}

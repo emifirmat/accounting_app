@@ -114,6 +114,26 @@ def click_and_redirect(driver, selector, selector_name, current_url,
     root.find_element(selector, selector_name).click()
     WebDriverWait(driver, 10).until(EC.url_changes(current_url))
 
+def click_button_and_show(driver, parent_selector, parent_name, show_selector, 
+    show_name, index=0):
+    """
+    Click a button and wait unti an element is showed.
+    Parameters:
+    - driver: WebDriver.
+    - parent_selector: Selector of the buttons's parent element.
+    - parent_name: Name of button's parent element searched by the selector.
+    - show_selector: Selector of the new element that will be showed.
+    - show_name: Element's name searched by the selector.
+    - index: If there are multiple buttons, index number. Default: 0. 
+    """
+    path = driver.find_element(parent_selector, parent_name)
+    path.find_elements(By.TAG_NAME, "button")[index].click()
+    webDriverWait_visible_element(driver, show_selector, show_name)
+
+
+
+
+
 def fill_field(driver, path, field, value):
     """
     Pick, clean and fill a field. It waits until the value is loaded on page.
@@ -179,31 +199,39 @@ def get_columns_data(row, start=0, end=-1):
     for i in range(start, end):
         yield row_data[i]
 
+def webDriverWait_visible_element(driver, selector, element_name): 
+    """
+    Clearer line of WebDriveWait visibility of element located. Wait 10 secs.
+    Parameters:
+    - driver: WebDriver.
+    - selector: Element selector. By.CLASS_NAME, By.TAG_NAME, etc.
+    - selector_name: Name of the element that the selector will search.
+    """
+    WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((selector, element_name))
+    )
+
+def click_button_and_answer_alert(driver, parent_selector, parent_name, 
+    alert_answer, index=0):
+    """
+    Click on a button and then answer an alert
+    Parameters:
+    - driver: WebDriver.
+    - parent_selector: Selector of the buttons's parent element.
+    - parent_name: Name of button's parent element searched by the selector.
+    - alert_answer: Accept/Cancel the alert.
+    - index: If there are multiple buttons, index number. Default: 0. 
+    """
+    path = driver.find_element(parent_selector, parent_name)
+    path.find_elements(By.TAG_NAME, "button")[index].click()
+    WebDriverWait(driver, 10).until(EC.alert_is_present())
+    if alert_answer == "accept":
+        driver.switch_to.alert.accept()
+    elif alert_answer == "dismiss":
+        driver.switch_to.alert.dismiss()
 
 
 # By section functions
-
-def edit_person_click_on_person(driver, person_index): #TODO
-    """
-    Click on client/supplier in edit section
-    Parameters:
-    - driver: WebDriver.
-    - person_number: Index of the client/supplier I want to click.
-    """
-    path = driver.find_elements(By.CLASS_NAME, "specific-person")
-    path[person_index].click()
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.ID, "person-details"))
-    )
-
-def edit_person_click_on_edit(driver): #TODO
-    """Click in edit button after clicking a client/supplier in edit section"""
-    path = driver.find_element(By.ID, "person-details")
-    path.find_element(By.TAG_NAME, "button").click()
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.ID, "person-edit-form"))
-    )
-
 
 def delete_person_click_on_delete(driver): # TODO
     """In delete client/supplier section, click on delete button"""

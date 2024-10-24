@@ -32,7 +32,7 @@ def read_uploaded_file(file, date_column=None):
             return pd.read_csv(file, parse_dates=[date_column], dayfirst=True)
         else:
             return pd.read_csv(file)
-    else :
+    else:
         return pd.read_excel(file)
 
 def list_file_errors(error_type, row_index):

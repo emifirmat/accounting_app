@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block title %}Related Documents{% endblock title%}
+
+{% block body %}
+
+    <h2 id="rd-title">Related Documents</h2>
+    <p>The following documents are linked to <b>{{ person_type }} N° {{ person.id }}:
+        "{{ person.name }}"</b>.</p>
+    <small>Tax number: {{ person.tax_number }}.</small>
+    <hr>
+    
+    <div class="row">
+        <div class="col-6 inv-section">
+            <h6>Invoices</h6>
+            <ul>
+                {% for invoice in invoice_list %}
+                    <li><a href="{{ invoice.get_absolute_url }}">Invoice N° {{ invoice }}</a></li>
+                {% empty %}
+                    <li>There isn't any related invoice.</li>
+                {% endfor %}
+            </ul>
+
+        </div>
+        <div class="col-6 rec-section">    
+            <h6>Receipts</h6>
+            <ul>
+                {% for receipt in receipt_list %}
+                    <li><a href="{{ receipt.get_absolute_url }}">Receipt N° {{ receipt }}</a></li>
+                {% empty %}
+                    <li>There isn't any related receipt.</li>
+                {% endfor %}
+            </ul>
+        </div> 
+    </div>
+
+{% endblock body %}

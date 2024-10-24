@@ -836,6 +836,30 @@ class ErpTestCase(BackBaseTest):
             "CLIENT1 SRL | 20361382481"
         )
 
+    def test_client_related_documents(self):
+        self.check_page_get_response(
+            f"/erp/client/{self.c_client1.pk}/related_documents", 
+            ["erp:person_rel_docs", {
+                "person_type": "client",
+                "person_pk": self.c_client1.pk
+            }],
+            "erp/person_related_docs.html", 
+            ["Related Documents", "Receipt N° 00001-00000001", 
+             "Invoice N° A 00001-00000001", "client N° 1"]
+        )
+
+    def test_client_related_documents_no(self):
+        self.check_page_get_response(
+            f"/erp/client/{self.c_client2.pk}/related_documents", 
+            ["erp:person_rel_docs", {
+                "person_type": "client",
+                "person_pk": self.c_client2.pk
+            }],
+            "erp/person_related_docs.html", 
+            ["Related Documents", "There isn't any related receipt.",
+                "client N° 2", "There isn't any related invoice."]
+        )
+
     def test_supplier_index_webpage(self):
         self.check_page_get_response(
             "/erp/supplier", 

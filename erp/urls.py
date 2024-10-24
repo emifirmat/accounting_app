@@ -17,6 +17,9 @@ urlpatterns = [
     path("<str:person_type>/edit", views.person_edit, name="person_edit"),
     # Delete a client or supplier web page
     path("<str:person_type>/delete", views.person_delete, name="person_delete"),
+    # Show a person's related documents webpage
+    path("<str:person_type>/<int:person_pk>/related_documents", 
+        views.person_related_docs, name="person_rel_docs"),
     # Payment conditions
     path("payment_conditions", views.payment_conditions, name="payment_conditions"),
     # Point of sells

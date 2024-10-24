@@ -140,13 +140,32 @@ async function deletePerson(personId, detailSection) {
     if (!confirmDelete) return
 
     const url = `/erp/api/${person}s/${personId}`;
-    await deleteInstance(url, {person}); // crud.js
     
-    detailSection.style.display = 'none';
-    document.querySelector('#delete-message').innerHTML = 
-        `${personCamel} deleted successfully.`;
-    setTimeout(() => location.reload(), 1000);
+    try {
+        const deleted = await deleteInstance(url, person); // crud.js
+        
+        if(!deleted) {
+            const redirectUrl = `${personId}/related_documents`;
+            showPopUp('button', redirectUrl, // utils.js
+                `The ${person} couldn't be deleted because there are some 
+                documents linked to it. Press Accept to delete or edit them.`
+            );
+            return false;
+        }
     
+    } catch {
+        // If something wrong happened, stop the function.
+        console.error(`Error deleting the ${person}.`)
+        return;
+    }
+    
+    // element to append the popup
+    showPopUp('animation', '',
+        `The ${person} has been deleted successfully.`
+    );
+     
+
+        
 }
 
 

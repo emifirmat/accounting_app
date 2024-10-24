@@ -20,8 +20,8 @@ from company.models import Company, FinancialYear
 from ..models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
     PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt)
 from utils.utils_tests import (go_to_section, element_has_selected_option, 
-    edit_person_click_on_person, edit_person_click_on_edit, fill_field,
-    delete_person_click_on_delete, pay_conditions_click_default, go_to_link,
+    click_button_and_show, fill_field, webDriverWait_visible_element,
+    click_button_and_answer_alert, pay_conditions_click_default, go_to_link,
     pay_conditions_delete_confirm_button, pick_option_by_index, search_fill_field,
     search_clear_field, create_extra_pay_terms, create_extra_pay_methods,
     get_columns_data, web_driver_wait_count, click_and_wait, search_first_input,
@@ -103,11 +103,65 @@ class FrontBaseTest(StaticLiveServerTestCase):
         self.pay_term1 = PaymentTerm.objects.create(pay_term = "0")
         self.pay_term2 = PaymentTerm.objects.create(pay_term = "30")
 
+    def create_doc_types(self):
+        self.doc_type1 = DocumentType.objects.create(
+            type = "A",
+            code = "001",
+            type_description = "Invoice A",
+            hide = False,
+        )
+
+        self.doc_type2 = DocumentType.objects.create(
+            type = "B",
+            code = "002",
+            type_description = "Invoice B",
+            hide = False,
+        )
+
+    def create_first_invoice_and_receipt(self):
+        self.sale_invoice1 = SaleInvoice.objects.create(
+            issue_date = datetime.date(2024, 1, 21), 
+            type = self.doc_type1, 
+            point_of_sell = self.pos1,
+            number = "00000001", 
+            sender = self.company,
+            recipient = self.c_client1,
+            payment_method = self.pay_method1,
+            payment_term = self.pay_term1,
+            # Set collected manually, as this attribute is modified in views.
+            collected = True, 
+        )
+        
+        self.sale_invoice1_line1 = SaleInvoiceLine.objects.create(
+            sale_invoice = self.sale_invoice1,
+            description = "Test sale invoice",
+            taxable_amount = Decimal("1000"),
+            not_taxable_amount = Decimal("90.01"),
+            vat_amount = Decimal("210"),
+        )
+        self.sale_invoice1_line2 = SaleInvoiceLine.objects.create(
+            sale_invoice = self.sale_invoice1,
+            description = "Other products",
+            taxable_amount = Decimal("999"),
+            not_taxable_amount = Decimal("00.01"),
+            vat_amount = Decimal("209.99"),
+        )
+
+        self.sale_receipt1 = SaleReceipt.objects.create(
+            issue_date = datetime.date(2024, 2, 21),
+            point_of_sell = self.pos1,
+            number = "00000001",
+            description = "Test sale receipt",
+            related_invoice = self.sale_invoice1,
+            sender = self.company,
+            recipient = self.c_client1,
+            total_amount = Decimal("2509.01"),
+        )
+
 
 """Tests"""
 @tag("erp_front_simple_models")
 class ErpFrontTestCase(FrontBaseTest):
-
     def test_navigation(self):
         # Index
         self.driver.get(f"{self.live_server_url}")
@@ -151,9 +205,12 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.get(f"{self.live_server_url}/erp/client/edit")
 
         """Test edition"""
-        # click on 2nd client
-        edit_person_click_on_person(self.driver, 1)
-        edit_person_click_on_edit(self.driver)
+        # click on 2nd client and edit
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[1].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        click_button_and_show(
+            self.driver, By.ID, "person-details", By.ID, "person-edit-form"
+        )
         
         path = self.driver.find_element(By.ID, "person-edit-form")
         
@@ -172,8 +229,7 @@ class ErpFrontTestCase(FrontBaseTest):
         path.find_element(By.TAG_NAME, "button").click()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "person-list"),
-                "12345678901"
+                (By.ID, "person-list"), "12345678901"
             )
         )
        
@@ -181,16 +237,19 @@ class ErpFrontTestCase(FrontBaseTest):
         # Go to delete client page
         self.driver.get(f"{self.live_server_url}/erp/client/delete")
 
-        # Click on 1st client and delete
-        edit_person_click_on_person(self.driver, 0)
-        delete_person_click_on_delete(self.driver)
-
-        # Cancel alert
-        self.driver.switch_to.alert.dismiss()
+        # Click on 1st client 
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[0].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        
+        # Click on Delete and cancel alert
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "dismiss"
+        )
 
         # Click again on delete and accept
-        delete_person_click_on_delete(self.driver)
-        self.driver.switch_to.alert.accept()
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
 
         # Check that client disappeared
         path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
@@ -201,18 +260,54 @@ class ErpFrontTestCase(FrontBaseTest):
         path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
         self.assertNotIn("20361382480", path[0].text)
         self.assertEqual(len(path), 1)
+
+    @tag("erp_front_client_delete_conflict")
+    def test_client_delete_conflict(self):
+        # Go to client delete webpage.
+        self.create_doc_types()
+        self.create_first_invoice_and_receipt()
+        self.driver.get(f"{self.live_server_url}/erp/client/delete")
         
+        # Click on 1st client and delete
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[0].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+        
+        # Wait for popup and cancel.
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[1].click()
+
+        #  Delete again  
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[0].click()
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+    
+        # Wait for popup to appear and accept
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[0].click()
+        
+        webDriverWait_visible_element(self.driver, By.ID, "rd-title")
+
+        self.assertEqual(self.driver.title, "Related Documents")
+        self.assertEqual(CompanyClient.objects.all().count(), 2)
+
     @tag("erp_front_supplier_edit")
     def test_supplier_edit(self):
         # Go to edit supplier page
         self.driver.get(f"{self.live_server_url}/erp/supplier/edit")
 
-        """Test edition"""
         # click on 1st supplier
-        edit_person_click_on_person(self.driver, 0)
-        edit_person_click_on_edit(self.driver)
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[0].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        click_button_and_show(
+            self.driver, By.ID, "person-details", By.ID, "person-edit-form"
+        )
 
-        
         path = self.driver.find_element(By.ID, "person-edit-form")
         
         # Alter data, add company's tax number
@@ -239,16 +334,17 @@ class ErpFrontTestCase(FrontBaseTest):
         # Go to delete supplier page
         self.driver.get(f"{self.live_server_url}/erp/supplier/delete")
 
-        # Click on supplier2 and delete (note, 0= sup2, 1=sup1)
-        edit_person_click_on_person(self.driver, 1)
-        delete_person_click_on_delete(self.driver)
-
-        # Cancel alert
-        self.driver.switch_to.alert.dismiss()
+        # Click on supplier2, delete (note, 0= sup2, 1=sup1) and cancel alarm
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[1].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "dismiss"
+        )
 
         # Click again on delete and accept
-        delete_person_click_on_delete(self.driver)
-        self.driver.switch_to.alert.accept()
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
 
         # Check that supplier2 disappeared
         path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
@@ -259,6 +355,34 @@ class ErpFrontTestCase(FrontBaseTest):
         path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
         self.assertNotIn("30361382485", path[0].text)
         self.assertEqual(len(path), 1)
+
+    @tag("erp_front_client_rel_docs_links")
+    def test_client_rel_docs_links_invoice(self):
+        self.create_doc_types()
+        self.create_first_invoice_and_receipt()
+        # Go to invoice 1 rel receipts webpage.
+        url = f"{self.live_server_url}/erp/client/{self.c_client1.pk}"
+        url += f"/related_documents"
+        self.driver.get(url)
+        self.assertEqual(self.driver.title, "Related Documents")
+
+        # Check invoice link
+        go_to_link(self.driver, By.CLASS_NAME, "inv-section", url, 0)
+        self.assertEqual(self.driver.title, "Invoice A 00001-00000001")
+
+    @tag("erp_front_client_rel_docs_links")
+    def test_sales_invoice_rel_receipts_links_receipt(self):
+        self.create_doc_types()
+        self.create_first_invoice_and_receipt()
+        # Go to invoice 1 rel receipts webpage.
+        url = f"{self.live_server_url}/erp/client/{self.c_client1.pk}"
+        url += f"/related_documents"
+        self.driver.get(url)
+        self.assertEqual(self.driver.title, "Related Documents")
+
+        # Check receipt link
+        go_to_link(self.driver, By.CLASS_NAME, "rec-section", url, 0)
+        self.assertEqual(self.driver.title, "Receipt 00001-00000001")
 
     @tag("erp_payment_term_d")
     def test_payment_conditions_term_default(self):
@@ -465,6 +589,7 @@ class ErpFrontTestCase(FrontBaseTest):
     def test_doc_types_visibility(self):
         # Go to Document Types page.
         self.driver.get(f"{self.live_server_url}/erp/document_types")
+        time.sleep(0.5)
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element((By.ID, "invisible-list"), "002")
         )
@@ -510,63 +635,10 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         """Populate db and load index page"""
         super().setUp()
 
-        FinancialYear.objects.create(year="2024", current=True)
-        
+        FinancialYear.objects.create(year="2024", current=True)        
         self.pos2 = PointOfSell.objects.create(pos_number = "00002")
-
-        self.doc_type1 = DocumentType.objects.create(
-            type = "A",
-            code = "001",
-            type_description = "Invoice A",
-            hide = False,
-        )
-        
-        self.doc_type2 = DocumentType.objects.create(
-            type = "B",
-            code = "002",
-            type_description = "Invoice B",
-            hide = False,
-        )
-
-        self.sale_invoice1 = SaleInvoice.objects.create(
-            issue_date = datetime.date(2024, 1, 21), 
-            type = self.doc_type1, 
-            point_of_sell = self.pos1,
-            number = "00000001", 
-            sender = self.company,
-            recipient = self.c_client1,
-            payment_method = self.pay_method1,
-            payment_term = self.pay_term1,
-            # Set collected manually, as this attribute is modified in views.
-            collected = True, 
-        )
-        
-        self.sale_invoice1_line1 = SaleInvoiceLine.objects.create(
-            sale_invoice = self.sale_invoice1,
-            description = "Test sale invoice",
-            taxable_amount = Decimal("1000"),
-            not_taxable_amount = Decimal("90.01"),
-            vat_amount = Decimal("210"),
-        )
-        self.sale_invoice1_line2 = SaleInvoiceLine.objects.create(
-            sale_invoice = self.sale_invoice1,
-            description = "Other products",
-            taxable_amount = Decimal("999"),
-            not_taxable_amount = Decimal("00.01"),
-            vat_amount = Decimal("209.99"),
-        )
-
-        self.sale_receipt1 = SaleReceipt.objects.create(
-            issue_date = datetime.date(2024, 2, 21),
-            point_of_sell = self.pos1,
-            number = "00000001",
-            description = "Test sale receipt",
-            related_invoice = self.sale_invoice1,
-            sender = self.company,
-            recipient = self.c_client1,
-            total_amount = Decimal("2509.01"),
-        )
-
+        self.create_doc_types() # FrontBaseTest function
+        self.create_first_invoice_and_receipt()# FrontBaseTest function
         
     def create_extra_invoices(self):
         """Add extra invoices in necessary tests"""
@@ -859,18 +931,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         button = path.find_element(By.ID, "new-line")
         # JS click as regular one doesn't work.
         self.driver.execute_script("arguments[0].click();", button)
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.ID, "id_s_invoice_lines-1-description")
-            )
+        webDriverWait_visible_element(
+            self.driver, By.ID, "id_s_invoice_lines-1-description"
         )
 
         # Click again. JS click as regular one doesn't work.
         self.driver.execute_script("arguments[0].click();", button)
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.ID, "id_s_invoice_lines-2-description")
-            )
+        webDriverWait_visible_element(
+            self.driver, By.ID, "id_s_invoice_lines-2-description"
         )
 
     @tag("erp_front_search")
@@ -1115,9 +1183,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         WebDriverWait(self.driver, 10).until(EC.alert_is_present())
         self.driver.switch_to.alert.accept()
         # Wait for popup to appear
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.CLASS_NAME, "popup"))
-        )
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+  
         # Cancel pop up
         path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
         path.find_elements(By.TAG_NAME, "button")[1].click()
@@ -1131,18 +1198,12 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         WebDriverWait(self.driver, 10).until(EC.alert_is_present())
         self.driver.switch_to.alert.accept()
         # Wait for popup to appear
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.CLASS_NAME, "popup")
-        ))
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
         # Accept pop up
         path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
         accept_button = path.find_elements(By.TAG_NAME, "button")[0]
         accept_button.click()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.ID, "rr-title")
-        ))
+        webDriverWait_visible_element(self.driver, By.ID, "rr-title")
 
         self.assertEqual(self.driver.title, "Related Receipts")
         self.assertEqual(SaleInvoice.objects.all().count(), 10)
@@ -1165,10 +1226,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Regular click doesn't work, I use JS click
         self.driver.execute_script("arguments[0].click();", new_line_button)
         # There are 2 lines, so there should be a third one
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.ID, "id_s_invoice_lines-1-description")
-            )
+        webDriverWait_visible_element(
+            self.driver, By.ID, "id_s_invoice_lines-1-description"
         )
 
         # Go back to invoice detail
@@ -1224,9 +1283,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.driver.switch_to.alert.accept()
         
         # Wait for popup and cancel.
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.CLASS_NAME, "popup"))
-        )
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+
         # Cancel pop up
         path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
         path.find_elements(By.TAG_NAME, "button")[1].click()
@@ -1237,15 +1295,10 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.driver.switch_to.alert.accept()
     
         # Wait for popup to appear and accept
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located(
-                (By.CLASS_NAME, "popup")
-        ))
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
         path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
         path.find_elements(By.TAG_NAME, "button")[0].click()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "rr-title"))
-        )
+        webDriverWait_visible_element(self.driver, By.ID, "rr-title")
 
         self.assertEqual(self.driver.title, "Related Receipts")
         self.assertEqual(SaleInvoice.objects.all().count(), 1)
@@ -1281,15 +1334,11 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Click on year tab
         self.driver.find_element(By.ID, "year-tab").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "id_year"))
-        )
-        
+        webDriverWait_visible_element(self.driver, By.ID, "id_year")
+      
         # Click on date tab
         self.driver.find_element(By.ID, "date-tab").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "id_date_from"))
-        )
+        webDriverWait_visible_element(self.driver, By.ID, "id_date_from")
 
 
     @tag("erp_front_show_list_original_order")
@@ -1813,15 +1862,11 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Click on year tab
         self.driver.find_element(By.ID, "year-tab").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "id_year"))
-        )
+        webDriverWait_visible_element(self.driver, By.ID, "id_year")
         
         # Click on date tab
         self.driver.find_element(By.ID, "date-tab").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "id_date_from"))
-        )
+        webDriverWait_visible_element(self.driver, By.ID, "id_date_from")
     
 
     @tag("erp_front_receipt_show_list_original_order")

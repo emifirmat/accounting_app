@@ -8,6 +8,7 @@ from django.db.models import Sum, F
 from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
+from pathlib import Path
 
 
 
@@ -18,25 +19,19 @@ from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermFor
     SaleReceiptForm, SearchReceiptForm, AddSaleReceiptsFileForm)
 from .models import (Company, CompanyClient, Supplier, PaymentMethod, 
     PaymentTerm, PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine,
-    SaleReceipt)
+    SaleReceipt, PurchaseInvoice, PurchaseReceipt)
 from .utils import (read_uploaded_file, check_column_len, standarize_dataframe,
 check_column_names, list_file_errors, get_model_fields_name, get_sale_invoice_objects,
 update_invoice_collected_status)
 
 
 # Create your views here.
-def current_year():
-    """Define current financial year"""
-    try:
-        financial_year = FinancialYear.objects.get(current=True)
-    except ObjectDoesNotExist:
-        financial_year = None
-    return financial_year
 
 def client_index(request):
     """Client's overview page"""
-    financial_year = current_year()
+    financial_year = FinancialYear.objects.filter(current=True).first()
     clients = CompanyClient.objects.all()
+    
     return render(request, "erp/client_index.html", {
         "financial_year": financial_year,
         "clients": clients,
@@ -45,24 +40,23 @@ def client_index(request):
 
 def person_new(request, person_type):
     """Add a new client/supplier page"""
-    # File form post work in a dif view, so it can be always new in this view
+    # File form post works in a dif view, so it is not filled in this view
     file_form = AddPersonFileForm()
+    if person_type == "client":
+        form = CclientForm
+    else:
+        form = SupplierForm
+
     if request.method == "POST":
-        if person_type == "client":
-            form = CclientForm(request.POST)
-        elif person_type == "supplier":
-            form = SupplierForm(request.POST)
-        if form.is_valid():
-            form.save()
+        person_form = form(request.POST)
+        if person_form.is_valid():
+            person_form.save()
             return HttpResponseRedirect(reverse(f"erp:{person_type}_index"))
     else:
-        if person_type == "client":
-            form = CclientForm()
-        elif person_type == "supplier":
-            form = SupplierForm()
+        person_form = form()
 
     return render(request, "erp/person_new.html", {
-        "form": form,
+        "form": person_form,
         "file_form": file_form,
         "person_type": person_type,
     })
@@ -128,15 +122,18 @@ def person_edit(request, person_type):
     """Search and edit an existing client or supplier"""
     if request.method == "GET":
         if person_type == "client":
-            person_list = CompanyClient.objects.all()
-            form = CclientForm()
+            model = CompanyClient
+            form = CclientForm
         elif person_type == "supplier":
-            person_list = Supplier.objects.all()
-            form = SupplierForm()
+            model = Supplier
+            form = SupplierForm
+
+        person_list = model.objects.all()
+        person_form = form()   
         
         return render(request, "erp/person_edit.html", {
             "person_list": person_list,
-            "form": form,
+            "form": person_form,
             "person_type": person_type,
         })
 
@@ -144,23 +141,49 @@ def person_edit(request, person_type):
 def person_delete(request, person_type):
     """Search and delete an existing client or supplier"""
     if person_type == "client":
-        person_list = CompanyClient.objects.all()
-        form = CclientForm()
+        model = CompanyClient
+        form = CclientForm
     elif person_type == "supplier":
-        person_list = Supplier.objects.all()
-        form = SupplierForm()
+        model = Supplier
+        form = SupplierForm
+
+    person_list = model.objects.all()
+    person_form = form()
     
     return render(request, "erp/person_delete.html", {
         "person_list": person_list,
-        "form": form,
+        "form": person_form,
         "person_type": person_type,
     })
 
+def person_related_docs(request, person_type, person_pk):
+    """ Show related invoices and receipts of a client or supplier webpage."""
+    
+    if person_type == "client":
+        person_model = CompanyClient
+        inv_model = SaleInvoice
+        rec_model = SaleReceipt
+    else:
+        person_model = Supplier
+        inv_model = PurchaseInvoice
+        rec_model = PurchaseReceipt
+
+    person = person_model.objects.get(pk=person_pk)
+    invoice_list = inv_model.objects.filter(recipient=person)
+    receipt_list = rec_model.objects.filter(recipient=person)
+
+    return render(request, "erp/person_related_docs.html", {
+        "person_type": person_type,
+        "person": person,
+        "invoice_list": invoice_list,
+        "receipt_list": receipt_list,
+    })
 
 def supplier_index(request):
     """Supplier's overview page"""
-    financial_year = current_year()
+    financial_year = FinancialYear.objects.filter(current=True).first()
     suppliers = Supplier.objects.all()
+
     return render(request, "erp/supplier_index.html", {
         "financial_year": financial_year,
         "suppliers": suppliers,
@@ -173,6 +196,7 @@ def payment_conditions(request):
     payment_terms = PaymentTerm.objects.all()
     term_form = PaymentTermForm()
     method_form = PaymentMethodForm()
+
     return render(request, "company/payment_conditions.html", {
         "payment_methods": payment_methods,
         "payment_terms": payment_terms,
@@ -202,35 +226,28 @@ def doc_types(request):
 
 def load_doc_types():
     """Import all doc types according to Argentinian regulations"""
-    file_path = os.path.join(settings.STATICFILES_DIRS[0], "data", "doc_types.csv")
-    try:
-        with open(file_path, 'r', encoding="utf-8") as file:
-            # Load all data or none
-            with transaction.atomic():
-                # Remove bom
-                first_char = file.read(1)
-                if first_char != '\ufeff':
-                    first_char = file.seek(0)
-                
-                # Read file
-                reader = csv.DictReader(file)
-                for row in reader:
-                    DocumentType.objects.create(
-                        code = row['code'],
-                        type = row['initials'],
-                        type_description = row['description'],
-                    )
-    except FileNotFoundError:
-        print(f"Couldn't load file")
+    file_path = Path.cwd()/"static/data/doc_types.csv"
+    
+    df = pd.read_csv(file_path)
 
+    # Load all data or none
+    with transaction.atomic():     
+        # Read file
+        for _, row in df.iterrows():
+            DocumentType.objects.create(
+                code = str(row['code']),
+                type = str(row['initials']),
+                type_description = str(row['description']),
+            )
 
 def sales_index(request):
     """Sales overview webpage"""
-    financial_year = current_year()
-    sale_invoices = SaleInvoice.objects.all()
+    financial_year = FinancialYear.objects.filter(current=True).first()
+    invoice_list = SaleInvoice.objects.all()
+
     return render(request, "erp/sales_index.html", {
         "financial_year": financial_year,
-        "sale_invoices": sale_invoices,
+        "sale_invoices": invoice_list,
     })
 
 def sales_new(request):
@@ -249,7 +266,7 @@ def sales_new(request):
                     args=[sale_invoice.id]
                 ))
 
-    elif request.method == "GET":
+    else:
         invoice_form = SaleInvoiceForm()
         line_formset = SaleInvoiceLineFormSet()
 
@@ -295,8 +312,6 @@ def sales_new_massive(request):
                         recipient_index = total_fields.index("recipient")
                         pay_method_index = total_fields.index("payment_method")
                         pay_term_index = total_fields.index("payment_term")
-
-
 
                         if last_invoice:
                             current_invoice = (
@@ -420,9 +435,9 @@ def sales_edit(request, inv_pk):
                 invoice_form.save()
                 line_formset.save()
 
-            return HttpResponseRedirect(reverse("erp:sales_invoice", 
-                args=[invoice.id]
-            ))
+            return HttpResponseRedirect(
+                reverse("erp:sales_invoice", args=[invoice.id])
+            )
 
     else:
         invoice_form = SaleInvoiceForm(instance=invoice)
@@ -448,9 +463,8 @@ def sales_related_receipts(request, inv_pk):
 def sales_list(request):
     """Show a list of invoices in a specific range webpage"""
     # Get list general case, it gets overwritten if it changes
-    try:
-        financial_year = FinancialYear.objects.get(current=True)
-    except ObjectDoesNotExist:
+    financial_year = FinancialYear.objects.filter(current=True).first()
+    if not financial_year:    
         return HttpResponseRedirect(reverse("company:year"))
     
     if request.method == "POST":
@@ -482,11 +496,15 @@ def sales_list(request):
                         "year", f"The year {input_year} doesn't exist in the records."
                     )
                     financial_year = FinancialYear.objects.get(current=True)
-                invoice_list = SaleInvoice.objects.filter(issue_date__year=financial_year.year)
+                invoice_list = SaleInvoice.objects.filter(
+                    issue_date__year=financial_year.year
+                )
     else:
         form_date = SearchByDateForm()
         form_year = SearchByYearForm()
-        invoice_list = SaleInvoice.objects.filter(issue_date__year=financial_year.year)
+        invoice_list = SaleInvoice.objects.filter(
+            issue_date__year=financial_year.year
+        )
 
     return render(request, "erp/sales_list.html", {
         "com_document": "invoice",
@@ -497,7 +515,7 @@ def sales_list(request):
 
 def receivables_index(request):
     """Overview of receivables webpage"""
-    financial_year = current_year()
+    financial_year = FinancialYear.objects.filter(current=True).first()
     receipt_list = SaleReceipt.objects.all()
     return render(request, "erp/receivables_index.html", {
         "receipt_list": receipt_list,
@@ -679,7 +697,7 @@ def receivables_search(request):
 def receivables_list(request):
     """Show a list of receipts in a specific range webpage"""
     # Get list general case, it gets overwritten if it changes
-    financial_year = current_year()
+    financial_year = FinancialYear.objects.filter(current=True).first()
     if not financial_year:
         return HttpResponseRedirect(reverse("company:year"))
     

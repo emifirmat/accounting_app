@@ -158,7 +158,7 @@ class SaleInvoice(CommercialDocumentModel):
     type = models.ForeignKey(DocumentType, on_delete=models.PROTECT)
     point_of_sell = models.ForeignKey(PointOfSell, on_delete=models.PROTECT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(CompanyClient, on_delete=models.PROTECT)
+    recipient = models.ForeignKey(CompanyClient, on_delete=models.RESTRICT)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
     payment_term = models.ForeignKey(PaymentTerm, on_delete=models.PROTECT)
     collected = models.BooleanField(default=False)
@@ -199,7 +199,7 @@ class SaleReceipt(CommercialDocumentModel):
     point_of_sell = models.ForeignKey(PointOfSell, on_delete=models.PROTECT)
     related_invoice = models.ForeignKey(SaleInvoice, on_delete=models.RESTRICT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(CompanyClient, on_delete=models.PROTECT)
+    recipient = models.ForeignKey(CompanyClient, on_delete=models.RESTRICT)
     description = models.CharField(max_length=280)
     total_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
@@ -231,8 +231,8 @@ class PurchaseInvoice(CommercialDocumentModel):
     point_of_sell = models.CharField(max_length=5, validators=[
         validate_is_digit
     ])
-    sender = models.ForeignKey(Supplier, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(Company, on_delete=models.PROTECT)
+    sender = models.ForeignKey(Supplier, on_delete=models.RESTRICT)
+    recipient = models.ForeignKey(Company, on_delete=models.CASCADE)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
     payment_term = models.ForeignKey(PaymentTerm, on_delete=models.PROTECT)
 
@@ -259,8 +259,8 @@ class PurchaseReceipt(CommercialDocumentModel):
         validate_is_digit
     ])
     related_invoice = models.ForeignKey(PurchaseInvoice, on_delete=models.RESTRICT)
-    sender = models.ForeignKey(Supplier, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(Company, on_delete=models.PROTECT)
+    sender = models.ForeignKey(Supplier, on_delete=models.RESTRICT)
+    recipient = models.ForeignKey(Company, on_delete=models.CASCADE)
     description = models.CharField(max_length=280)
     total_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
