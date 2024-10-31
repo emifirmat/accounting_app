@@ -1,10 +1,13 @@
-function createElementComplete({tagName, className, innerHTML, eventName, 
-    eventFunction}) {
+function createElementComplete({tagName, attributeName, attributeValue, className,
+    innerHTML, eventName, eventFunction}) {
 
     // Centralize code while creating an element
     const element = document.createElement(tagName);
     if(className) {
         element.className = className;
+    }
+    if(attributeName) {
+        element.setAttribute(attributeName, attributeValue)
     }
     if(innerHTML) {
         element.innerHTML = innerHTML;

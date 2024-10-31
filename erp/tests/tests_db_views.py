@@ -103,10 +103,9 @@ class ErpTestCase(BackBaseTest):
             recipient = cls.c_client1,
             payment_method = cls.pay_method1,
             payment_term = cls.pay_term1,
-             # Set collected manually, as this attribute is modified in views.
+            # Set collected manually, as this attribute is modified in views.
             collected = True,
         )
-
         cls.sale_invoice1_line1 = SaleInvoiceLine.objects.create(
             sale_invoice = cls.sale_invoice1,
             description = "Test sale invoice",
@@ -1347,13 +1346,19 @@ class ErpTestCase(BackBaseTest):
             page_content)
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
 
-    def test_sales_invoice_multiline_webpage(self):
+    def test_sales_invoice_webpage(self):
+        self.create_extra_invoices()
         self.check_page_get_response(
             f"/erp/sales/invoices/{self.sale_invoice1.pk}", 
             ["erp:sales_invoice", {"inv_pk": self.sale_invoice1.pk}],
             "erp/sales_invoice.html", 
-            ["Invoice N° 00001-00000001", "$ 1300.01", "$ 2509.01"]                   
+            ["Invoice N° 00001-00000001", "$ 1300.01", "$ 2509.01", "Collected"]                   
         )
+
+        # Check invoice2 doesn't have "collected".
+        response = self.client.get(f"/erp/sales/invoices/{self.sale_invoice2.pk}")
+        self.assertNotContains(response, "Collected")
+
         
     def test_sales_search_webpage(self):
         self.check_page_get_response(
@@ -1560,6 +1565,7 @@ class ErpTestCase(BackBaseTest):
         self.assertEqual(self.sale_invoice2.collected, True)
 
     def test_receivables_new_receipt_post_wrong_year_webpage(self):
+        self.create_extra_invoices()
         post_object = {
             # Receipt form
             "issue_date": "29/01/2025",
@@ -1567,7 +1573,7 @@ class ErpTestCase(BackBaseTest):
             "number": "1",
             "sender": self.company.id,
             "recipient": self.c_client1.id,
-            "related_invoice": self.sale_invoice1.id,
+            "related_invoice": self.sale_invoice2.id,
             "description": "Something",
             "total_amount": "600.01"
         }
@@ -1616,19 +1622,20 @@ class ErpTestCase(BackBaseTest):
         self.assertContains(response, "Receipt total amount cannot be higher")
 
     def test_receivables_new_receipt_post_wrong_second_amount_webpage(self):
+        self.create_extra_receipts()
         post_object = {
             # Receipt form
-            "issue_date": "24/04/2024",
+            "issue_date": "25/07/2025",
             "point_of_sell": self.pos1.id,
-            "number": "2",
+            "number": "6",
             "sender": self.company.id,
             "recipient": self.c_client1.id,
-            "related_invoice": self.sale_invoice1.id,
+            "related_invoice": self.sale_invoice2.id,
             "description": "Something",
-            "total_amount": "1209.02" # Total from invoice is $2509.02,
+            "total_amount": "1209.10" # Total from invoice is $1209.10,
         }
         response = self.check_page_post_response("erp:receivables_new", 
-            post_object, 200, (SaleReceipt, 1))     
+            post_object, 200, (SaleReceipt, 7))     
 
         self.assertContains(response, 
             "The sum of your receipts cannot be higher"

@@ -8,7 +8,8 @@ from .models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
     PointOfSell, DocumentType, SaleInvoice, SaleReceipt)
 from .serializers import (CClientSerializer, SupplierSerializer, 
     PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer,
-    DocTypesSerializer, SaleInvoicesSerializer, SaleReceiptsSerializer)
+    DocTypesSerializer, SaleInvoicesSerializer, SaleReceiptsSerializer, 
+    SInvoiceDynamicSerializer)
 
 
 def handle_multiple_instances(self, request):
@@ -53,6 +54,7 @@ class DetailCompanyClientAPI(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CClientSerializer
 
     def destroy(self, request, *args, **kwargs):
+        # Identify when there is RestrictError (FK) with 409 status.
         try:
             return super().destroy(request, *args, **kwargs)
         except RestrictedError as e:
@@ -140,9 +142,42 @@ class DocTypeAPI(generics.RetrieveUpdateAPIView):
 
 class SaleInvoicesAPI(generics.ListCreateAPIView):
     """CRUD API of sale invoices"""
-    queryset = SaleInvoice.objects.all()
-    serializer_class = SaleInvoicesSerializer
+    def get_queryset(self):
+        # Get full list or only collected invoices.
+        collected = self.request.query_params.get("collected", None)
+        exclude_inv_pk = self.request.query_params.get("exclude_inv_pk", None)
+        
+        queryset = SaleInvoice.objects.all()
 
+        # Apply filters and exclusions
+        if collected:
+            if collected.lower() == "true":
+                queryset = queryset.filter(collected=True)
+            elif collected.lower() == "false":
+                queryset = queryset.filter(collected=False)
+    
+        if exclude_inv_pk and exclude_inv_pk.isdigit():
+            queryset = queryset.exclude(pk=int(exclude_inv_pk))
+   
+        return queryset
+    
+    def get_serializer(self, *args, **kwargs):
+        # Add 'fields' to serializer init if picked SIDynamicSerilizer.
+        fields = self.request.query_params.get("fields", None)
+        if fields:
+            kwargs['fields'] = fields.split(",")
+        
+        # Return an instance of the selected serializer class
+        return self.get_serializer_class()(*args, **kwargs)
+
+    def get_serializer_class(self):
+        # Pick serializer acording to request
+        fields = self.request.query_params.get("fields", None)
+        if fields:
+            return SInvoiceDynamicSerializer
+        # Default Serializer
+        else:
+            return SaleInvoicesSerializer
 
 class SaleInvoiceAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale invoice"""

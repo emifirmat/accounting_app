@@ -78,7 +78,7 @@ def validate_receipt_date_number_correlation(model, instance):
 def validate_receipt_total_amount(model, instance):
     """Check that total amount of receipt is equal o lower than total amount of
     invoice"""
-    invoice_total = instance.related_invoice.total_lines_sum()
+    invoice_total = instance.related_invoice.total_lines_sum() or 0
     if instance.total_amount > invoice_total:
         raise ValidationError(
             f"Receipt total amount cannot be higher than invoice total amount."
@@ -89,10 +89,9 @@ def validate_receipt_total_amount(model, instance):
         ).exclude(pk=instance.pk).aggregate(total=Sum("total_amount")
     )
     # Case: First receipt
-    if receipts["total"] == None:
-        receipts["total"] = 0
+    receipts_total = receipts["total"] or 0
   
-    if (receipts["total"] + instance.total_amount) > invoice_total:
+    if (receipts_total + instance.total_amount) > invoice_total:
         raise ValidationError(
             f"The sum of your receipts cannot be higher than invoice total amount."
         )

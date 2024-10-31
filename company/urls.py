@@ -13,8 +13,8 @@ urlpatterns = [
     path("company/year", views.company_year, name="year"),
     
     # Financial years API
-    path("api/company/years", views_api.CompanyYearAPI.as_view(), name="years_api"),
+    path("company/api/years", views_api.CompanyYearAPI.as_view(), name="years_api"),
     # Especific f. year API
-    path("api/company/years/<int:pk>", views_api.DetailCompanyYearAPI.as_view(),
+    path("company/api/years/<int:pk>", views_api.DetailCompanyYearAPI.as_view(),
         name="year_api"),
 ]

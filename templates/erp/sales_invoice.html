@@ -8,6 +8,8 @@
 {% block body %}
 
     <h2>Invoice N° {{ invoice.point_of_sell }}-{{ invoice.number }}</h2>
+    {% if invoice.collected %}<small>Collected</small>{% endif %}
+    
     <a id="edit-button" class="edit-button" href="{% url 'erp:sales_edit' invoice.pk %}">Edit</a>
     <button id="delete-button" data-document="invoice" data-id="{{ invoice.id }}" 
     data-type="{{ invoice.type.type }}" data-pos="{{ invoice.point_of_sell }}" 

@@ -801,7 +801,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
     def create_extra_receipts(self): 
         """Create extra receipts if it's necessary """
         self.create_extra_invoices() # Function dependant
-        self.sale_invoice2.collected = True # Update imvoice 2 status
+        self.sale_invoice2.collected = True # Update invoice 2 status
+        self.sale_invoice2.save()
         
         self.sale_receipt2 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 22),
@@ -1354,14 +1355,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(date.text, "26/01/2024")
         self.assertEqual(type.text, "002 | B")
         self.assertEqual(pos.text, "00002")
-        self.assertEqual(number.text, "00000001")
+        self.assertEqual(number.text, "00000002")
 
         third_row = rows[2]
         date, type, pos, number = get_columns_data(third_row, end=4)
         self.assertEqual(date.text, "25/01/2024")
         self.assertEqual(type.text, "001 | A")
         self.assertEqual(pos.text, "00002")
-        self.assertEqual(number.text, "00000001")
+        self.assertEqual(number.text, "00000002")
 
         last_row = rows[-1]
         date, type, pos, number = get_columns_data(last_row, end=4)
@@ -1394,14 +1395,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(date.text, "23/01/2024")
         self.assertEqual(type.text, "001 | A")
         self.assertEqual(pos.text, "00001")
-        self.assertEqual(number.text, "00000002")
+        self.assertEqual(number.text, "00000003")
 
         last_row = rows[-1]
         date, type, pos, number = get_columns_data(last_row, end=4)
         self.assertEqual(date.text, "26/01/2024")
         self.assertEqual(type.text, "002 | B")
         self.assertEqual(pos.text, "00002")
-        self.assertEqual(number.text, "00000002")
+        self.assertEqual(number.text, "00000001")
 
     @tag("erp_front_show_list_type")
     def test_sales_show_list_type_order(self):
@@ -1530,6 +1531,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(number.text, "00000002")
         self.assertEqual(total_amount.text, "$ 9.00")
 
+    @tag("erp_front_receipt_new")
     def test_receivables_new_receipt_numbers(self):
         # Go to Receivables new receipt page.
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/new")
@@ -1551,7 +1553,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         pick_option_by_index(self.driver, "id_point_of_sell", 2, "00002")      
         self.assertEqual(number_field.get_attribute("value"), "1")
 
-    @tag("erp_receipt_recipient")
+    @tag("erp_front_receipt_new")
     def test_receivables_new_receipt_recipient(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/new")
@@ -1561,23 +1563,46 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(recipient_field.get_attribute('value'), "")
                 
         # Pick related invoice and check recipient field changes
-        rel_invoice_field = Select(self.driver.find_element(By.ID, "id_related_invoice"))
-        rel_invoice_field.select_by_index(1)
-        WebDriverWait(self.driver, 10).until(
-            # Rel invoices are ordered from newest to oldest
-            element_has_selected_option((By.ID, "id_related_invoice"),
-                "B 00002-00000001")
-        )
+        pick_option_by_index(self.driver, "id_related_invoice",
+            1, "B 00002-00000002")
+
         self.assertEqual(recipient_field.get_attribute('value'), str(self.c_client2.pk))
 
         # Pick another rel invoice and check recipient field changes again
-        rel_invoice_field.select_by_index(3)
-        WebDriverWait(self.driver, 10).until(
-            element_has_selected_option(
-                (By.ID, "id_related_invoice"), "A 00002-00000001"
-            )
-        )        
+        pick_option_by_index(self.driver, "id_related_invoice", 3, 
+            "A 00002-00000002")
+                
         self.assertEqual(recipient_field.get_attribute("value"), str(self.c_client1.pk))
+
+    @tag("erp_front_receipt_new")
+    def test_receivables_new_receipt_collected_ri(self):
+        # Go to Receivables new receipt page.
+        self.create_extra_invoices()
+        url = f"{self.live_server_url}/erp/receivables/receipts/new"
+        self.driver.get(url)
+
+        ri_field = self.driver.find_element(By.ID, "id_related_invoice")
+        options = ri_field.find_elements(By.TAG_NAME, "option")
+        # 9 uncollected invoices + empty option[0]
+        self.assertEqual(len(options), 10)
+        
+        # Click on "Include collected invoice"
+        checkbox = self.driver.find_element(By.ID, "id-collected")
+        checkbox.click()
+        # 8 uncollected invoices + empty option[0] + 1 collected inv
+        web_driver_wait_count(self.driver, ri_field, 11, "option")
+        
+        self.assertTrue(checkbox.is_selected())
+
+        # Check collected invoice content
+        collected_invs = self.driver.find_elements(By.CLASS_NAME, "collected-inv")
+        self.assertEqual(collected_invs[0].text, "A 00001-00000001")
+
+        # Click again and see if collected invs were removed
+        checkbox.click()
+        web_driver_wait_count(self.driver, ri_field, 10, "option")
+        
+        self.assertFalse(checkbox.is_selected())
 
     def test_receivables_new_receipt_link_pos(self):
         # Go to Receivables new receipt page.
@@ -1811,7 +1836,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         go_to_link(self.driver, By.ID, "receipt-link", url)
         self.assertEqual(self.driver.title, "Receipt 00001-00000001")
 
-    @tag("erp_front_edit_receipt_number")
+    @tag("erp_front_receipt_edit")
     def test_receivables_receipt_edit_numbers(self):
         # Go to Sales new receipt page.
         self.driver.get(
@@ -1829,6 +1854,40 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             element_has_selected_option((By.ID, "id_point_of_sell"), "00002")
         )
         self.assertEqual(number_field.get_attribute('value'), "1")
+
+    @tag("erp_front_receipt_edit_ri")
+    def test_receivables_receipt_edit_ri(self):
+        self.create_extra_receipts()
+    
+        # Go to Sales new receipt page.
+        self.driver.get(
+            f"{self.live_server_url}/erp/receivables/receipts/{self.sale_receipt1.pk}/edit"
+        )
+       
+        # Check number field is 1
+        ri_field = self.driver.find_element(By.ID, "id_related_invoice")
+        # Blank option + 8 uncollected invoices + edited invoice
+        web_driver_wait_count(self.driver, ri_field, 10, "option")
+
+        # Pick pos and check new number field
+        checkbox = self.driver.find_element(By.ID, "id-collected")
+        checkbox.click()
+
+        # 8 uncollected invoices + empty option[0] + 1 collected inv
+        web_driver_wait_count(self.driver, ri_field, 11, "option")
+        self.assertTrue(checkbox.is_selected())
+
+        # Check collected invoice content
+        collected_invs = self.driver.find_elements(By.CLASS_NAME, "collected-inv")
+        self.assertEqual(collected_invs[0].text, "B 00001-00000001")
+
+        # Click again and see if collected invs were removed
+        checkbox.click()
+        web_driver_wait_count(self.driver, ri_field, 10, "option")
+        
+        self.assertFalse(checkbox.is_selected())
+
+
 
     @tag("erp_front_receipt_delete")
     def test_receivables_receipt_delete(self):
@@ -1888,7 +1947,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         date, pos, number = get_columns_data(third_row, end=3)
         self.assertEqual(date.text, "24/03/2024")
         self.assertEqual(pos.text, "00002")
-        self.assertEqual(number.text, "00000002")
+        self.assertEqual(number.text, "00000001")
 
         last_row = rows[-1]
         date, pos, number = get_columns_data(last_row, end=3)
@@ -1924,7 +1983,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         date, pos, number = get_columns_data(last_row, end=3)
         self.assertEqual(date.text, "24/03/2024")
         self.assertEqual(pos.text, "00002")
-        self.assertEqual(number.text, "00000002")
+        self.assertEqual(number.text, "00000001")
    
     @tag("erp_front_receipt_show_list_related_invoice")
     def test_receivables_show_list_related_invoice_order(self):
@@ -2008,6 +2067,6 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         last_row = rows[-1]
         number = last_row.find_elements(By.TAG_NAME, "td")[2]
         total_amount = last_row.find_elements(By.TAG_NAME, "td")[-1]
-        self.assertEqual(number.text, "00000002")
+        self.assertEqual(number.text, "00000001")
         self.assertEqual(total_amount.text, "$ 5.00")
   

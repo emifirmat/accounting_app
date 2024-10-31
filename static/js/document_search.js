@@ -230,25 +230,12 @@ async function getParticularFieldsInfo(comDocument, comDocumentList) {
         let rInvoiceIdList = comDocumentList.map(receipt => receipt.related_invoice);
         rInvoiceIdList = [...new Set(rInvoiceIdList)];
 
-        // Get invoice type, pos and numbers for each id
+        // Get invoice name
         let relatedInvoices = await Promise.all(rInvoiceIdList.map(InvoiceId => 
             getSubFields(`/erp/api/sale_invoices/${InvoiceId}`, result => 
-                ({id: result.id, type: result.type, pos: result.point_of_sell,
-                    number: result.number})
-            )     
+                ({id: result.id, info: result.display_name})     
+            )
         ));
-        
-        // Convert pos and type id from related invoice to pos-number.
-        // Note: For parallel fetch I use promise all
-        relatedInvoices = await Promise.all(relatedInvoices.map(async invoice => {
-        
-            invoice.type = await getSubFields(`/erp/api/document_types/${invoice.type}`,
-                result => result.type);
-            invoice.pos = await getSubFields(`/erp/api/points_of_sell/${invoice.pos}`,
-                result => result.pos_number);
-            return invoice;
-        
-        }));
         
         return relatedInvoices;
     }
@@ -283,8 +270,7 @@ function convertDocumentFields(comDocument, cDocumentList, fieldsSubfields) {
         } else if (comDocument === 'receipt') {
             for (const rInvoice of fieldsSubfields[1]) {
                 if (rInvoice.id === cDocument.related_invoice) {
-                    cDocument.related_invoice_info = 
-                        `${rInvoice.type} ${rInvoice.pos}-${rInvoice.number}`;
+                    cDocument.related_invoice_info = rInvoice.info;
                 }
             }
         }

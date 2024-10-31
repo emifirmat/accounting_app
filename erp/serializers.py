@@ -59,9 +59,32 @@ class DocTypesSerializer(serializers.ModelSerializer):
 
 
 class SaleInvoicesSerializer(serializers.ModelSerializer):
+    display_name = serializers.SerializerMethodField()
+    
     class Meta:
         model = SaleInvoice
         fields = "__all__"
+
+    def get_display_name(self, instance):
+        return str(instance)
+    
+class SInvoiceDynamicSerializer(serializers.ModelSerializer):
+    """Create a dynamic serializer for sale invoices where it only adds the 
+    fields I need of each instance.
+    """
+    class Meta:
+        model = SaleInvoice
+        fields = []
+    
+    def __init__(self, *args, **kwargs):
+        
+        # Delete fields in case then I have another parameter
+        fields = kwargs.pop('fields', None)
+        super(SInvoiceDynamicSerializer, self).__init__(*args, **kwargs)
+        
+        # Add fields in Meta class
+        if fields is not None:
+            self.Meta.fields = fields
 
 class SaleReceiptsSerializer(serializers.ModelSerializer):
     class Meta:

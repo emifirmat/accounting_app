@@ -168,7 +168,7 @@ class SaleInvoice(CommercialDocumentModel):
             models.UniqueConstraint(fields=["point_of_sell", "number", "type"],
                 name="unique_sale_invoice_complete_number"),
         ]
-        ordering = ["-issue_date", "type", "point_of_sell", "number" ]
+        ordering = ["-issue_date", "type", "point_of_sell", "-number" ]
 
     def get_absolute_url(self):
         """Get object webpage"""
@@ -209,7 +209,7 @@ class SaleReceipt(CommercialDocumentModel):
                 name="unique_sale_receipt_complete_number"
             ),
         ]
-        ordering = ["-issue_date", "point_of_sell", "number"]
+        ordering = ["-issue_date", "point_of_sell", "-number"]
 
     def get_absolute_url(self):
         """Get object webpage"""
@@ -241,7 +241,7 @@ class PurchaseInvoice(CommercialDocumentModel):
             models.UniqueConstraint(fields=["sender", "point_of_sell", "number",
                 "type"], name="unique_purchase_invoice_per_supplier")
         ]
-        ordering = ["-issue_date", "sender", "type", "point_of_sell", "number"]
+        ordering = ["-issue_date", "sender", "type", "point_of_sell", "-number"]
 
     def __str__(self):
         return f"{self.type.type} {self.point_of_sell}-{self.number}"
@@ -271,7 +271,7 @@ class PurchaseReceipt(CommercialDocumentModel):
             ], name="unique_purchase_receipt_per_supplier"
             )
         ]
-        ordering = ["-issue_date", "sender", "point_of_sell", "number"]
+        ordering = ["-issue_date", "sender", "point_of_sell", "-number"]
     
     def __str__(self):
         return f"{self.point_of_sell}-{self.number}"

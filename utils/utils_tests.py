@@ -186,6 +186,7 @@ def pick_option_by_index(driver, element_id, index, expected_value):
     WebDriverWait(driver, 10).until(
         element_has_selected_option((By.ID, element_id), expected_value)
     )
+    
 
 def get_columns_data(row, start=0, end=-1):
     """
@@ -327,7 +328,7 @@ def search_first_input(driver, path, id_element, input, count):
     return web_driver_wait_count(driver, path, count)
 
 # WebDriver functions
-def web_driver_wait_count(driver, path, count):
+def web_driver_wait_count(driver, path, count, list_tag="li"):
     """
     Custom webdriverwait that compares the number of elements in a list with the
     expected count. It returns the updated list or it raises a ValueError. 
@@ -335,12 +336,13 @@ def web_driver_wait_count(driver, path, count):
     - driver: WebDriver;
     - path: Parent of the list to check count; 
     - count: Expected count.
+    - list_tag: tag_name of the list. Default: "li".
     Returns:
     - Updated version of doc_list
     - Value error: When couldn't find the match.
     """
     # Update list before waiting
-    doc_list = path.find_elements(By.TAG_NAME, 'li')
+    doc_list = path.find_elements(By.TAG_NAME, list_tag)
     
     try: 
         WebDriverWait(driver, 1).until(lambda d: len(doc_list) == count)

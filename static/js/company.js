@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 async function makeCurrentYear(event, currentYear) {
     const newYear = event.target.innerHTML.trim();
-    const url = '/api/company/years/';
+    const url = '/company/api/years/';
 
     // Make previous current year false
     if (currentYear != null) {
@@ -38,7 +38,7 @@ async function makeCurrentYear(event, currentYear) {
 async function searchCurrentYear(year) {
     // Search year list, and select the one that matches year argument.
     
-    const yearList = await getList("/api/company/years");
+    const yearList = await getList("/company/api/years");
     
     // Search for a match
     for (let i = 0, len = yearList.length; i < len; i++) {

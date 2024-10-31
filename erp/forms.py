@@ -1,6 +1,7 @@
 """Forms for ERP app"""
 from datetime import datetime
 from django import forms
+from django.db.models import Q
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
 
@@ -257,8 +258,19 @@ class SaleReceiptForm(forms.ModelForm):
             self.fields["sender"].initial = sender
             self.fields["sender"].disabled = True
 
-        # In related invoice field, show only uncollected invoices
-        # TODO
+        # In related invoice field, show only uncollected invoices + edited invoice
+        receipt = kwargs.get("instance")
+
+        if receipt:
+            related_invoices = SaleInvoice.objects.filter(
+                Q(collected=False) | Q(pk=receipt.related_invoice.pk)
+            )
+            
+            self.fields["related_invoice"].queryset = related_invoices
+        else:
+            self.fields["related_invoice"].queryset = SaleInvoice.objects.filter(
+                collected=False
+            )
 
 class SearchReceiptForm(forms.Form):
     """Fields for the receipt search"""

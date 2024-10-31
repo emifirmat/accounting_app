@@ -10,7 +10,7 @@
 {% block body %}
 
     {% block edit_title %}
-        <h2 id="document-title" data-document="receipt">Create a new receipt</h2>
+        <h2 id="document-title" data-document="receipt" data-action="create">Create a new receipt</h2>
  
     {% endblock edit_title %}
     <br>
@@ -30,4 +30,5 @@
     <script src="{% static 'js/document_new.js' %}"></script>
     <script src="{% static 'js/receipt_new.js' %}"></script>
     <script src="{% static 'js/crud.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
 {% endblock script %}
