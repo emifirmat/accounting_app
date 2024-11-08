@@ -154,6 +154,9 @@ SaleInvoiceLineFormSet = inlineformset_factory(
 
 class SearchInvoiceForm(forms.Form):
     """Fields for the invoice search"""
+    collected = forms.ChoiceField(choices=[
+        ('op1', 'All'), ('op2', 'Uncollected'), ('op3', 'Collected')
+    ], label='Show invoices')
     type = forms.CharField(max_length=5)
     pos = forms.CharField(max_length=5, label="Point of sell")
     number = forms.CharField(max_length=8)
@@ -161,6 +164,13 @@ class SearchInvoiceForm(forms.Form):
     client_name = forms.CharField(max_length=40)
     year = forms.CharField(max_length=4)
     month = forms.CharField(max_length=2, help_text="Only numbers.")
+
+    def __init__(self, *args, **kwargs):
+        """Customize intitial fields"""
+        super().__init__(*args, **kwargs)
+        
+        # Customize issue_date field
+        self.fields["collected"].initial = 'op2'
 
 class AddPersonFileForm(forms.Form):
     """Add file for new clients or suppliers"""

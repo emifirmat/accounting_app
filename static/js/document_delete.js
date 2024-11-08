@@ -4,8 +4,8 @@ async function deleteComDocument(commercialDocument, cDocObject, redirectUrl)
 
     if (commercialDocument === "receipt") {
         cDocObject.type = "";
-        var rTotalAmount = await getSubFields(`/erp/api/sale_receipts/${cDocObject.id}`,
-            result => result.total_amount
+        var rTotalAmount = await getSubFields(
+            `/erp/api/sale_receipts/${cDocObject.id}`, ['total_amount']
         );
     }
     

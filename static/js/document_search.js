@@ -12,16 +12,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const clientTaxNumberField = document.querySelector('#id_client_tax_number');
     const yearField = document.querySelector('#id_year');
     const monthField = document.querySelector('#id_month');
-
-    let searchFields = [posField, numberField, clientNameField, clientTaxNumberField,
+    
+    const searchFields = [posField, numberField, clientNameField, clientTaxNumberField,
         yearField, monthField];
 
     // Get particular fields
-    let typeField = '';
-    let rInvoiceField = '';
+    let collectedField, typeField;
+    let rInvoiceField;
+
     if (comDocument === 'invoice') {
         typeField = document.querySelector('#id_type');
+        collectedField = document.querySelector('#id_collected');
         searchFields.push(typeField);
+        
+        collectedField.addEventListener('change', async () => {
+            // Each option fetches a different list of invoices
+            comDocumentList = await preloadComDocuments(comDocument, 
+                comDocumentList, collectedField);
+            searchComDocuments(comDocument, comDocumentList, searchFields);
+        });
+    
     } else if (comDocument === 'receipt') {
         rInvoiceField = document.querySelector('#id_related_invoice');
         searchFields.push(rInvoiceField);
@@ -32,26 +42,46 @@ document.addEventListener('DOMContentLoaded', function() {
     
     searchFields.forEach(field => {
         field.addEventListener('focus', async () => {
-            if(!comDocumentList) {
-                // crud.js, preload list when user click on a field
-                comDocumentList = await preloadComDocuments(comDocument, comDocumentList)
+            // preload fetch list when user clicks on a field for the first time.
+            if (!comDocumentList) {
+                comDocumentList = await preloadComDocuments(
+                    comDocument, comDocumentList, collectedField
+                )
             }
         })
     
-        field.addEventListener('input', async () => {
-            if(!comDocumentList) {
-                comDocumentList = await preloadComDocuments(comDocument, comDocumentList)
-            } 
+        field.addEventListener('input', async () => { 
+            // Get cache from comDocList but fetch list again if focus didn't word.
+            // Then Search and show documents from the list according to the filters.
+            if (!comDocumentList) {
+                comDocumentList = await preloadComDocuments(
+                    comDocument, comDocumentList, collectedField
+                )
+            }
+            
             searchComDocuments(comDocument, comDocumentList, searchFields)
         })
     });
 });
 
-async function preloadComDocuments(comDocument, comDocumentList) {
+async function preloadComDocuments(comDocument, comDocumentList, collectedField) {
     // Preload the invoices to allow fast searching
     
-    // Get the full list.
-    comDocumentList = await getList(`/erp/api/sale_${comDocument}s`);
+    // Get the list.
+    let url = `/erp/api/sale_${comDocument}s`;
+    if (comDocument === 'invoice') {
+        let collectedStatus = collectedField.value;
+        if(collectedStatus === 'op1') {
+            collectedStatus = '';
+        } else if (collectedStatus === 'op2') {
+            collectedStatus = 'false';
+        } else {
+            collectedStatus = 'true';
+        }
+        url += `?collected=${collectedStatus}`
+    }
+
+    comDocumentList = await getList(url);
 
     // Get the subfields of each field
     const fieldsSubfields = await Promise.all([
@@ -67,7 +97,6 @@ async function preloadComDocuments(comDocument, comDocumentList) {
 
 }
 
-
 function searchComDocuments(comDocument, comDocumentList, ...fields) {
     // Search com documents from the full list
     
@@ -77,7 +106,8 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
     // If all values are empty, hide list.
     const allEmpty = fields[0].every(field => field.value === '');
     if (allEmpty) {
-        document.querySelector(`#${comDocument}-list`).innerHTML = '';
+        document.querySelector(`#search-headers`).innerHTML = '';
+        document.querySelector(`#search-rows`).innerHTML = '';
         return;
     }   
 
@@ -87,10 +117,12 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
 
     // Show the list
     const cDocumentSection = document.querySelector(`#${comDocument}s-section`);
-    const cDocumentListSection = document.querySelector(`#${comDocument}-list`);
+    const searchHeaders = document.querySelector(`#search-headers`);
+    const searchRows = document.querySelector(`#search-rows`);
     
     cDocumentSection.style.display = 'block';
-    cDocumentListSection.innerHTML = '';
+    searchHeaders.innerHTML = '';
+    searchRows.innerHTML = '';
     
     if (filteredCDocumentList.length === 0) {
         const pElement = createElementComplete({
@@ -98,33 +130,73 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
             innerHTML: `Couldn't match any ${comDocument}.`
         });
 
-        cDocumentListSection.append(pElement);
+        searchRows.append(pElement);
     } else {
-    
+
+        // Add headers
+        let headers;
+        if (comDocument === 'invoice') {
+            headers = ['Issue Date', 'Type', 'Number', 'Recipient Tax Number', 
+                'Recipient Name', 'Collected'];
+        } else if (comDocument === 'receipt') {
+            headers = ['Issue Date', 'Number', 'Recipient Tax Number',
+                'Recipient Name', 'Related Invoice'];
+        }
+        
+        createHeaders(searchHeaders, headers);
+        
+        
         for (let cDocument of filteredCDocumentList) {
             // Create list item and buttons in html     
             let baseUrl = '';
             let itemContent = '';
-
+            let gridColumns = '';
+           
             if (comDocument === 'invoice') {
+                // Set columns (add space for the buttons)
+                gridColumns = '2fr 1fr 2fr 2fr 2fr 1fr 1fr 1fr 1fr'
+                searchHeaders.style.gridTemplateColumns = gridColumns;
+                
                 baseUrl = `/erp/sales`;
                 endUrl = `/invoices/${cDocument.id}`
-                itemContent = `${cDocument.issue_date.substring(0, 10)} |
-                 ${cDocument.type} | ${cDocument.point_of_sell}-${cDocument.number} |
-                 ${cDocument.recipient} | ${cDocument.recipient_name}`
+                itemContent = `
+                <div class=search-cell>${cDocument.issue_date.substring(0, 10)}</div>
+                <div class=search-cell>${cDocument.type}</div>
+                <div class=search-cell>${cDocument.point_of_sell}-${cDocument.number}</div>
+                <div class=search-cell>${cDocument.recipient}</div>
+                <div class=search-cell>${cDocument.recipient_name}</div>
+                <div class=search-cell>${cDocument.collected}</div>`
+            
             } else if (comDocument === 'receipt') {
+                // Set columns (add space for the buttons)
+                gridColumns = '2fr 2fr 2fr 2fr 2fr 1fr 1fr 1fr'
+                searchHeaders.style.gridTemplateColumns = gridColumns;
+
                 baseUrl = `/erp/receivables`;
                 endUrl = `/receipts/${cDocument.id}`
-                itemContent = `${cDocument.issue_date.substring(0, 10)} | 
-                ${cDocument.point_of_sell}-${cDocument.number} | 
-                ${cDocument.recipient} | ${cDocument.recipient_name} |
-                ${cDocument.related_invoice_info}`
+                itemContent = `
+                <div class=search-cell>${cDocument.issue_date.substring(0, 10)}</div> 
+                <div class=search-cell>${cDocument.point_of_sell}-${cDocument.number}</div>
+                <div class=search-cell>${cDocument.recipient}</div> 
+                <div class=search-cell>${cDocument.recipient_name}</div>
+                <div class=search-cell>${cDocument.related_invoice_info}</div>`
             }
 
-            const liElement = createElementComplete({
-                tagName: 'li',
-                innerHTML: `<a href="${baseUrl}${endUrl}"><p>`+
-                    `${itemContent}</p></a>`
+            const rowElement = createElementComplete({
+                tagName: 'div',
+                className: 'search-row',
+                innerHTML: itemContent
+            })
+            // Set columns (headers + buttons) for rows
+            rowElement.style.gridTemplateColumns = gridColumns
+
+            const viewButtonElement = createElementComplete({
+                tagName: 'button',
+                innerHTML: `View`,
+                className: 'view-button',
+                eventName: 'click',
+                eventFunction: () =>
+                    window.location.href = `${baseUrl}${endUrl}`
             });
             const editButtonElement = createElementComplete({
                 tagName: 'button',
@@ -144,8 +216,11 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
                     await deleteComDocument(comDocument, cDocument, baseUrl)
             });
             
-            cDocumentListSection.append(liElement, editButtonElement,
+            // Append created elements
+            rowElement.append(viewButtonElement, editButtonElement,
                 deleteButtonElement);
+
+            searchRows.append(rowElement)
         }
 
     }
@@ -197,14 +272,12 @@ async function getCommonFieldsInfo(comDocumentList) {
     const [posNumbers, clientsInfo] = await Promise.all([
 
         Promise.all(posIdList.map(posId => 
-            getSubFields(`/erp/api/points_of_sell/${posId}`, result => 
-                ({id: result.id, pos_number: result.pos_number})
-            )
+            getSubFields(`/erp/api/points_of_sell/${posId}`, ['id', 'pos_number'])
         )),
         
         Promise.all(clientIdList.map(clientId => 
-            getSubFields(`/erp/api/clients/${clientId}`, result => 
-                ({id: result.id, name: result.name, tax_number: result.tax_number})
+            getSubFields(
+                `/erp/api/clients/${clientId}`, ['id', 'name', 'tax_number']
             )
         ))
     ])
@@ -222,21 +295,21 @@ async function getParticularFieldsInfo(comDocument, comDocumentList) {
 
         // Get invoice types for each id
         return await Promise.all(typeIdList.map(typeId => 
-            getSubFields(`/erp/api/document_types/${typeId}`, result => 
-                ({id: result.id, type: result.type})
+            getSubFields(
+                `/erp/api/document_types/${typeId}`, ['id', 'type'])
             )
-        ));
+        );
     } else if (comDocument === 'receipt') {
         let rInvoiceIdList = comDocumentList.map(receipt => receipt.related_invoice);
         rInvoiceIdList = [...new Set(rInvoiceIdList)];
 
         // Get invoice name
         let relatedInvoices = await Promise.all(rInvoiceIdList.map(InvoiceId => 
-            getSubFields(`/erp/api/sale_invoices/${InvoiceId}`, result => 
-                ({id: result.id, info: result.display_name})     
+            getSubFields(
+                `/erp/api/sale_invoices/${InvoiceId}`, ['id', 'display_name']
             )
         ));
-        
+
         return relatedInvoices;
     }
 }
@@ -270,7 +343,7 @@ function convertDocumentFields(comDocument, cDocumentList, fieldsSubfields) {
         } else if (comDocument === 'receipt') {
             for (const rInvoice of fieldsSubfields[1]) {
                 if (rInvoice.id === cDocument.related_invoice) {
-                    cDocument.related_invoice_info = rInvoice.info;
+                    cDocument.related_invoice_info = rInvoice.display_name;
                 }
             }
         }
@@ -280,3 +353,17 @@ function convertDocumentFields(comDocument, cDocumentList, fieldsSubfields) {
 
 }
 
+function createHeaders(container, headers) {
+    // Create headers for search section
+
+    // Create headers
+    headers.forEach(header => {
+        const element = createElementComplete({
+            tagName: 'div',
+            innerHTML: header.toUpperCase(),
+            className: 'header'
+        });
+        container.append(element);
+    })
+
+}

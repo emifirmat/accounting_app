@@ -9,38 +9,11 @@ from .models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
 from .serializers import (CClientSerializer, SupplierSerializer, 
     PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer,
     DocTypesSerializer, SaleInvoicesSerializer, SaleReceiptsSerializer, 
-    SInvoiceDynamicSerializer)
+    SInvoiceDynamicSerializer, DocTypeDynamicSerializer, CClientDynamicSerializer,
+    POSDynamicSerializer)
 
-
-def handle_multiple_instances(self, request):
-    """
-    Handle multiple instances in one request.
-    Returns:
-    - Response: status 201, headers, and serializer data. 
-    """
-    # Create serializer for multiple instances
-    serializer = self.get_serializer(data=request.data, many=True)
-    # Check if they're valid
-    serializer.is_valid(raise_exception=True)
-    # Save instances
-    self.perform_create(serializer)
-    # Add headers 
-    headers = self.get_success_headers(serializer.data)
-    return Response(serializer.data, status=status.HTTP_201_CREATED,
-        headers=headers)
- 
-def return_conflict_status(message):
-    """
-    When a RestrictedError is raised, return conflic_status.
-    Parameters:
-    - error: Restricted Error object.
-    Returns:
-    - response: Status 409 and error message.
-    """
-    return Response({
-        "detail": str(message),
-        "code": "restricted_error"
-    }, status=status.HTTP_409_CONFLICT)
+from .utils_api import (handle_multiple_instances, return_conflict_status, 
+    SerializerMixin)
 
 
 class CompanyClientAPI(generics.ListAPIView):
@@ -48,10 +21,9 @@ class CompanyClientAPI(generics.ListAPIView):
     queryset = CompanyClient.objects.all()
     serializer_class = CClientSerializer
 
-class DetailCompanyClientAPI(generics.RetrieveUpdateDestroyAPIView):
+class DetailCompanyClientAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific client"""
     queryset = CompanyClient.objects.all()
-    serializer_class = CClientSerializer
 
     def destroy(self, request, *args, **kwargs):
         # Identify when there is RestrictError (FK) with 409 status.
@@ -59,6 +31,15 @@ class DetailCompanyClientAPI(generics.RetrieveUpdateDestroyAPIView):
             return super().destroy(request, *args, **kwargs)
         except RestrictedError as e:
             return return_conflict_status(RestrictedError)
+        
+    def get_serializer_class(self):
+        # Pick serializer acording to request
+        fields = self.request.query_params.get("fields", None)
+        if fields:
+            return CClientDynamicSerializer
+        # Default Serializer
+        else:
+            return CClientSerializer 
 
 
 class SupplierAPI(generics.ListAPIView):
@@ -122,10 +103,18 @@ class PointOfSellAPI(generics.ListCreateAPIView):
     serializer_class = PointOfSellSerializer
 
 
-class DetailPointOfSellAPI(generics.RetrieveUpdateAPIView):
+class DetailPointOfSellAPI(SerializerMixin, generics.RetrieveUpdateAPIView):
     """CRUD API of specific POS"""
     queryset = PointOfSell.objects.all()
-    serializer_class = PointOfSellSerializer
+
+    def get_serializer_class(self):
+        # Pick serializer acording to request
+        fields = self.request.query_params.get("fields", None)
+        if fields:
+            return POSDynamicSerializer
+        # Default Serializer
+        else:
+            return PointOfSellSerializer 
 
 
 class DocTypesAPI(generics.ListAPIView):
@@ -134,13 +123,21 @@ class DocTypesAPI(generics.ListAPIView):
     serializer_class = DocTypesSerializer
 
 
-class DocTypeAPI(generics.RetrieveUpdateAPIView):
+class DocTypeAPI(SerializerMixin, generics.RetrieveUpdateAPIView):
     """Vies API of especific doc type"""
     queryset = DocumentType.objects.all()
-    serializer_class = DocTypesSerializer
+
+    def get_serializer_class(self):
+        # Pick serializer acording to request
+        fields = self.request.query_params.get("fields", None)
+        if fields:
+            return DocTypeDynamicSerializer
+        # Default Serializer
+        else:
+            return DocTypesSerializer
 
 
-class SaleInvoicesAPI(generics.ListCreateAPIView):
+class SaleInvoicesAPI(SerializerMixin, generics.ListCreateAPIView):
     """CRUD API of sale invoices"""
     def get_queryset(self):
         # Get full list or only collected invoices.
@@ -161,15 +158,6 @@ class SaleInvoicesAPI(generics.ListCreateAPIView):
    
         return queryset
     
-    def get_serializer(self, *args, **kwargs):
-        # Add 'fields' to serializer init if picked SIDynamicSerilizer.
-        fields = self.request.query_params.get("fields", None)
-        if fields:
-            kwargs['fields'] = fields.split(",")
-        
-        # Return an instance of the selected serializer class
-        return self.get_serializer_class()(*args, **kwargs)
-
     def get_serializer_class(self):
         # Pick serializer acording to request
         fields = self.request.query_params.get("fields", None)
@@ -179,7 +167,7 @@ class SaleInvoicesAPI(generics.ListCreateAPIView):
         else:
             return SaleInvoicesSerializer
 
-class SaleInvoiceAPI(generics.RetrieveUpdateDestroyAPIView):
+class SaleInvoiceAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale invoice"""
     queryset = SaleInvoice.objects.all()
     serializer_class = SaleInvoicesSerializer
@@ -191,7 +179,16 @@ class SaleInvoiceAPI(generics.RetrieveUpdateDestroyAPIView):
             return return_conflict_status(
                 "The invoice you're trying to delete has related receipts."
             )
-
+        
+    def get_serializer_class(self):
+        # Pick serializer acording to request
+        fields = self.request.query_params.get("fields", None)
+        if fields:
+            return SInvoiceDynamicSerializer
+        # Default Serializer
+        else:
+            return SaleInvoicesSerializer
+    
 class SaleReceiptsAPI(generics.ListCreateAPIView):
     """CRUD API of sale receipts"""
     queryset = SaleReceipt.objects.all()

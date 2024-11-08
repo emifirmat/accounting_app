@@ -942,8 +942,37 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             self.driver, By.ID, "id_s_invoice_lines-2-description"
         )
 
-    @tag("erp_front_search")
-    def test_sales_new_search_invoice_one_field_part_1(self):
+    @tag("erp_front_invoice_search_collected")
+    def test_sales_search_invoice_collected(self):
+        self.create_extra_invoices()
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
+
+        element_has_selected_option("id_collected", "Uncollected")
+        # Click to load invoices in js.
+        click_and_wait(self.driver, "id_client_name")
+
+        # Test initial list
+        path = self.driver.find_element(By.ID, "invoice-list")
+        invoice_list = path.find_elements(By.CLASS_NAME, "search-row")
+        self.assertEqual(len(invoice_list), 0)
+        
+        # Add an imput to show all invoices
+        search_fill_field(self.driver, "id_type", " ")
+        time.sleep(0.005)
+        invoice_list = web_driver_wait_count(self.driver, path, 9)
+
+        # Test all invoices
+        pick_option_by_index(self.driver, "id_collected", 0, "All")
+        time.sleep(0.005)
+        invoice_list = web_driver_wait_count(self.driver, path, 10)
+        
+        # Test collected invoices
+        pick_option_by_index(self.driver, "id_collected", 2, "Collected")
+        time.sleep(0.005)
+        invoice_list = web_driver_wait_count(self.driver, path, 1)
+
+    @tag("erp_front_invoice_search_fields")
+    def test_sales_invoice_search_one_field_part_1(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
 
@@ -954,22 +983,23 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Search by type
         search_fill_field(self.driver, "id_type", "a")
-        invoice_list = search_first_input(self.driver, path, "id_type", "a", 5)
+        invoice_list = search_first_input(self.driver, path, "id_type", "a", 4)
 
-        self.assertIn("A | ", invoice_list[0].text)
+        self.assertIn("A", invoice_list[0].text)
         
         search_clear_field(self.driver, "id_type", invoice_list[0])
         
         # Test Pos
         search_fill_field(self.driver, "id_pos", " 2")
-        invoice_list = web_driver_wait_count(self.driver, path, 4)
+        invoice_list = web_driver_wait_count(self.driver, path, 4, By.CLASS_NAME,
+            "search-row")
         
-        self.assertIn("B | 00002-", invoice_list[0].text)
+        self.assertIn("00002-", invoice_list[0].text)
         
         search_clear_field(self.driver, "id_pos", invoice_list[0])
              
-    @tag("erp_front_search_2")
-    def test_sales_new_search_invoice_one_field_part_2(self):
+    @tag("erp_front_invoice_search_fields")
+    def test_sales_invoice_search_one_field_part_2(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         
@@ -980,7 +1010,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Test Number
         search_fill_field(self.driver, "id_number", "1 ")
-        invoice_list = search_first_input(self.driver, path, "id_number", "1", 4)
+        invoice_list = search_first_input(self.driver, path, "id_number", "1", 3)
         
         self.assertIn("-00000001", invoice_list[0].text)
         
@@ -988,7 +1018,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Test Client tax number
         search_fill_field(self.driver, "id_client_tax_number", "13 ")
-        invoice_list = web_driver_wait_count(self.driver, path, 6)
+        invoice_list = web_driver_wait_count(self.driver, path, 5, By.CLASS_NAME,
+            "search-row")
         
         self.assertIn("20361382481", invoice_list[0].text)
         
@@ -996,12 +1027,13 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Test Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT2 SA")
-        invoice_list = web_driver_wait_count(self.driver, path, 4)
+        invoice_list = web_driver_wait_count(self.driver, path, 4, By.CLASS_NAME,
+            "search-row")
 
         self.assertIn("CLIENT2 SA", invoice_list[0].text)
 
-    @tag("erp_front_search_3")
-    def test_sales_new_search_invoice_one_field_part_3(self):
+    @tag("erp_front_invoice_search_fields")
+    def test_sales_invoice_search_one_field_part_3(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
         
@@ -1012,7 +1044,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Test Year
         search_fill_field(self.driver, "id_year", "20")
-        invoice_list = search_first_input(self.driver, path, "id_year", "20", 10)
+        invoice_list = search_first_input(self.driver, path, "id_year", "20", 9)
        
         self.assertIn("2024", invoice_list[0].text)
         
@@ -1020,13 +1052,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Test month
         search_fill_field(self.driver, "id_month", "13")
-        invoice_list = web_driver_wait_count(self.driver, path, 0)
+        invoice_list = web_driver_wait_count(self.driver, path, 0, By.CLASS_NAME,
+            "search-row")
         
         path = self.driver.find_element(By.ID, "invoice-list")
         self.assertIn("Couldn't match any invoice.", path.text)
 
-    @tag("erp_front_search_multiple")
-    def test_sales_new_search_invoice_multiple_field(self):       
+    @tag("erp_front_invoice_search_multiple")
+    def test_sales_invoice_search_multiple_field(self):       
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
 
@@ -1037,21 +1070,23 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Test multiple fields: 1) Type
         search_fill_field(self.driver, "id_type", "a ")
-        invoice_list = search_first_input(self.driver, path, "id_type", "a ", 5)
+        invoice_list = search_first_input(self.driver, path, "id_type", "a ", 4)
  
-        self.assertIn("A | ", invoice_list[0].text)
+        self.assertIn("A", invoice_list[0].text)
         
         # 2) POS
         search_fill_field(self.driver, "id_pos", " 2")
-        invoice_list = web_driver_wait_count(self.driver, path, 2)
+        invoice_list = web_driver_wait_count(self.driver, path, 2, By.CLASS_NAME,
+            "search-row")
 
-        self.assertIn("A | 00002", invoice_list[0].text)
+        self.assertIn("00002", invoice_list[0].text)
         
         # Number
         search_fill_field(self.driver, "id_number", " 1 ")
-        invoice_list = web_driver_wait_count(self.driver, path, 1)
+        invoice_list = web_driver_wait_count(self.driver, path, 1, By.CLASS_NAME,
+            "search-row")
 
-        self.assertIn("A | 00002-00000001", invoice_list[0].text)
+        self.assertIn("00002-00000001", invoice_list[0].text)
         
         # Clear all fields
         for field_id in ["id_type", "id_pos", "id_number"]:
@@ -1060,8 +1095,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             EC.staleness_of(invoice_list[0])
         )
 
-    @tag("erp_front_search_multiple_2")
-    def test_sales_new_search_invoice_multiple_field_2(self): 
+    @tag("erp_front_invoice_search_multiple")
+    def test_sales_invoice_search_multiple_field_2(self): 
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
 
@@ -1079,14 +1114,15 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT1 Srl")
-        invoice_list = web_driver_wait_count(self.driver, path, 0)
+        invoice_list = web_driver_wait_count(self.driver, path, 0, By.CLASS_NAME,
+            "search-row")
 
         # No match
         path = self.driver.find_element(By.ID, "invoice-list")
         self.assertIn("Couldn't match any invoice.", path.text)
 
-    @tag("erp_front_search_edit")
-    def test_sales_new_search_invoice_edit(self):
+    @tag("erp_front_invoice_search_view")
+    def test_sales_invoice_search_view(self):
         self.create_extra_invoices()
         url = f"{self.live_server_url}/erp/sales/invoices/search"
         self.driver.get(url)
@@ -1096,45 +1132,76 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         path = self.driver.find_element(By.ID, "invoice-list")
         
-        # Search invoice 1: type
+        # Search invoice 1: 
+        # collected
+        pick_option_by_index(self.driver, "id_collected", 2, "Collected")
+        time.sleep(0.05) # Let fetch to load
+        # type
+        search_fill_field(self.driver, "id_type", "a ")
+        invoice_list = search_first_input(self.driver, path, "id_type", "a", 1)
+        
+        self.assertIn("A", invoice_list[0].text)
+        
+        # Click on edit button
+        click_and_redirect(self.driver, By.CLASS_NAME, "view-button", url, path)
+        self.assertEqual(self.driver.title, "Invoice A 00001-00000001")
+
+    @tag("erp_front_invoice_search_edit")
+    def test_sales_invoice_search_edit(self):
+        self.create_extra_invoices()
+        url = f"{self.live_server_url}/erp/sales/invoices/search"
+        self.driver.get(url)
+
+        # Click to load invoices in js.
+        click_and_wait(self.driver, "id_year")
+
+        path = self.driver.find_element(By.ID, "invoice-list")
+        
+        # Search invoice 1: 
+        # collected
+        pick_option_by_index(self.driver, "id_collected", 0, "All")
+        time.sleep(0.05) # Let fetch to load
+        # type
         search_fill_field(self.driver, "id_type", "a ")
         invoice_list = search_first_input(self.driver, path, "id_type", "a", 5)
         
-        self.assertIn("A | ", invoice_list[0].text)
+        self.assertIn("A", invoice_list[0].text)
    
         # pos
         search_fill_field(self.driver, "id_pos", "1")
-        invoice_list = web_driver_wait_count(self.driver, path, 3)
+        invoice_list = web_driver_wait_count(self.driver, path, 3, By.CLASS_NAME,
+            "search-row")
 
-        self.assertIn("A | 00001", invoice_list[0].text)
+        self.assertIn("00001", invoice_list[0].text)
         
         # Click on edit button
         click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url, path)
         self.assertEqual(self.driver.title, "Edit Invoice")
         
-    @tag("erp_front_search_delete")
-    def test_sales_new_search_invoice_delete(self):
+    @tag("erp_front_invoice_search_delete")
+    def test_sales_invoice_search_delete(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
 
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_month")
 
-        # Search invoice A | 00001-00000003
+        path = self.driver.find_element(By.ID, "invoice-list")
+
+        # Search invoice A 00001-00000003
+        # Collected
+        pick_option_by_index(self.driver, "id_collected", 0, "All")
         # Type
         search_fill_field(self.driver, "id_type", "a ")
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "invoice-list"), "A | 00001-00000001")
-        )
+        invoice_list = search_first_input(self.driver, path, "id_type", "a ", 5)
         
-        path = self.driver.find_element(By.ID, "invoice-list")
-        invoice_list = path.find_elements(By.TAG_NAME, 'li')
+        self.assertIn("A", invoice_list[0].text)
         
         # POS
         search_fill_field(self.driver, "id_pos", "1")
-        invoice_list = web_driver_wait_count(self.driver, path, 3)
-        self.assertIn("A | 00001", invoice_list[0].text)
+        invoice_list = web_driver_wait_count(self.driver, path, 3, By.CLASS_NAME,
+            "search-row")
+        self.assertIn("00001", invoice_list[0].text)
         
         # Click on delete button   
         path = self.driver.find_element(By.ID, "invoice-list")     
@@ -1149,8 +1216,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         )
         self.assertEqual(SaleInvoice.objects.all().count(), 9)
 
-    @tag("erp_front_search_delete_conflict")
-    def test_sales_new_search_invoice_delete_conflict(self):
+    @tag("erp_front_invoice_search_delete_conflict")
+    def test_sales_invoice_search_delete_conflict(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
 
@@ -1159,22 +1226,25 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         path = self.driver.find_element(By.ID, "invoice-list")
 
-        # Search invoice A | 00001-00000001
+        # Search invoice A 00001-00000001
+        pick_option_by_index(self.driver, "id_collected", 0, "All")
         # Type
         search_fill_field(self.driver, "id_type", " a")
         invoice_list = search_first_input(self.driver, path, "id_type", " a", 5)       
         
-        self.assertIn("A | ", invoice_list[0].text)
+        self.assertIn("A", invoice_list[0].text)
         
         # POS
         search_fill_field(self.driver, "id_pos", "1")
-        invoice_list = web_driver_wait_count(self.driver, path, 3)
-        self.assertIn("A | 00001", invoice_list[0].text)
+        invoice_list = web_driver_wait_count(self.driver, path, 3, By.CLASS_NAME,
+            "search-row")
+        self.assertIn("00001", invoice_list[0].text)
 
         # Number
         search_fill_field(self.driver, "id_number", "1")
-        invoice_list = web_driver_wait_count(self.driver, path, 1)
-        self.assertNotIn("A | 00001-00000002", invoice_list[0].text)
+        invoice_list = web_driver_wait_count(self.driver, path, 1, By.CLASS_NAME,
+            "search-row")
+        self.assertNotIn("00001-00000002", invoice_list[0].text)
         
         # Click on delete button   
         path = self.driver.find_element(By.ID, "invoice-list")     
@@ -1590,7 +1660,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         checkbox = self.driver.find_element(By.ID, "id-collected")
         checkbox.click()
         # 8 uncollected invoices + empty option[0] + 1 collected inv
-        web_driver_wait_count(self.driver, ri_field, 11, "option")
+        web_driver_wait_count(self.driver, ri_field, 11, By.TAG_NAME, "option")
         
         self.assertTrue(checkbox.is_selected())
 
@@ -1600,7 +1670,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Click again and see if collected invs were removed
         checkbox.click()
-        web_driver_wait_count(self.driver, ri_field, 10, "option")
+        web_driver_wait_count(self.driver, ri_field, 10, By.TAG_NAME, "option")
         
         self.assertFalse(checkbox.is_selected())
 
@@ -1614,7 +1684,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Points of Sell")
     
     @tag("erp_front_receipt_search")
-    def test_receivables_new_search_receipt_one_field_part_1(self):
+    def test_receivables_receipt_search_one_field_part_1(self):
         self.create_extra_receipts()
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
       
@@ -1634,7 +1704,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Search Pos
         search_fill_field(self.driver, "id_pos", " 2")
-        receipt_list = web_driver_wait_count(self.driver, path, 2)
+        receipt_list = web_driver_wait_count(self.driver, path, 2, By.CLASS_NAME,
+            "search-row")
 
         self.assertIn("00002", receipt_list[0].text)
         
@@ -1642,7 +1713,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
       
     @tag("erp_front_receipt_search_2")
-    def test_receivables_new_search_receipt_one_field_part_2(self):
+    def test_receivables_receipt_search_one_field_part_2(self):
         self.create_extra_receipts()
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
         
@@ -1662,7 +1733,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Test Client tax number
         search_fill_field(self.driver, "id_client_tax_number", "13 ")
-        receipt_list = web_driver_wait_count(self.driver, path, 5)
+        receipt_list = web_driver_wait_count(self.driver, path, 5, By.CLASS_NAME,
+            "search-row")
         
         self.assertIn("20361382481", receipt_list[0].text)
         
@@ -1670,12 +1742,13 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Test Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT2 SA")
-        receipt_list = web_driver_wait_count(self.driver, path, 1)
+        receipt_list = web_driver_wait_count(self.driver, path, 1, By.CLASS_NAME,
+            "search-row")
         
-        self.assertIn(" 99999999999", receipt_list[0].text)
+        self.assertIn("99999999999", receipt_list[0].text)
 
     @tag("erp_front_receipt_search_3")
-    def test_receivables_new_search_receipt_one_field_part_3(self):
+    def test_receivables_receipt_search_one_field_part_3(self):
         self.create_extra_receipts()
         # Go to Sales search receipt page.
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
@@ -1695,13 +1768,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Search month
         search_fill_field(self.driver, "id_month", "13")
-        receipt_list = web_driver_wait_count(self.driver, path, 0)
+        receipt_list = web_driver_wait_count(self.driver, path, 0, By.CLASS_NAME,
+            "search-row")
 
         path = self.driver.find_element(By.ID, "receipt-list")
         self.assertIn("Couldn't match any receipt.", path.text)
 
     @tag("erp_front_receipt_search_multiple")
-    def test_receivables_new_search_receipt_multiple_field(self): 
+    def test_receivables_receipt_search_multiple_field(self): 
         self.create_extra_receipts()
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
         
@@ -1720,11 +1794,13 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # POS
         search_fill_field(self.driver, "id_pos", " 1")
-        receipt_list = web_driver_wait_count(self.driver, path, 4)
+        receipt_list = web_driver_wait_count(self.driver, path, 4,By.CLASS_NAME,
+            "search-row")
         
         # Number
         search_fill_field(self.driver, "id_number", "2 ")
-        receipt_list = web_driver_wait_count(self.driver, path, 1)
+        receipt_list = web_driver_wait_count(self.driver, path, 1, By.CLASS_NAME,
+            "search-row")
 
         self.assertIn("00001-00000002", receipt_list[0].text)
         
@@ -1735,10 +1811,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             EC.staleness_of(receipt_list[0])
         )
 
-    
-
     @tag("erp_front_receipt_search_multiple_2")
-    def test_receivables_new_search_receipt_multiple_field_2(self): 
+    def test_receivables_receipt_search_multiple_field_2(self): 
         self.create_extra_receipts()
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
         
@@ -1756,13 +1830,37 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Client name
         search_fill_field(self.driver, "id_client_name", "cLiEnT1 SA")
-        receipt_list = web_driver_wait_count(self.driver, path, 0)
+        receipt_list = web_driver_wait_count(self.driver, path, 0, By.CLASS_NAME,
+            "search-row")
         
         path = self.driver.find_element(By.ID, "receipt-list")
         self.assertIn("Couldn't match any receipt.", path.text)
 
+    @tag("erp_front_receipt_search_view")
+    def test_receivables_receipt_search_view(self):
+        self.create_extra_receipts()
+        url = f"{self.live_server_url}/erp/receivables/receipts/search"
+        self.driver.get(url)
+
+        # Click to load invoices in js.
+        click_and_wait(self.driver, "id_year")
+
+        path = self.driver.find_element(By.ID, "receipt-list")
+        
+        # Search invoice 1: 
+        # related invoice
+        search_fill_field(self.driver, "id_related_invoice", "3 ")
+        receipt_list = search_first_input(self.driver, path, "id_related_invoice",
+            "3", 1)
+        
+        self.assertIn("00001-00000004", receipt_list[0].text)
+        
+        # Click on edit button
+        click_and_redirect(self.driver, By.CLASS_NAME, "view-button", url, path)
+        self.assertEqual(self.driver.title, "Receipt 00001-00000004")
+
     @tag("erp_front_receipt_search_edit")
-    def test_receivables_new_search_receipt_edit(self):
+    def test_receivables_search_receipt_edit(self):
         self.create_extra_receipts()
         url = f"{self.live_server_url}/erp/receivables/receipts/search"
         self.driver.get(url)
@@ -1785,7 +1883,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Edit Receipt") 
 
     @tag("erp_front_receipt_search_delete")
-    def test_receivables_new_search_receipt_delete(self):
+    def test_receivables_search_receipt_delete(self):
         self.create_extra_receipts()
         self.driver.get(f"{self.live_server_url}/erp/receivables/receipts/search")
 
@@ -1804,7 +1902,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # number
         search_fill_field(self.driver, "id_number", "2")
-        receipt_list = web_driver_wait_count(self.driver, path, 1)
+        receipt_list = web_driver_wait_count(self.driver, path, 1, By.CLASS_NAME,
+            "search-row")
   
         # Click on delete button   
         delete_button = path.find_element(By.CLASS_NAME, "delete-button")
@@ -1867,14 +1966,14 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Check number field is 1
         ri_field = self.driver.find_element(By.ID, "id_related_invoice")
         # Blank option + 8 uncollected invoices + edited invoice
-        web_driver_wait_count(self.driver, ri_field, 10, "option")
+        web_driver_wait_count(self.driver, ri_field, 10,By.TAG_NAME, "option")
 
         # Pick pos and check new number field
         checkbox = self.driver.find_element(By.ID, "id-collected")
         checkbox.click()
 
         # 8 uncollected invoices + empty option[0] + 1 collected inv
-        web_driver_wait_count(self.driver, ri_field, 11, "option")
+        web_driver_wait_count(self.driver, ri_field, 11, By.TAG_NAME, "option")
         self.assertTrue(checkbox.is_selected())
 
         # Check collected invoice content
@@ -1883,7 +1982,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Click again and see if collected invs were removed
         checkbox.click()
-        web_driver_wait_count(self.driver, ri_field, 10, "option")
+        web_driver_wait_count(self.driver, ri_field, 10, By.TAG_NAME, "option")
         
         self.assertFalse(checkbox.is_selected())
 

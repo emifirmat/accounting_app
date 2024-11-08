@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(action === "edit") {
                 
                 receipt = document.querySelector("#receipt-link").dataset.receipt;
-                const ri = await getSubFields(`/erp/api/sale_receipts/${receipt}`, 
-                    result => ({related_invoice: result.related_invoice})
+                const ri = await getSubFields(
+                    `/erp/api/sale_receipts/${receipt}`, ['related_invoice']
                 );              
 
                 parameter += `&exclude_inv_pk=${ri.related_invoice}`

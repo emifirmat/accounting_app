@@ -48,3 +48,21 @@
     flex: 1; /* same space ocupied by buttons*/
     height: auto;
 }
+
+#search-headers {
+    display: grid;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    border-bottom: 2px solid;
+}
+
+#search-rows, .search-row {
+    display: grid;
+    border-bottom: 1px solid;
+}
+
+.search-row {
+    text-align: center;
+    padding: 10px;
+}

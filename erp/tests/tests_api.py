@@ -186,6 +186,16 @@ class APIErpTests(APIBaseTest):
             (CompanyClient, 2)
         )
 
+    def test_detail_company_client_dynamic_serializer_api(self):
+        url = f"/erp/api/clients/{self.client2.pk}"
+        self.check_api_get_response(
+            f"{url}?fields=id,name,tax_number",
+            # page content includes display_name
+            page_content=["CLIENT2 SRL", "99999999999"],
+            wrong_content=["12443131241"],
+            count=3, # Number of fields in the object
+        )
+
     def test_supplier_api(self):
         self.check_api_get_response(
            "/erp/api/suppliers",
@@ -281,6 +291,16 @@ class APIErpTests(APIBaseTest):
             wrong_content=["00001", "00002"]
         )
 
+    def test_point_of_sell_dynamic_serializer_api(self):
+        url = f"/erp/api/points_of_sell/{self.pos3.pk}"
+        self.check_api_get_response(
+            f"{url}?fields=id,pos_number",
+            # page content includes display_name
+            page_content=["00003"],
+            count=2, # Number of fields in the object
+        )
+
+
     def test_doc_types_api(self):
         self.check_api_get_response(
            "/erp/api/document_types",
@@ -295,6 +315,16 @@ class APIErpTests(APIBaseTest):
             ["erp:doc_type_api", {"pk": self.doc_type2.pk}],
             page_content=["B", "false"],
             wrong_content=["00001", "INVOICE E"]
+        )
+
+    def test_doc_type_dynamic_serializer_api(self):
+        url = f"/erp/api/document_types/{self.doc_type2.pk}"
+        self.check_api_get_response(
+            f"{url}?fields=type",
+            # page content includes display_name
+            page_content=["B"],
+            wrong_content=["2"],
+            count=1, # Number of fields in the object
         )
         
     def test_sale_invoices_api(self):
@@ -375,6 +405,16 @@ class APIErpTests(APIBaseTest):
             ["erp:sale_invoice_api", {"pk": self.sale_invoice1.pk}],
             status.HTTP_409_CONFLICT,
             (SaleInvoice, 3)
+        )
+
+    def test_sale_invoice_dynamic_serializer_api(self):
+        url = f"/erp/api/sale_invoices/{self.sale_invoice1.pk}"
+        self.check_api_get_response(
+            f"{url}?fields=issue_date,number",
+            # page content includes display_name
+            page_content=["2024-01-21", "00000001"],
+            wrong_content=["A 00001-00000001"],
+            count=2, # Number of fields in the object
         )
 
     def test_sale_receipts_api(self):

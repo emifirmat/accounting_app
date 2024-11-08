@@ -17,10 +17,9 @@ async function getList(url) {
     }
 }
 
-async function getSubFields(url, getResult=(result) => result) {
+async function getSubFields(url, fields) {
     // Get some attributes from an object or list of objects
-    const objectOrList = await getList(url);
-    return getResult(objectOrList);
+    return await getList(`${url}?fields=${fields.join(',')}`);
 }
 
 async function postData(url, bodyData, msg="Data posted successfully.") {
