@@ -1441,7 +1441,7 @@ class ErpTestCase(BackBaseTest):
             "/erp/sales/invoices/list", 
             "erp:invoice_list", 
             "erp/sales_list.html", 
-            ["Invoice List", "Client Name", "21/01/2024"] # Current year is 2024                   
+            ["Invoice List", "Client Name", "21/01/2024", "Collected"] # Current year is 2024                   
         )
 
     def test_sales_list_post_year_webpage(self):
@@ -1454,7 +1454,7 @@ class ErpTestCase(BackBaseTest):
         response = self.check_page_post_response("erp:invoice_list", post_object,
             200) 
 
-        for page_content in [ "23/06/2025", "20361382481", "600.01"]:
+        for page_content in [ "23/06/2025", "20361382481", "600.01", "No"]:
             self.assertContains(response, page_content)
      
     def test_sales_list_post_year_no_financial_webpage(self):

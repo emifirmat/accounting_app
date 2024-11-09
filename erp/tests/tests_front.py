@@ -958,17 +958,17 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Add an imput to show all invoices
         search_fill_field(self.driver, "id_type", " ")
-        time.sleep(0.005)
+        time.sleep(0.5) # 0.1 can lead to false error
         invoice_list = web_driver_wait_count(self.driver, path, 9)
 
         # Test all invoices
         pick_option_by_index(self.driver, "id_collected", 0, "All")
-        time.sleep(0.005)
+        time.sleep(0.5)
         invoice_list = web_driver_wait_count(self.driver, path, 10)
         
         # Test collected invoices
         pick_option_by_index(self.driver, "id_collected", 2, "Collected")
-        time.sleep(0.005)
+        time.sleep(0.5)
         invoice_list = web_driver_wait_count(self.driver, path, 1)
 
     @tag("erp_front_invoice_search_fields")
@@ -1135,7 +1135,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Search invoice 1: 
         # collected
         pick_option_by_index(self.driver, "id_collected", 2, "Collected")
-        time.sleep(0.05) # Let fetch to load
+        time.sleep(0.5) # Let fetch to load, 0.1 not enough
         # type
         search_fill_field(self.driver, "id_type", "a ")
         invoice_list = search_first_input(self.driver, path, "id_type", "a", 1)
@@ -1160,7 +1160,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Search invoice 1: 
         # collected
         pick_option_by_index(self.driver, "id_collected", 0, "All")
-        time.sleep(0.05) # Let fetch to load
+        time.sleep(0.5) # Let fetch to load, 0.1 is not enough
         # type
         search_fill_field(self.driver, "id_type", "a ")
         invoice_list = search_first_input(self.driver, path, "id_type", "a", 5)
@@ -1191,6 +1191,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Search invoice A 00001-00000003
         # Collected
         pick_option_by_index(self.driver, "id_collected", 0, "All")
+        time.sleep(0.5) # Let fetch to load, 0.1 is not enough
         # Type
         search_fill_field(self.driver, "id_type", "a ")
         invoice_list = search_first_input(self.driver, path, "id_type", "a ", 5)
@@ -1228,6 +1229,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Search invoice A 00001-00000001
         pick_option_by_index(self.driver, "id_collected", 0, "All")
+        time.sleep(0.5) # Let fetch to load, 0.1 is not enough
         # Type
         search_fill_field(self.driver, "id_type", " a")
         invoice_list = search_first_input(self.driver, path, "id_type", " a", 5)       
@@ -1342,7 +1344,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         )
         self.assertEqual(self.driver.title, "Sales")
 
-    @tag("erp_front_invoice_delete_conflict")
+    @tag("erp_front_invoice_delete")
     def test_sales_invoice_delete_conflict(self):
         # Go to invoice 1 webpage.
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}")
@@ -1374,7 +1376,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Related Receipts")
         self.assertEqual(SaleInvoice.objects.all().count(), 1)
 
-    @tag("erp_front_invoice_rel_receipts_link_inv")
+    @tag("erp_front_invoice_rel_receipts_link")
     def test_sales_invoice_rel_receipts_links_invoice(self):
         # Go to invoice 1 rel receipts webpage.
         url = f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}"
@@ -1386,7 +1388,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         go_to_link(self.driver, By.CLASS_NAME, "container", url, 0)
         self.assertEqual(self.driver.title, "Invoice A 00001-00000001")
 
-    @tag("erp_front_invoice_rel_receipts_link_rec")
+    @tag("erp_front_invoice_rel_receipts_link")
     def test_sales_invoice_rel_receipts_links_receipt(self):
         # Go to invoice 1 rel receipts webpage.
         url = f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}"
@@ -1441,7 +1443,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(pos.text, "00001")
         self.assertEqual(number.text, "00000001")
         
-    @tag("erp_front_show_list_date_reverse")
+    @tag("erp_front_show_list_date")
     def test_sales_show_list_date_reverse_order(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
@@ -1450,7 +1452,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         headers = self.driver.find_elements(By.TAG_NAME, "th")
         headers[0].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
         first_row = rows[0]
@@ -1483,47 +1485,46 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         headers = self.driver.find_elements(By.TAG_NAME, "th")
         headers[1].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
         first_row = rows[0]
-        point_of_sell = first_row.find_elements(By.TAG_NAME, "td")[2]
-        pay_term = first_row.find_elements(By.TAG_NAME, "td")[-2]
         i_type = first_row.find_elements(By.TAG_NAME, "td")[1]
+        point_of_sell = first_row.find_elements(By.TAG_NAME, "td")[2]
+        pay_term = first_row.find_elements(By.TAG_NAME, "td")[7]
+        self.assertEqual(i_type.text, "001 | A")
         self.assertEqual(point_of_sell.text, "00002")
-        self.assertEqual(pay_term.text, "0 days")    
-        self.assertEqual(i_type.text, "001 | A")            
-
+        self.assertEqual(pay_term.text, "0 days")
+        
         last_row = rows[-1]
-        point_of_sell = last_row.find_elements(By.TAG_NAME, "td")[2]
-        pay_term = last_row.find_elements(By.TAG_NAME, "td")[-2]
         i_type = last_row.find_elements(By.TAG_NAME, "td")[1]
+        point_of_sell = last_row.find_elements(By.TAG_NAME, "td")[2]
+        pay_term = last_row.find_elements(By.TAG_NAME, "td")[7]
+        self.assertEqual(i_type.text, "002 | B")
         self.assertEqual(point_of_sell.text, "00001")
-        self.assertEqual(pay_term.text, "30 days")        
-        self.assertEqual(i_type.text, "002 | B")            
+        self.assertEqual(pay_term.text, "30 days")
 
         # Test client name desc sort
         headers[1].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
         first_row = rows[0]
-        point_of_sell = first_row.find_elements(By.TAG_NAME, "td")[2]
-        pay_term = first_row.find_elements(By.TAG_NAME, "td")[-2]
         i_type = first_row.find_elements(By.TAG_NAME, "td")[1]
+        point_of_sell = first_row.find_elements(By.TAG_NAME, "td")[2]
+        pay_term = first_row.find_elements(By.TAG_NAME, "td")[7]
+        self.assertEqual(i_type.text, "002 | B")
         self.assertEqual(point_of_sell.text, "00002")
-        self.assertEqual(pay_term.text, "0 days")   
-        self.assertEqual(i_type.text, "002 | B")     
-
+        self.assertEqual(pay_term.text, "0 days")
+        
         last_row = rows[-1]
-        point_of_sell = last_row.find_elements(By.TAG_NAME, "td")[2]
-        pay_term = last_row.find_elements(By.TAG_NAME, "td")[-2]
         i_type = last_row.find_elements(By.TAG_NAME, "td")[1]
+        point_of_sell = last_row.find_elements(By.TAG_NAME, "td")[2]
+        pay_term = last_row.find_elements(By.TAG_NAME, "td")[7]
+        self.assertEqual(i_type.text, "001 | A")
         self.assertEqual(point_of_sell.text, "00001")
-        self.assertEqual(pay_term.text, "0 days") 
-        self.assertEqual(i_type.text, "001 | A")         
-    
+        self.assertEqual(pay_term.text, "0 days")
     
     @tag("erp_front_show_list_client_name")
     def test_sales_show_list_client_name_order(self):
@@ -1534,7 +1535,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         headers = self.driver.find_elements(By.TAG_NAME, "th")
         headers[5].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
         first_row = rows[0]
@@ -1548,7 +1549,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Test client name desc sort
         headers[5].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
         first_row = rows[0]
@@ -1558,6 +1559,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         last_row = rows[-1]
         client_name = last_row.find_elements(By.TAG_NAME, "td")[5]
         self.assertEqual(client_name.text, "CLIENT1 SRL")
+        
 
     @tag("erp_front_show_list_total")
     def test_sales_show_list_total_order(self):
@@ -1566,40 +1568,74 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Test total amount asc sort
         headers = self.driver.find_elements(By.TAG_NAME, "th")
-        headers[-1].click()
+        headers[-2].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
         first_row = rows[0]
         client_name = first_row.find_elements(By.TAG_NAME, "td")[5]
-        total_amount = first_row.find_elements(By.TAG_NAME, "td")[-1]
+        total_amount = first_row.find_elements(By.TAG_NAME, "td")[-2]
         self.assertEqual(client_name.text, "CLIENT1 SRL")
         self.assertEqual(total_amount.text, "$ 9.00")
 
         last_row = rows[-1]
         client_name = last_row.find_elements(By.TAG_NAME, "td")[5]
-        total_amount = last_row.find_elements(By.TAG_NAME, "td")[-1]
+        total_amount = last_row.find_elements(By.TAG_NAME, "td")[-2]
         self.assertEqual(client_name.text, "CLIENT1 SRL")
         self.assertEqual(total_amount.text, "$ 2509.01")
 
-        # Test client name desc sort
-        headers[-1].click()
+        # Test total amount desc sort
+        headers[-2].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
         first_row = rows[0]
         number = first_row.find_elements(By.TAG_NAME, "td")[3]
-        total_amount = first_row.find_elements(By.TAG_NAME, "td")[-1]
+        total_amount = first_row.find_elements(By.TAG_NAME, "td")[-2]
         self.assertEqual(number.text, "00000001")
         self.assertEqual(total_amount.text, "$ 2509.01")
 
         last_row = rows[-1]
         number = last_row.find_elements(By.TAG_NAME, "td")[3]
-        total_amount = last_row.find_elements(By.TAG_NAME, "td")[-1]
+        total_amount = last_row.find_elements(By.TAG_NAME, "td")[-2]
         self.assertEqual(number.text, "00000002")
         self.assertEqual(total_amount.text, "$ 9.00")
+
+    @tag("erp_front_show_list_collected")
+    def test_sales_show_list_collected(self):
+        self.create_extra_invoices()
+        self.driver.get(f"{self.live_server_url}/erp/sales/invoices/list")
+
+        # Test collected asc sort
+        headers = self.driver.find_elements(By.TAG_NAME, "th")
+        headers[-1].click()
+        # Elements only change location, so I use time sleep
+        time.sleep(0.005)
+
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        collected = first_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(collected.text, "No")
+
+        last_row = rows[-1]
+        collected = last_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(collected.text, "Yes")
+
+        # Test client name desc sort
+        headers[-1].click()
+        # Elements only change location, so I use time sleep
+        time.sleep(0.005)
+
+        rows = self.driver.find_elements(By.CLASS_NAME, "invoice")
+        first_row = rows[0]
+        collected = first_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(collected.text, "Yes")
+
+        last_row = rows[-1]
+        collected = last_row.find_elements(By.TAG_NAME, "td")[-1]
+        self.assertEqual(collected.text, "No")
 
     @tag("erp_front_receipt_new")
     def test_receivables_new_receipt_numbers(self):
@@ -2063,7 +2099,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         headers = self.driver.find_elements(By.TAG_NAME, "th")
         headers[0].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "receipt")
         first_row = rows[0]
@@ -2093,7 +2129,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         headers = self.driver.find_elements(By.TAG_NAME, "th")
         headers[5].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "receipt")
         first_row = rows[0]
@@ -2111,7 +2147,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Test related invoice desc sort
         headers[5].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "receipt")
         first_row = rows[0]
@@ -2136,7 +2172,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         headers = self.driver.find_elements(By.TAG_NAME, "th")
         headers[-1].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "receipt")
         first_row = rows[0]
@@ -2151,10 +2187,10 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(client_name.text, "CLIENT1 SRL")
         self.assertEqual(total_amount.text, "$ 2509.01")
 
-        # Test client name desc sort
+        # Test total desc sort
         headers[-1].click()
         # Elements only change location, so I use time sleep
-        time.sleep(0.01)
+        time.sleep(0.005)
 
         rows = self.driver.find_elements(By.CLASS_NAME, "receipt")
         first_row = rows[0]
