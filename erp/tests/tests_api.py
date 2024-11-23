@@ -7,13 +7,13 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from company.models import Company
-from utils.base_tests import APIBaseTest
+from utils.base_tests import APIBaseTest, CreateDbInstancesMixin
 from ..models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
     PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt)
 
 
 @tag("erp_api")
-class APIErpTests(APIBaseTest):
+class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
     """Test ERP's apis"""
     @classmethod
     def setUpTestData(cls):
@@ -27,18 +27,18 @@ class APIErpTests(APIBaseTest):
             creation_date = datetime.date(1991, 3, 10),
             closing_date = datetime.date(2024, 6, 30),
         )
-        cls.client1 = CompanyClient.objects.create(
+        cls.c_client1 = CompanyClient.objects.create(
             tax_number = "20361382481",
             name = "Client1 SRL",
             address = "Client street, Client city, Chile",
-            email = "client1@email.com",
+            email = "c_client1@email.com",
             phone = "1234567890",
         )
-        cls.client2 = CompanyClient.objects.create(
+        cls.c_client2 = CompanyClient.objects.create(
             tax_number = "99999999999",
             name = "Client2 SRL",
             address = "Client2 street, Client city, Argentina",
-            email = "client2@email.com",
+            email = "c_client2@email.com",
             phone = "12443131241",
         )
 
@@ -91,7 +91,7 @@ class APIErpTests(APIBaseTest):
             point_of_sell = cls.pos1,
             number = "00000001",
             sender = cls.company,
-            recipient = cls.client1,
+            recipient = cls.c_client1,
             payment_method = cls.pay_method1,
             payment_term = cls.pay_term1,
             # Set collected manually, as this attribute is modified in views.
@@ -118,7 +118,7 @@ class APIErpTests(APIBaseTest):
             point_of_sell = cls.pos1,
             number = "1",
             sender = cls.company,
-            recipient = cls.client1,
+            recipient = cls.c_client1,
             payment_method = cls.pay_method2,
             payment_term = cls.pay_term2,
         )
@@ -129,7 +129,7 @@ class APIErpTests(APIBaseTest):
             point_of_sell = cls.pos1,
             number = "00000002",
             sender = cls.company,
-            recipient = cls.client1,
+            recipient = cls.c_client1,
             payment_method = cls.pay_method1,
             payment_term = cls.pay_term1,
         )
@@ -141,7 +141,7 @@ class APIErpTests(APIBaseTest):
             description = "Test sale receipt",
             related_invoice = cls.sale_invoice1,
             sender = cls.company,
-            recipient = cls.client1,
+            recipient = cls.c_client1,
             total_amount = Decimal("2509.01"),
         )
         cls.sale_receipt2 = SaleReceipt.objects.create(
@@ -151,7 +151,7 @@ class APIErpTests(APIBaseTest):
             description = "Second receipt",
             related_invoice = cls.sale_invoice2,
             sender = cls.company,
-            recipient = cls.client1,
+            recipient = cls.c_client1,
             total_amount = Decimal("600.01"),
         )
 
@@ -164,30 +164,51 @@ class APIErpTests(APIBaseTest):
             count=2,
         )
 
+    def test_company_client_delete_multiple_api(self):
+        self.create_company_clients()
+        delete_object = {"ids": [self.c_client3.pk, self.c_client5.pk, self.c_client7.pk]}
+        
+        self.check_api_delete_response(
+            ["erp:clients_delete_api"],
+            status.HTTP_204_NO_CONTENT,
+            (CompanyClient, 4),
+            delete_object,
+        )
+
+    def test_company_client_delete_multiple_conlfict_api(self):
+        delete_object = {"ids": [self.c_client1.pk, self.c_client2.pk]}
+        
+        self.check_api_delete_response(
+            ["erp:clients_delete_api"],
+            status.HTTP_409_CONFLICT,
+            (CompanyClient, 2),
+            delete_object,
+        )
+
     def test_detail_company_client_api(self):
         self.check_api_get_response(
-            f"/erp/api/clients/{self.client2.pk}",
-            ["erp:client_api", {"pk": self.client2.pk}],
+            f"/erp/api/clients/{self.c_client2.pk}",
+            ["erp:client_api", {"pk": self.c_client2.pk}],
             page_content=["Client2 Street", "99999999999"],
             wrong_content=["20361382481"]
         )
     
     def test_detail_company_client_delete_api(self):
         self.check_api_delete_response(
-            ["erp:client_api", {"pk": self.client2.pk}],
+            ["erp:client_api", {"pk": self.c_client2.pk}],
             status.HTTP_204_NO_CONTENT,
             (CompanyClient, 1)
         )
 
     def test_detail_company_client_delete_conflict_api(self):
         self.check_api_delete_response(
-            ["erp:client_api", {"pk": self.client1.pk}],
+            ["erp:client_api", {"pk": self.c_client1.pk}],
             status.HTTP_409_CONFLICT,
             (CompanyClient, 2)
         )
 
     def test_detail_company_client_dynamic_serializer_api(self):
-        url = f"/erp/api/clients/{self.client2.pk}"
+        url = f"/erp/api/clients/{self.c_client2.pk}"
         self.check_api_get_response(
             f"{url}?fields=id,name,tax_number",
             # page content includes display_name
@@ -203,6 +224,29 @@ class APIErpTests(APIBaseTest):
             page_content=["SUPPLIER1 SA", "SUPPLIER2 SRL"],
             count=2,
         )
+
+    def test_supplier_delete_multiple_api(self):
+        delete_object = {"ids": [self.supplier1.pk, self.supplier2.pk]}
+
+        self.check_api_delete_response(
+            ["erp:suppliers_delete_api"],
+            status.HTTP_204_NO_CONTENT,
+            (Supplier, 0),
+            delete_object,
+        )
+
+    # TODO add multiple delete conflict after adding purhcase invoices
+    """
+    def test_supplier_delete_multiple_api(self):
+        delete_object = {"ids": [self.supplier1.pk, self.supplier2.pk]}
+
+        self.check_api_delete_response(
+            ["erp:suppliers_delete_api"],
+            status.HTTP_204_NO_CONTENT,
+            (Supplier, 0),
+            delete_object,
+        )
+    """
 
     def test_detail_supplier_api(self):
         self.check_api_get_response(

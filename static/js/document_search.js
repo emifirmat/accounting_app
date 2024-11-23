@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // list cache, to make searching faster
     let comDocumentList;
-    
+    let timeoutId;
+
     searchFields.forEach(field => {
         field.addEventListener('focus', async () => {
             // preload fetch list when user clicks on a field for the first time.
@@ -58,8 +59,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     comDocument, comDocumentList, collectedField
                 )
             }
-            
-            searchComDocuments(comDocument, comDocumentList, searchFields)
+
+            // Prevent multiple calls if user is typing quickly
+            timeoutId = debounce(timeoutId, 200, () =>
+                searchComDocuments(comDocument, comDocumentList, searchFields)
+            )
         })
     });
 });

@@ -109,22 +109,37 @@ async function changeOneAttribute(url, attributeName, attributeValue,
     }
 }
 
-async function deleteInstance(url, instanceName) {
-    // Delete the instance of a model
+async function deleteInstance(url, instanceName, deleteObject=null) {
+    // Delete the one or more instances of a model
 
     try {
-        const response = await fetch(url, {method: 'DELETE'})
+        options = {method: 'DELETE'}
+
+        if(deleteObject) {
+            options.headers = {'content-type': 'application/json'};
+            options.body = JSON.stringify({'ids': deleteObject});
+        }
+
+        const response = await fetch(url, options)
         
         if(!response.ok) {
+            // Returns 409 conflict error if there's restric error.
             if (response.status == 409) {
                 // Return false so I can handle RestrictErrors in other functions.
                 return false;
-            } else {
+            } else { // return generic error
                 const errorMessage = await response.json();
                 throw new Error(errorMessage.detail || 'Unknown error.');
-            }
+            };
         } else {
-            console.log(`The ${instanceName} has been deleted successfully.`);
+            let message;
+            if (deleteObject) {
+                message = `The ${instanceName}s have been deleted successfully.`;
+            } else {
+                message = `The ${instanceName} has been deleted successfully.`;
+            }
+            
+            console.log(message);
             return true;
         }    
     } catch(error) {
@@ -133,7 +148,6 @@ async function deleteInstance(url, instanceName) {
     }
     
 }
-
 
 function getCookie(name) {
     // Get cookie for CSRF token

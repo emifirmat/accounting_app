@@ -2,6 +2,7 @@
 from django.db.models.deletion import RestrictedError
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 from .models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
@@ -13,13 +14,17 @@ from .serializers import (CClientSerializer, SupplierSerializer,
     POSDynamicSerializer)
 
 from .utils_api import (handle_multiple_instances, return_conflict_status, 
-    SerializerMixin)
+    SerializerMixin, BulkDeleteMixin)
 
 
 class CompanyClientAPI(generics.ListAPIView):
     """Show API list of clients"""
     queryset = CompanyClient.objects.all()
     serializer_class = CClientSerializer
+    
+class CompanyClientDeleteAPI(BulkDeleteMixin, generics.GenericAPIView):
+    """API delete a list of clients"""
+    queryset = CompanyClient.objects.all()
 
 class DetailCompanyClientAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific client"""
@@ -29,7 +34,7 @@ class DetailCompanyClientAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIV
         # Identify when there is RestrictError (FK) with 409 status.
         try:
             return super().destroy(request, *args, **kwargs)
-        except RestrictedError as e:
+        except RestrictedError:
             return return_conflict_status(RestrictedError)
         
     def get_serializer_class(self):
@@ -41,11 +46,14 @@ class DetailCompanyClientAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIV
         else:
             return CClientSerializer 
 
-
 class SupplierAPI(generics.ListAPIView):
     """Show API list of suppliers"""
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
+
+class SupplierDeleteAPI(BulkDeleteMixin, generics.GenericAPIView):
+    """API delete a list of suppliers"""
+    queryset = Supplier.objects.all()
 
 class DetailSupplierAPI(generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific supplier"""
@@ -55,7 +63,7 @@ class DetailSupplierAPI(generics.RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         try:
             return super().destroy(request, *args, **kwargs)
-        except RestrictedError as e:
+        except RestrictedError:
             return return_conflict_status(RestrictedError)
 
 

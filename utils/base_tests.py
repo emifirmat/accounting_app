@@ -6,6 +6,99 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from company.models import Company, FinancialYear
+from erp.models import PaymentTerm, PaymentMethod, CompanyClient, Supplier
+
+
+class CreateDbInstancesMixin:
+    """Create additional instances from DB for testing"""
+    def create_extra_pay_terms(self):
+        """Create additional payment terms for testing."""
+        PaymentTerm.objects.bulk_create([
+            PaymentTerm(pay_term="60"),
+            PaymentTerm(pay_term="90"),
+            PaymentTerm(pay_term="180"),
+        ])
+
+    def create_extra_pay_methods(self):
+        """Create additional payment methods for testing."""
+        PaymentMethod.objects.bulk_create([
+            PaymentMethod(pay_method="Debit Card"),
+            PaymentMethod(pay_method="Check"),
+        ])
+    
+    def create_company_clients(self):
+        self.c_client3 = CompanyClient.objects.create(
+            tax_number = "27451008780",
+            name = "Client3 SA",
+            address = "Client3 street, Client city, Argentina",
+            email = "client3@gmail.com",
+            phone = "0981114322",
+        )
+        self.c_client4 = CompanyClient.objects.create(
+            tax_number = "27451008781",
+            name = "Client4 SA",
+            address = "Client4 street, Client city, Brazil",
+            email = "client4@gmail.com",
+            phone = "0987656663",
+        )
+        self.c_client5 = CompanyClient.objects.create(
+            tax_number = "27451008782",
+            name = "Client5 SRL",
+            address = "Client5 street, Client city, USA",
+            email = "client5@email.com",
+            phone = "0333654324",
+        )
+        self.c_client6 = CompanyClient.objects.create(
+            tax_number = "32546921",
+            name = "Client6 SRL",
+            address = "Client6 street, Client city, Peru",
+            email = "client6@email.com",
+            phone = "4487654325",
+        )
+        self.c_client7 = CompanyClient.objects.create(
+            tax_number = "33546921",
+            name = "Client7 SA",
+            address = "Client7 street, Client city, China",
+            email = "client7@gmail.com",
+            phone = "1212654326",
+        )
+    
+    def create_suppliers(self):
+        self.supplier3 = Supplier.objects.create(
+            tax_number = "78493261547",
+            name = "Supplier3 SA",
+            address = "Supplier3 street, Supplier, Argentina",
+            email = "supplier3@gmail.com",
+            phone = "4938201567",
+        )
+        self.supplier4 = Supplier.objects.create(
+            tax_number = "23984715680",
+            name = "Supplier4 SA",
+            address = "Supplier4 street, Supplier city, Brazil",
+            email = "supplier4@gmail.com",
+            phone = "7029183456",
+        )
+        self.supplier5 = Supplier.objects.create(
+            tax_number = "59102348762",
+            name = "Supplier5 SRL",
+            address = "Supplier5 street, Supplier city, USA",
+            email = "supplier5@email.com",
+            phone = "1837460928",
+        )
+        self.supplier6 = Supplier.objects.create(
+            tax_number = "74639018254",
+            name = "Supplier6 SRL",
+            address = "Supplier6 street, Supplier city, Peru",
+            email = "supplier6@email.com",
+            phone = "9571304826",
+        )
+        self.supplier7 = Supplier.objects.create(
+            tax_number = "83092147563",
+            name = "Supplier3 SA",
+            address = "Supplier7 street, Supplier city, China",
+            email = "supplier7@gmail.com",
+            phone = "3648190275",
+        )
 
 
 class BackBaseTest(TestCase):
@@ -152,7 +245,8 @@ class APIBaseTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(count[0].objects.count(), count[1])
 
-    def check_api_delete_response(self, url_name, status_code, count):
+    def check_api_delete_response(self, url_name, status_code, count, 
+        delete_object=None):
         """
         Check that API responds correctly when using DELETE method.
         Parameters: 
@@ -160,10 +254,16 @@ class APIBaseTest(APITestCase):
         pass the dict as the second element of the list.
         - status_code: DRF status method. Expected status response.
         - count: Tuple with model and expected count.
+        - delete_object: Default None. A dict with a list of id objects to delete.
         """
-        response = self.client.delete(reverse(url_name[0], kwargs=url_name[1]
-            ), format="json"
-        )
+        if delete_object:
+            response = self.client.delete(
+                reverse(url_name[0]), data=delete_object, format="json"
+            )
+        else:
+            response = self.client.delete(
+                reverse(url_name[0], kwargs=url_name[1]), format="json"
+            )
         self.assertEqual(response.status_code, status_code)
         self.assertEqual(count[0].objects.count(), count[1])
   

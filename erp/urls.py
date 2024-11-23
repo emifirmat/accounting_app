@@ -63,10 +63,14 @@ urlpatterns = [
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
+    path("api/clients/bulk-delete", views_api.CompanyClientDeleteAPI.as_view(),
+        name="clients_delete_api"),
     path("api/clients/<int:pk>", views_api.DetailCompanyClientAPI.as_view(), 
         name="client_api"),
     # Suppliers APIS
     path("api/suppliers", views_api.SupplierAPI.as_view(), name="suppliers_api"),
+    path("api/suppliers/bulk-delete", views_api.SupplierDeleteAPI.as_view(),
+        name="suppliers_delete_api"),
     path("api/suppliers/<int:pk>", views_api.DetailSupplierAPI.as_view(), 
         name="supplier_api"),
     # Payment_conditions APIS

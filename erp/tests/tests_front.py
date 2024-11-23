@@ -23,12 +23,13 @@ from utils.utils_tests import (go_to_section, element_has_selected_option,
     click_button_and_show, fill_field, webDriverWait_visible_element,
     click_button_and_answer_alert, pay_conditions_click_default, go_to_link,
     pay_conditions_delete_confirm_button, pick_option_by_index, search_fill_field,
-    search_clear_field, create_extra_pay_terms, create_extra_pay_methods,
+    search_clear_field, click_and_redirect, multiple_driver_wait_count, 
     get_columns_data, web_driver_wait_count, click_and_wait, search_first_input,
-    click_and_redirect)
+    find_visible_elements, filter_field, text_in_visible_element)
+from utils.base_tests import CreateDbInstancesMixin
 
 
-class FrontBaseTest(StaticLiveServerTestCase):
+class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
         """Start Selenium webdriver"""
@@ -199,12 +200,11 @@ class ErpFrontTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Supplier Current Account")
         """
 
-    @tag("erp_client_edit")
+    @tag("erp_front_client_edit")
     def test_client_edit(self):
         # Go to edit client page
         self.driver.get(f"{self.live_server_url}/erp/client/edit")
 
-        """Test edition"""
         # click on 2nd client and edit
         self.driver.find_elements(By.CLASS_NAME, "specific-person")[1].click()
         webDriverWait_visible_element(self.driver, By.ID, "person-details")
@@ -232,8 +232,42 @@ class ErpFrontTestCase(FrontBaseTest):
                 (By.ID, "person-list"), "12345678901"
             )
         )
+    
+    @tag("erp_front_client_edit")
+    def test_client_edit_filter(self):
+        self.create_company_clients()
+        # Go to edit client page
+        self.driver.get(f"{self.live_server_url}/erp/client/edit")
+
+        # Get original client's list 
+        client_list = find_visible_elements(self.driver, By.CLASS_NAME, "specific-person")
+        self.assertEqual(len(client_list), 7)
+        
+        # Filter the list
+        filterField = self.driver.find_element(By.ID, "filter")
+        filterField.send_keys("2745100")
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(client_list[0])
+        )
+        path = self.driver.find_element(By.ID, "person-list")
+        client_list = web_driver_wait_count(
+            self.driver, path, 3, selector_value="specific-person", visible=True
+        )
+        
+        # clean data and filter again
+        search_clear_field(self.driver, "filter")
+        filterField.send_keys("Client6 SRL")
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(client_list[0])
+        )
+        
+        # check quantity
+        web_driver_wait_count(
+            self.driver, path, 1, selector_value="specific-person", visible=True
+        )
        
-    def test_client_delete(self):
+    @tag("erp_front_client_delete")
+    def test_client_delete_single(self):
         # Go to delete client page
         self.driver.get(f"{self.live_server_url}/erp/client/delete")
 
@@ -261,7 +295,396 @@ class ErpFrontTestCase(FrontBaseTest):
         self.assertNotIn("20361382480", path[0].text)
         self.assertEqual(len(path), 1)
 
-    @tag("erp_front_client_delete_conflict")
+    @tag("erp_front_client_delete")
+    def test_client_delete_multiple(self):
+        self.create_company_clients()
+        # Go to delete client page
+        self.driver.get(f"{self.live_server_url}/erp/client/delete")
+
+        # Click clients 2,4 outside the checkbox
+        clients = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        clients[1].click()
+        clients[3].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "person-details"), "CLIENT4")
+        )
+        boxes = self.driver.find_elements(By.CLASS_NAME, "select-multiple")
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        delete_button = self.driver.find_element(By.CLASS_NAME, "delete-button")
+
+        self.assertEqual(len(checked_boxes), 2)
+        self.assertIn("Delete All (2)", delete_button.text)
+
+        # Click clients 5,7 inside the checkbox
+        boxes[4].click()
+        boxes[6].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "person-details"), "CLIENT7")
+        )
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        delete_button = self.driver.find_element(By.CLASS_NAME, "delete-button")
+
+        self.assertEqual(len(checked_boxes), 4)
+        self.assertIn("Delete All (4)", delete_button.text)
+        
+        # Click checkbox of client 4 and container client 5
+        boxes[3].click()
+        clients[4].click()
+        WebDriverWait(self.driver, 5).until(
+            # Use delete button because client detail doesn't change
+            EC.text_to_be_present_in_element(
+                (By.CLASS_NAME, "delete-button"), "Delete All (2)")
+        )
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        
+        self.assertEqual(len(checked_boxes), 2)
+
+        # Click on Delete All and cancel alert
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "dismiss"
+        )
+        # Click again and accept
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+
+        # Check that clients 2 and 7 disappeared
+        path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        WebDriverWait(self.driver, 10).until(
+            EC.staleness_of(path[-1])
+        )
+        path = self.driver.find_elements(By.CLASS_NAME, "specific-person") # Refresh the list
+        self.assertNotIn("33546921", path[-1].text)
+        self.assertNotIn("CLIENT2 SA", path[1].text)
+        self.assertEqual(len(path), 5)
+
+    @tag("erp_front_client_delete")
+    def test_client_delete_filter(self):
+        self.create_company_clients()
+        # Go to edit client page
+        self.driver.get(f"{self.live_server_url}/erp/client/delete")
+
+        # Get original client's list 
+        client_list = find_visible_elements(self.driver, By.CLASS_NAME, "specific-person")
+        self.assertEqual(len(client_list), 7)
+        
+        # Filter the list
+        filter_field(self.driver, "09876", invisible_element=client_list[1])
+        path = self.driver.find_element(By.ID, "person-list")
+        client_list = web_driver_wait_count(
+            self.driver, path, 0, selector_value="specific-person", visible=True
+        )
+        
+        # clean data and filter again
+        search_clear_field(self.driver, "filter")
+        WebDriverWait(self.driver, 5).until(
+            text_in_visible_element(
+                (By.CLASS_NAME, "specific-person"), "CLIENT1"
+            )
+        )
+        client_list = find_visible_elements(self.driver, By.CLASS_NAME, "specific-person")
+        filter_field(self.driver, "client")
+        
+        # check quantity
+        web_driver_wait_count(
+            self.driver, path, 7, selector_value="specific-person", visible=True
+        )
+
+    @tag("erp_front_client_delete")
+    def test_client_delete_conflict(self):
+        # Go to client delete webpage.
+        self.create_doc_types()
+        self.create_first_invoice_and_receipt()
+        self.driver.get(f"{self.live_server_url}/erp/client/delete")
+        
+        # Click on 1st client and delete
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[0].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+        
+        # Wait for popup and cancel.
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[1].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element_located((By.CLASS_NAME, "popup"))
+        )
+
+        #  Delete again  
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+    
+        # Wait for popup to appear and accept
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[0].click()
+        
+        webDriverWait_visible_element(self.driver, By.ID, "rd-title")
+
+        self.assertEqual(self.driver.title, "Related Documents")
+        self.assertEqual(CompanyClient.objects.all().count(), 2)
+
+    @tag("erp_front_client_delete")
+    def test_client_delete_multiple_conflict_filter(self):
+        self.create_company_clients()
+        self.create_doc_types()
+        self.create_first_invoice_and_receipt()
+        # Go to delete client page
+        self.driver.get(f"{self.live_server_url}/erp/client/delete")
+
+        # filter clients by SRL
+        client_list = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        filter_field(self.driver, "srl", invisible_element=client_list[1])
+        path = self.driver.find_element(By.ID, "person-list")
+        client_list = web_driver_wait_count(
+            self.driver, path, 3, selector_value="specific-person", visible=True
+        )
+
+        # Click clients 1 and 6 (first and third in filtered list)
+        client_list[0].click()
+        client_list[2].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "person-details"), "CLIENT6")
+        )
+        boxes = self.driver.find_elements(By.CLASS_NAME, "select-multiple")
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        delete_button = self.driver.find_element(By.CLASS_NAME, "delete-button")
+
+        self.assertEqual(len(checked_boxes), 2)
+        self.assertIn("Delete All (2)", delete_button.text)
+
+        # Click on Delete All and cancel alert
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "dismiss"
+        )
+        # Click again and accept
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+
+        # check pop up has one button and accept
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        buttons = path.find_elements(By.TAG_NAME, "button")
+        
+        self.assertEqual(len(buttons), 1)
+        self.assertEqual(buttons[0].text, "Accept")
+
+        buttons[0].click()
+        
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element_located((By.ID, "detail-section"))
+        )
+
+        self.assertEqual(self.driver.title, "Delete Client")
+        self.assertEqual(CompanyClient.objects.all().count(), 7)
+
+    @tag("erp_front_supplier_edit")
+    def test_supplier_edit(self):
+        # Go to edit supplier page
+        self.driver.get(f"{self.live_server_url}/erp/supplier/edit")
+
+        # click on 1st supplier
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[0].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        click_button_and_show(
+            self.driver, By.ID, "person-details", By.ID, "person-edit-form"
+        )
+
+        path = self.driver.find_element(By.ID, "person-edit-form")
+        
+        # Alter data, add company's tax number
+        fill_field(self.driver, path, "tax_number", "20361382480")
+        path.find_element(By.TAG_NAME, "button").click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "edit-message"),
+                "The tax number you're trying to add belongs to the company."
+            )
+        )
+
+        # Alter data again, add a correct id 
+        fill_field(self.driver, path, "tax_number", "12345678901")
+        path.find_element(By.TAG_NAME, "button").click()
+        WebDriverWait(self.driver, 10).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "person-list"), "12345678901"
+            )
+        )
+
+    @tag("erp_front_supplier_edit")
+    def test_supplier_edit_filter(self):
+        self.create_suppliers()
+        # Go to edit supplier page
+        self.driver.get(f"{self.live_server_url}/erp/supplier/edit")
+
+        # Get original supplier's list 
+        supplier_list = find_visible_elements(self.driver, By.CLASS_NAME, "specific-person")
+        self.assertEqual(len(supplier_list), 7)
+        
+        # Filter the list
+        filterField = self.driver.find_element(By.ID, "filter")
+        filterField.send_keys("13")
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(supplier_list[-1])
+        )
+        path = self.driver.find_element(By.ID, "person-list")
+        supplier_list = web_driver_wait_count(
+            self.driver, path, 2, selector_value="specific-person", visible=True
+        )
+        
+        # clean data and filter again
+        search_clear_field(self.driver, "filter")
+        filterField.send_keys("SA")
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(supplier_list[1])
+        )
+        
+        # check quantity
+        web_driver_wait_count(
+            self.driver, path, 4, selector_value="specific-person", visible=True
+        )
+    
+    @tag("erp_front_supplier_delete")
+    def test_supplier_delete_single(self):
+        # Go to delete supplier page
+        self.driver.get(f"{self.live_server_url}/erp/supplier/delete")
+
+        # Click on supplier2, delete (note, 0= sup2, 1=sup1) and cancel alarm
+        self.driver.find_elements(By.CLASS_NAME, "specific-person")[1].click()
+        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "dismiss"
+        )
+
+        # Click again on delete and accept
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+
+        # Check that supplier2 disappeared
+        path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        WebDriverWait(self.driver, 10).until(
+            EC.staleness_of(path[1])
+        )
+        # Path changed, I have to reassign it
+        path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        self.assertNotIn("30361382485", path[0].text)
+        self.assertEqual(len(path), 1)
+
+    @tag("erp_front_supplier_delete_multiple")
+    def test_supplier_delete_multiple(self):
+        self.create_suppliers()
+        # Go to delete supplier page
+        self.driver.get(f"{self.live_server_url}/erp/supplier/delete")
+
+        # Click suppliers 3, 4, 1 outside the checkbox
+        suppliers = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        suppliers[2].click()
+        suppliers[3].click()
+        suppliers[0].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "person-details"), "20361382482")
+        )
+        boxes = self.driver.find_elements(By.CLASS_NAME, "select-multiple")
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        delete_button = self.driver.find_element(By.CLASS_NAME, "delete-button")
+
+        self.assertEqual(len(checked_boxes), 3)
+        self.assertIn("Delete All (3)", delete_button.text)
+
+        # Click suppliers 7,6 inside the checkbox
+        boxes[6].click()
+        boxes[5].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "person-details"), "74639018254")
+        )
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        delete_button = self.driver.find_element(By.CLASS_NAME, "delete-button")
+
+        self.assertEqual(len(checked_boxes), 5)
+        self.assertIn("Delete All (5)", delete_button.text)
+        
+        # Click checkbox of supplier 1 and container supplier 6
+        boxes[0].click()
+        suppliers[5].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "person-details"), "83092147563"
+            )
+        )
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        delete_button = self.driver.find_element(By.CLASS_NAME, "delete-button")
+        
+        self.assertEqual(len(checked_boxes), 3)
+        self.assertIn("Delete All (3)", delete_button.text)
+
+        # Click on Delete All and cancel alert
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "dismiss"
+        )
+        # Click again and accept
+        click_button_and_answer_alert(
+            self.driver, By.ID, "person-details", "accept"
+        )
+
+        # Check that suppliers 3, 4 and 7 disappeared
+        path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        WebDriverWait(self.driver, 10).until(
+            EC.staleness_of(path[-1])
+        )
+        # Refresh the list
+        path = self.driver.find_elements(By.CLASS_NAME, "specific-person") 
+        
+        for value, element in [("78493261547", path[2]), ("23984715680", path[3]),
+            ("83092147563", path[-1])]:
+            self.assertNotIn(value, element.text)
+        
+        self.assertEqual(len(path), 4)
+
+    @tag("erp_front_supplier_delete")
+    def test_supplier_delete_filter(self):
+        self.create_suppliers()
+        # Go to edit supplier page
+        self.driver.get(f"{self.live_server_url}/erp/supplier/delete")
+
+        # Get original supplier's list 
+        supplier_list = find_visible_elements(self.driver, By.CLASS_NAME, "specific-person")
+        self.assertEqual(len(supplier_list), 7)
+        
+        # Filter the list
+        filterField = self.driver.find_element(By.ID, "filter")
+        filterField.send_keys("13")
+        # Double wait as sometime it shows false error.
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(supplier_list[2]) 
+        )
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(supplier_list[-1]) 
+        )
+        path = self.driver.find_element(By.ID, "person-list")
+        supplier_list = web_driver_wait_count(
+            self.driver, path, 2, selector_value="specific-person", visible=True
+        )
+        
+        # clean data and filter again
+        search_clear_field(self.driver, "filter")
+        filterField.send_keys("SRL")
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(supplier_list[0])
+        )
+        
+        # check quantity
+        web_driver_wait_count(
+            self.driver, path, 3, selector_value="specific-person", visible=True
+        )
+
+    # TODO when I add a purchase invoice
+    """
+    @tag("erp_front_supplier_delete")
     def test_client_delete_conflict(self):
         # Go to client delete webpage.
         self.create_doc_types()
@@ -296,65 +719,62 @@ class ErpFrontTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Related Documents")
         self.assertEqual(CompanyClient.objects.all().count(), 2)
 
-    @tag("erp_front_supplier_edit")
-    def test_supplier_edit(self):
-        # Go to edit supplier page
-        self.driver.get(f"{self.live_server_url}/erp/supplier/edit")
+    @tag("erp_front_supplier_delete")
+    def test_client_delete_multiple_conflict_filter(self):
+        self.create_company_clients()
+        self.create_doc_types()
+        self.create_first_invoice_and_receipt()
+        # Go to delete client page
+        self.driver.get(f"{self.live_server_url}/erp/client/delete")
 
-        # click on 1st supplier
-        self.driver.find_elements(By.CLASS_NAME, "specific-person")[0].click()
-        webDriverWait_visible_element(self.driver, By.ID, "person-details")
-        click_button_and_show(
-            self.driver, By.ID, "person-details", By.ID, "person-edit-form"
+        # filter clients by SRL
+        client_list = self.driver.find_elements(By.CLASS_NAME, "specific-person")
+        filter_field(self.driver, "srl", invisible_element=client_list[1])
+        path = self.driver.find_element(By.ID, "person-list")
+        client_list = web_driver_wait_count(
+            self.driver, path, 3, selector_value="specific-person", visible=True
         )
 
-        path = self.driver.find_element(By.ID, "person-edit-form")
-        
-        # Alter data, add company's tax number
-        fill_field(self.driver, path, "tax_number", "20361382480")
-        path.find_element(By.TAG_NAME, "button").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "edit-message"),
-                "The tax number you're trying to add belongs to the company."
-            )
+        # Click clients 1 and 6 (first and third in filtered list)
+        client_list[0].click()
+        client_list[2].click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "person-details"), "CLIENT6")
         )
+        boxes = self.driver.find_elements(By.CLASS_NAME, "select-multiple")
+        checked_boxes = [box for box in boxes if box.is_selected()]
+        delete_button = self.driver.find_element(By.CLASS_NAME, "delete-button")
 
-        # Alter data again, add a correct id 
-        fill_field(self.driver, path, "tax_number", "12345678901")
-        path.find_element(By.TAG_NAME, "button").click()
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "person-list"), "12345678901"
-            )
-        )
-    
-    @tag("erp_supplier_delete")
-    def test_supplier_delete(self):
-        # Go to delete supplier page
-        self.driver.get(f"{self.live_server_url}/erp/supplier/delete")
+        self.assertEqual(len(checked_boxes), 2)
+        self.assertIn("Delete All (2)", delete_button.text)
 
-        # Click on supplier2, delete (note, 0= sup2, 1=sup1) and cancel alarm
-        self.driver.find_elements(By.CLASS_NAME, "specific-person")[1].click()
-        webDriverWait_visible_element(self.driver, By.ID, "person-details")
+        # Click on Delete All and cancel alert
         click_button_and_answer_alert(
             self.driver, By.ID, "person-details", "dismiss"
         )
-
-        # Click again on delete and accept
+        # Click again and accept
         click_button_and_answer_alert(
             self.driver, By.ID, "person-details", "accept"
         )
 
-        # Check that supplier2 disappeared
-        path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
-        WebDriverWait(self.driver, 10).until(
-            EC.staleness_of(path[1])
+        # check pop up has one button and accept
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
+        buttons = path.find_elements(By.TAG_NAME, "button")
+        
+        self.assertEqual(len(buttons), 1)
+        self.assertEqual(buttons[0].text, "Accept")
+
+        buttons[0].click()
+        
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element_located((By.ID, "detail-section"))
         )
-        # Path changed, I have to reassign it
-        path = self.driver.find_elements(By.CLASS_NAME, "specific-person")
-        self.assertNotIn("30361382485", path[0].text)
-        self.assertEqual(len(path), 1)
+
+        self.assertEqual(self.driver.title, "Delete Client")
+        self.assertEqual(CompanyClient.objects.all().count(), 7)
+    """
+
 
     @tag("erp_front_client_rel_docs_links")
     def test_client_rel_docs_links_invoice(self):
@@ -474,7 +894,7 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_payment_term_v")
     def test_payment_terms_view_list_and_delete(self):
         # Create data
-        create_extra_pay_terms()
+        self.create_extra_pay_terms()
         self.assertEqual(PaymentTerm.objects.all().count(), 5)
 
         # Go to Payment Conditions page.
@@ -499,7 +919,7 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_payment_method_v")
     def test_payment_methods_view_list_and_delete(self):
         # Create data
-        create_extra_pay_methods()
+        self.create_extra_pay_methods()
         self.assertEqual(PaymentMethod.objects.all().count(), 4)
     
 
@@ -958,18 +1378,16 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         
         # Add an imput to show all invoices
         search_fill_field(self.driver, "id_type", " ")
-        time.sleep(0.5) # 0.1 can lead to false error
-        invoice_list = web_driver_wait_count(self.driver, path, 9)
+        invoice_list = multiple_driver_wait_count(self.driver, path, 9)
 
         # Test all invoices
         pick_option_by_index(self.driver, "id_collected", 0, "All")
-        time.sleep(0.5)
-        invoice_list = web_driver_wait_count(self.driver, path, 10)
+        time.sleep(0.5) # Let fech load, 0.1 is not enough
+        invoice_list = multiple_driver_wait_count(self.driver, path, 10)
         
         # Test collected invoices
         pick_option_by_index(self.driver, "id_collected", 2, "Collected")
-        time.sleep(0.5)
-        invoice_list = web_driver_wait_count(self.driver, path, 1)
+        invoice_list = multiple_driver_wait_count(self.driver, path, 1)
 
     @tag("erp_front_invoice_search_fields")
     def test_sales_invoice_search_one_field_part_1(self):
@@ -1160,7 +1578,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Search invoice 1: 
         # collected
         pick_option_by_index(self.driver, "id_collected", 0, "All")
-        time.sleep(0.5) # Let fetch to load, 0.1 is not enough
+        time.sleep(1) # Let fetch to load, 0.5 is not enough
         # type
         search_fill_field(self.driver, "id_type", "a ")
         invoice_list = search_first_input(self.driver, path, "id_type", "a", 5)
@@ -1191,7 +1609,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Search invoice A 00001-00000003
         # Collected
         pick_option_by_index(self.driver, "id_collected", 0, "All")
-        time.sleep(0.5) # Let fetch to load, 0.1 is not enough
+        time.sleep(1) # Let fetch to load, 0.5 is not enough
         # Type
         search_fill_field(self.driver, "id_type", "a ")
         invoice_list = search_first_input(self.driver, path, "id_type", "a ", 5)

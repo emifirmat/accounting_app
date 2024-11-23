@@ -10,24 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait, Select
 
 from erp.models import PaymentTerm, PaymentMethod
-
-
-"""DB custom functions"""
-def create_extra_pay_terms():
-    """Create additional payment terms for testing."""
-    PaymentTerm.objects.bulk_create([
-        PaymentTerm(pay_term="60"),
-        PaymentTerm(pay_term="90"),
-        PaymentTerm(pay_term="180"),
-    ])
-
-
-def create_extra_pay_methods():
-    """Create additional payment methods for testing."""
-    PaymentMethod.objects.bulk_create([
-        PaymentMethod(pay_method="Debit Card"),
-        PaymentMethod(pay_method="Check"),
-    ])
+     
 
 """Back end custom functinos"""
 def get_file(file_path):
@@ -130,8 +113,12 @@ def click_button_and_show(driver, parent_selector, parent_name, show_selector,
     path.find_elements(By.TAG_NAME, "button")[index].click()
     webDriverWait_visible_element(driver, show_selector, show_name)
 
+def find_visible_elements(driver, selector, value):
+    """Find only those elements that are visible"""
+    elements = driver.find_elements(selector, value)
+    visible_elements = [element for element in elements if element.is_displayed()]
 
-
+    return visible_elements
 
 
 def fill_field(driver, path, field, value):
@@ -156,10 +143,25 @@ def fill_field(driver, path, field, value):
         lambda driver: input_value == value
     )
 
+def text_in_visible_element(locator, text):
+    """
+    Returns True if a visible element has a specific text.
+    Parameters: 
+    - locator: location of the element; 
+    - option_text: text I want to compare.
+    """
+    def _predicate(driver):
+        elements = driver.find_elements(*locator)
+        for element in elements:
+            if element.is_displayed() and text in element.text:
+                return True
+        return False
+    return _predicate
+
 def element_has_selected_option(locator, option_text):
     """
-    Returns True if selected option has an especific text.
-    Paramenters: 
+    Returns True if selected option has a specific text.
+    Parameters: 
     - locator: location of the element; 
     - option_text: text I want to compare.
     """
@@ -231,6 +233,27 @@ def click_button_and_answer_alert(driver, parent_selector, parent_name,
     elif alert_answer == "dismiss":
         driver.switch_to.alert.dismiss()
 
+def filter_field(driver, keys, visible_element=None, invisible_element=None):
+    """
+    Send keys to a filter field which ID is "filter".
+    - driver: WebDriver.
+    - keys: String that all non-filtered elements will have.
+    - visible_element: A Tuple that will be visible as a consecuence of the
+    filter.
+    - invisible_element: One element that won't be visible as a consecuence of the
+    filter.
+    """
+    filterField = driver.find_element(By.ID, "filter")
+    filterField.send_keys(keys)
+    if visible_element:
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(visible_element)
+        ) 
+    if invisible_element:
+        WebDriverWait(driver, 5).until(
+            EC.invisibility_of_element(invisible_element)
+        )
+
 
 # By section functions
 
@@ -286,7 +309,7 @@ def search_fill_field(driver, element_id, value):
     ActionChains(driver).move_to_element(field).click(field).perform()
     for char in value:
         ActionChains(driver).send_keys(char).perform()
-        time.sleep(0.05)
+    time.sleep(0.25)
 
 def search_clear_field(driver, element_id, first_element_list=None):
     """
@@ -300,16 +323,16 @@ def search_clear_field(driver, element_id, first_element_list=None):
     """
     field = driver.find_element(By.ID, element_id)
     action = ActionChains(driver).move_to_element(field).click(field)
-    for char in field.get_attribute("value"):
+    for _ in field.get_attribute("value"):
         action.send_keys(Keys.BACKSPACE).perform()
-        time.sleep(0.05)
+    time.sleep(0.2)
     if first_element_list:
         WebDriverWait(driver, 10).until(EC.staleness_of(first_element_list))
 
 def search_first_input(driver, path, id_element, input, count):
     """
     As it's the first input, sometimes selenium doesn't load the script properly,
-    so that, it refreshes the input up to 3 times.
+    so that, it refreshes the input up to 4 times.
     Note: Wait for script to be ready, time.sleeps and looping explicit waits 
     were attemped before and they didn't work or they're time consuming.
     Parameters:
@@ -319,7 +342,7 @@ def search_first_input(driver, path, id_element, input, count):
     - input: data to write on the element;
     - count: expected number of list's instances.
     """
-    for i in range(3):
+    for _ in range(4):
         try:
             return web_driver_wait_count(driver, path, count)
         except ValueError:
@@ -327,13 +350,11 @@ def search_first_input(driver, path, id_element, input, count):
             search_fill_field(driver, id_element, input)
     return web_driver_wait_count(driver, path, count)
 
-# WebDriver functions
-def web_driver_wait_count(driver, path, count, selector=By.CLASS_NAME, 
+def multiple_driver_wait_count(driver, path, count, selector=By.CLASS_NAME, 
     selector_value="search-row"):
     """
-    Custom webdriverwait that compares the number of elements in a list with the
-    expected count. It returns the updated list or it raises a ValueError. 
-    Parameters: 
+    Execute web_driver_wait_count multiple times to catch false errors.
+    Parameters:
     - driver: WebDriver;
     - path: Parent of the list to check count; 
     - count: Expected count.
@@ -344,8 +365,36 @@ def web_driver_wait_count(driver, path, count, selector=By.CLASS_NAME,
     - Updated version of doc_list
     - Value error: When couldn't find the match.
     """
+    for _ in range(6):
+        try:
+            return web_driver_wait_count(driver, path, count)
+        except ValueError:
+            time.sleep(0.5) # Tried 0.1 and wasn't enough
+    return web_driver_wait_count(driver, path, count)
+
+# WebDriver functions
+def web_driver_wait_count(driver, path, count, selector=By.CLASS_NAME, 
+    selector_value="search-row", visible=False):
+    """
+    Custom webdriverwait that compares the number of elements in a list with the
+    expected count. It returns the updated list or it raises a ValueError. 
+    Parameters: 
+    - driver: WebDriver;
+    - path: Parent of the list to check count; 
+    - count: Expected count.
+    - selector: Selector used to search the list. Default: CLASS_NAME. (Most used)
+    - selector_value: Value that the webdrive will use according to the selector picked.
+    - visible: Bool, while True it get's only the displayed elements from the DOM. 
+    Default: 'search-rows' (most used).
+    Returns:
+    - Updated version of doc_list
+    - Value error: When couldn't find the match.
+    """
     # Update list before waiting
-    doc_list = path.find_elements(selector, selector_value)
+    if visible:
+        doc_list = find_visible_elements(driver, selector, selector_value)    
+    else:
+        doc_list = path.find_elements(selector, selector_value)
     
     try: 
         WebDriverWait(driver, 1).until(lambda d: len(doc_list) == count)

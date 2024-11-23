@@ -47,22 +47,31 @@
     cursor: pointer;
     flex: 1; /* same space ocupied by buttons*/
     height: auto;
+    max-width: 50%;
 }
 
-#search-headers {
-    display: grid;
+#search-headers, #headers {
     font-weight: bold;
     text-align: center;
     padding: 10px;
     border-bottom: 2px solid;
 }
 
+#search-headers {
+    display: grid;
+}
+
+
 #search-rows, .search-row {
     display: grid;
     border-bottom: 1px solid;
 }
 
-.search-row {
+.search-row, .specific-person {
     text-align: center;
     padding: 10px;
+}
+
+.specific-person {
+    border-bottom: 1px solid;
 }

@@ -14,14 +14,13 @@ from ..models import (CompanyClient, Supplier, ClientCurrentAccount,
     PurchaseReceipt, PointOfSell, DocumentType)
 from company.models import Company, FinancialYear
 
-from utils.utils_tests import (get_file, create_extra_pay_methods,
-    create_extra_pay_terms)
-from utils.base_tests import BackBaseTest
+from utils.utils_tests import get_file
+from utils.base_tests import BackBaseTest, CreateDbInstancesMixin
 
 
 # Create your tests here.
 @tag("erp_db_view")
-class ErpTestCase(BackBaseTest):
+class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
     @classmethod
     def setUpTestData(cls):
         """Populate DB for testing ERP models"""
@@ -824,7 +823,8 @@ class ErpTestCase(BackBaseTest):
             "/erp/client/edit", 
             ["erp:person_edit", {"person_type": "client"}],
             "erp/person_edit.html", 
-            "CLIENT1 SRL | 20361382481"
+            ["CLIENT1 SRL", "20361382481", "Tax Number"],
+            "Select"
         )
 
     def test_client_delete_get(self):
@@ -832,7 +832,7 @@ class ErpTestCase(BackBaseTest):
             "/erp/client/delete", 
             ["erp:person_delete", {"person_type": "client"}],
             "erp/person_delete.html", 
-            "CLIENT1 SRL | 20361382481"
+            ["CLIENT1 SRL", "20361382481", "Select"]
         )
 
     def test_client_related_documents(self):
@@ -898,7 +898,6 @@ class ErpTestCase(BackBaseTest):
             "phone": "987654321",
         }
         
-        
         response = self.check_page_post_response(["erp:person_new",
             {"person_type": "supplier"}], post_object, 200, (Supplier, 2)
         )  
@@ -932,7 +931,8 @@ class ErpTestCase(BackBaseTest):
             "/erp/supplier/edit",
             ["erp:person_edit", {"person_type": "supplier"}], 
             "erp/person_edit.html",
-            "SUPPLIER1 SA | 20361382482"
+            ["SUPPLIER1 SA", "20361382482", "Name"],
+            "Select"
         )
         
     def test_supplier_delete_get(self):
@@ -940,7 +940,7 @@ class ErpTestCase(BackBaseTest):
             "/erp/supplier/delete",
             ["erp:person_delete", {"person_type": "supplier"}], 
             "erp/person_delete.html",
-            "SUPPLIER1 SA | 20361382482"
+            ["SUPPLIER1 SA", "20361382482", "Select"]
         )
         
     def test_payment_conditions_webpage(self):
@@ -1335,8 +1335,8 @@ class ErpTestCase(BackBaseTest):
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
 
     def test_sales_new_massive_invoices_multiple_lines_post_wrong_data(self):
-        create_extra_pay_methods()
-        create_extra_pay_terms()
+        self.create_extra_pay_methods()
+        self.create_extra_pay_terms()
         file = get_file("erp/tests/files/sales/invoices_mixed_wrong.csv")
   
         page_content = self.check_page_post_response("erp:sales_new_massive", 

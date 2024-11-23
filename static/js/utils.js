@@ -80,3 +80,14 @@ function redirectDelete(button, divElement, redirectUrl) {
         return;
     }
 }
+
+function debounce(timeoutId, time, action) {
+    // It debounce a function for efficiency
+    
+    // Restart timer
+    clearTimeout(timeoutId);
+    // Set timer for execution
+    timeoutId = setTimeout(action, time);
+
+    return timeoutId;
+}
