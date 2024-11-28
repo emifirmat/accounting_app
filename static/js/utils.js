@@ -91,3 +91,12 @@ function debounce(timeoutId, time, action) {
 
     return timeoutId;
 }
+
+function popupOneButton() {
+    // Convert the popup with 2 buttons into a single button one.
+    
+    popupFooter = document.querySelector('.popup-footer');
+    popupFooter.querySelectorAll('.popup-button')[1].innerHTML = 'Accept';
+    popupFooter.querySelectorAll('.popup-button')[0].remove();
+    popupFooter.style.justifyContent = 'center';
+}

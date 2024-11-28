@@ -214,7 +214,7 @@ async function deletePerson(person, {personId=null, personIdList=null}) {
         confirmDelete = 
             confirm(`Are you sure that you want to delete ${person} number ${personId}?`);
     } else {
-        url = `/erp/api/${person}s/bulk-delete`;
+        url = `/erp/api/${person}s/bulk_delete`;
         confirmDelete = 
             confirm(`Are you sure that you want to delete ${personIdList.length} ${person}s?`);
         
@@ -241,10 +241,7 @@ async function deletePerson(person, {personId=null, personIdList=null}) {
                 are some documents linked to one or more of them.`
 
                 showPopUp('button', '', message); // utils.js
-                // Alter button style
-                popupFooter = document.querySelector('.popup-footer');
-                popupFooter.querySelectorAll('.popup-button')[1].remove();
-                popupFooter.style.justifyContent = 'center';
+                popupOneButton() // utils.js
 
             }
 

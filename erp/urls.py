@@ -63,13 +63,13 @@ urlpatterns = [
 
     # Clients APIs
     path("api/clients", views_api.CompanyClientAPI.as_view(), name="clients_api"),
-    path("api/clients/bulk-delete", views_api.CompanyClientDeleteAPI.as_view(),
+    path("api/clients/bulk_delete", views_api.CompanyClientDeleteAPI.as_view(),
         name="clients_delete_api"),
     path("api/clients/<int:pk>", views_api.DetailCompanyClientAPI.as_view(), 
         name="client_api"),
     # Suppliers APIS
     path("api/suppliers", views_api.SupplierAPI.as_view(), name="suppliers_api"),
-    path("api/suppliers/bulk-delete", views_api.SupplierDeleteAPI.as_view(),
+    path("api/suppliers/bulk_delete", views_api.SupplierDeleteAPI.as_view(),
         name="suppliers_delete_api"),
     path("api/suppliers/<int:pk>", views_api.DetailSupplierAPI.as_view(), 
         name="supplier_api"),
@@ -95,11 +95,15 @@ urlpatterns = [
     # Sale invoices APIs
     path("api/sale_invoices", views_api.SaleInvoicesAPI.as_view(), 
         name="sale_invoices_api"),
+    path("api/sale_invoices/bulk_delete", views_api.SaleInvoicesDeleteAPI.as_view(), 
+        name="sale_invoices_delete_api"),
     path("api/sale_invoices/<int:pk>", views_api.SaleInvoiceAPI.as_view(), 
         name="sale_invoice_api"),
     # Sale receipts APIs
     path("api/sale_receipts", views_api.SaleReceiptsAPI.as_view(), 
         name="sale_receipts_api"),
+    path("api/sale_receipts/bulk_delete", views_api.SaleReceiptsDeleteAPI.as_view(), 
+        name="sale_receipts_delete_api"),
     path("api/sale_receipts/<int:pk>", views_api.SaleReceiptAPI.as_view(), 
         name="sale_receipt_api"),
 ]

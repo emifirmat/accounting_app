@@ -134,6 +134,17 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             payment_term = cls.pay_term1,
         )
 
+        cls.sale_invoice4 = SaleInvoice.objects.create(
+            issue_date = datetime.date(2024, 1, 24),
+            type = cls.doc_type1,
+            point_of_sell = cls.pos1,
+            number = "00000003",
+            sender = cls.company,
+            recipient = cls.c_client1,
+            payment_method = cls.pay_method1,
+            payment_term = cls.pay_term1,
+        )
+
         cls.sale_receipt1 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 1, 22),
             point_of_sell = cls.pos1,
@@ -155,7 +166,6 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             total_amount = Decimal("600.01"),
         )
 
-    
     def test_company_client_api(self):
         self.check_api_get_response(
             "/erp/api/clients",
@@ -377,7 +387,7 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             "erp:sale_invoices_api",
             # page content includes display_name
             page_content=["00000001","B 00001-00000001", "00000002"],
-            count=3,
+            count=4,
         )
 
     def test_sale_invoices_collected_api(self):
@@ -393,12 +403,11 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             # page content includes display_name
             page_content=["A 00001-00000002"],
             wrong_content=["A 00001-00000001"],
-            count=2,
+            count=3,
         )
         self.check_api_get_response(
            "/erp/api/sale_invoices?collected=nope",
-            # page content includes display_name
-            count=3,
+            count=4,
         )
 
     def test_sale_invoices_exclusion_api(self):
@@ -407,25 +416,45 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             # page content includes display_name
             page_content=["A 00001-00000002","A 00001-00000001"],
             wrong_content=["B 00001-00000001"],
-            count=2,
+            count=3,
         )
   
     def test_sale_invoices_collected_exclusion_api(self):
         self.check_api_get_response(
             f"/erp/api/sale_invoices?collected=false&exclude_inv_pk={self.sale_invoice2.pk}",
             # page content includes display_name
-            page_content=["A 00001-00000002"],
+            page_content=["A 00001-00000002", "A 00001-00000003"],
             wrong_content=["B 00001-00000001", "A 00001-00000001"],
-            count=1,
+            count=2,
         )
 
     def test_sale_invoices_dynamic_serializer_api(self):
         self.check_api_get_response(
             f"/erp/api/sale_invoices?fields=issue_date,number&collected=true",
-            # page content includes display_name
             page_content=["2024-01-21", "00000001"],
             wrong_content=["A 00001-00000001"],
             count=1,
+        )
+
+    def test_sale_invoices_delete_multiple_api(self):
+        delete_object = {"ids": [self.sale_invoice3.pk, self.sale_invoice4.pk]}
+        
+        self.check_api_delete_response(
+            ["erp:sale_invoices_delete_api"],
+            status.HTTP_204_NO_CONTENT,
+            (SaleInvoice, 2),
+            delete_object,
+        )
+
+    def test_sale_invoices_delete_multiple_conflict_api(self):
+        delete_object = {"ids": [self.sale_invoice1.pk, self.sale_invoice2.pk,
+            self.sale_invoice3.pk]}
+        
+        self.check_api_delete_response(
+            ["erp:sale_invoices_delete_api"],
+            status.HTTP_409_CONFLICT,
+            (SaleInvoice, 4),
+            delete_object,
         )
 
     def test_sale_invoice_api(self):
@@ -441,14 +470,14 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
         self.check_api_delete_response(
             ["erp:sale_invoice_api", {"pk": self.sale_invoice3.pk}],
             status.HTTP_204_NO_CONTENT,
-            (SaleInvoice, 2)
+            (SaleInvoice, 3)
         )
 
     def test_sale_invoice_delete_conflict_api(self):
         self.check_api_delete_response(
             ["erp:sale_invoice_api", {"pk": self.sale_invoice1.pk}],
             status.HTTP_409_CONFLICT,
-            (SaleInvoice, 3)
+            (SaleInvoice, 4)
         )
 
     def test_sale_invoice_dynamic_serializer_api(self):
@@ -470,6 +499,16 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             count=2,
         )
 
+    def test_sale_receipts_delete_multiple_api(self):
+        delete_object = {"ids": [self.sale_receipt1.pk, self.sale_receipt2.pk]}
+        
+        self.check_api_delete_response(
+            ["erp:sale_receipts_delete_api"],
+            status.HTTP_204_NO_CONTENT,
+            (SaleReceipt, 0),
+            delete_object,
+        )
+
     def test_sale_receipt_api(self):
         self.check_api_get_response(
             f"/erp/api/sale_receipts/{self.sale_receipt1.pk}",
@@ -478,3 +517,16 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             page_content=["00000001","2509.01"],
             wrong_content=["00000002", "2024-02-22"],
         )
+
+    def test_sale_receipt_dynamic_serializer_api(self):
+        url = f"/erp/api/sale_receipts/{self.sale_receipt2.pk}"
+        url += f"?fields=total_amount,related_invoice"
+
+        self.check_api_get_response(
+            url,
+            page_content=["600.01", f"{self.sale_invoice2.pk}"],
+            wrong_content=["Second receipt"],
+            count=2,
+        )
+
+ 

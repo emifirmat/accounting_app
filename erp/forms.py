@@ -171,6 +171,7 @@ class SearchInvoiceForm(forms.Form):
         
         # Customize issue_date field
         self.fields["collected"].initial = 'op2'
+        self.fields['collected'].widget.attrs.update({'data-status': ''})
 
 class AddPersonFileForm(forms.Form):
     """Add file for new clients or suppliers"""

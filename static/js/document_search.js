@@ -25,10 +25,14 @@ document.addEventListener('DOMContentLoaded', function() {
         collectedField = document.querySelector('#id_collected');
         searchFields.push(typeField);
         
-        collectedField.addEventListener('change', async () => {
+        collectedField.addEventListener('change', async (event) => {
             // Each option fetches a different list of invoices
             comDocumentList = await preloadComDocuments(comDocument, 
                 comDocumentList, collectedField);
+            // Add loaded status useful for testing
+            console.log(event.target)
+            collectedField.dataset.status = `loaded-${collectedField.value}`;
+
             searchComDocuments(comDocument, comDocumentList, searchFields);
         });
     
@@ -128,6 +132,7 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
     searchHeaders.innerHTML = '';
     searchRows.innerHTML = '';
     
+    // No match
     if (filteredCDocumentList.length === 0) {
         const pElement = createElementComplete({
             tagName: 'p',
@@ -135,35 +140,35 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
         });
 
         searchRows.append(pElement);
-    } else {
+    } else { // There's at least one document match
 
         // Add headers
-        let headers;
+        let headers = ['Selected', 'Issue Date', 'Number', 'Recipient Tax Number',
+            'Recipient Name'];
         if (comDocument === 'invoice') {
-            headers = ['Issue Date', 'Type', 'Number', 'Recipient Tax Number', 
-                'Recipient Name', 'Collected'];
+            headers.splice(2, 0, 'Type');
+            headers.push('Collected');
         } else if (comDocument === 'receipt') {
-            headers = ['Issue Date', 'Number', 'Recipient Tax Number',
-                'Recipient Name', 'Related Invoice'];
+            headers.push('Related Invoice');
         }
         
         createHeaders(searchHeaders, headers);
         
-        
+        let baseUrl = '';
         for (let cDocument of filteredCDocumentList) {
             // Create list item and buttons in html     
-            let baseUrl = '';
-            let itemContent = '';
             let gridColumns = '';
+            let itemContent = `<div class=search-cell>
+            <input type=checkbox class="checkbox" data-id="${cDocument.id}"></div>`;
            
             if (comDocument === 'invoice') {
                 // Set columns (add space for the buttons)
-                gridColumns = '2fr 1fr 2fr 2fr 2fr 1fr 1fr 1fr 1fr'
+                gridColumns = '1fr 2fr 1fr 2fr 2fr 2fr 1fr 1fr 1fr 1fr'
                 searchHeaders.style.gridTemplateColumns = gridColumns;
                 
                 baseUrl = `/erp/sales`;
                 endUrl = `/invoices/${cDocument.id}`
-                itemContent = `
+                itemContent += `
                 <div class=search-cell>${cDocument.issue_date.substring(0, 10)}</div>
                 <div class=search-cell>${cDocument.type}</div>
                 <div class=search-cell>${cDocument.point_of_sell}-${cDocument.number}</div>
@@ -173,12 +178,12 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
             
             } else if (comDocument === 'receipt') {
                 // Set columns (add space for the buttons)
-                gridColumns = '2fr 2fr 2fr 2fr 2fr 1fr 1fr 1fr'
+                gridColumns = '1fr 2fr 2fr 2fr 2fr 2fr 1fr 1fr 1fr'
                 searchHeaders.style.gridTemplateColumns = gridColumns;
 
                 baseUrl = `/erp/receivables`;
                 endUrl = `/receipts/${cDocument.id}`
-                itemContent = `
+                itemContent += `
                 <div class=search-cell>${cDocument.issue_date.substring(0, 10)}</div> 
                 <div class=search-cell>${cDocument.point_of_sell}-${cDocument.number}</div>
                 <div class=search-cell>${cDocument.recipient}</div> 
@@ -227,7 +232,40 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
             searchRows.append(rowElement)
         }
 
-    }
+    // Handle checkbox functionality
+    let selectedIdSet = new Set();
+    const deleteAllDiv = document.querySelector('#delete-all')
+    document.querySelectorAll('.checkbox').forEach(element => 
+        element.addEventListener('change', event => { 
+        
+            // Add or remove from the list
+            const documentId = event.target.dataset.id;
+            if (selectedIdSet.has(documentId)) {
+                selectedIdSet.delete(documentId)
+            } else {
+                selectedIdSet.add(documentId)
+            }
+
+            // Clean before adding a button
+            deleteAllDiv.innerHTML = '';
+            
+            // While list > 1
+            if (selectedIdSet.size > 1) { 
+                // add a delete all button
+                deleteAllButton = createElementComplete({
+                    tagName:'button',
+                    className: 'delete-button',
+                    innerHTML: `Delete All (${selectedIdSet.size})`,
+                    eventName: 'click',
+                    eventFunction: async () => await deleteMultipleDocuments( // document_delete.js
+                        comDocument, selectedIdSet, baseUrl)
+                });
+
+                deleteAllDiv.append(deleteAllButton);
+            }
+        })
+    )}
+
 }
 
 function filterCDocumentList(comDocument, cDocumentList, ...fields) {

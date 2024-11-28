@@ -189,6 +189,20 @@ def pick_option_by_index(driver, element_id, index, expected_value):
         element_has_selected_option((By.ID, element_id), expected_value)
     )
     
+def scroll_page(driver, proportion=1):
+    """ 
+    Scroll the webpage so that selenium can perform clicks over visible elements 
+    and more.
+    Parameters:
+    - driver: WebDriver
+    - proportion: Default 1. A string representation of a decimal number that 
+    determine where in Y-axis to scroll.
+    """
+    driver.execute_script(
+        f"window.scrollBy(0, document.body.scrollHeight * {proportion});"
+    )
+    time.sleep(0.1) # Time needed to selenium to scroll
+
 
 def get_columns_data(row, start=0, end=-1):
     """
@@ -227,9 +241,11 @@ def click_button_and_answer_alert(driver, parent_selector, parent_name,
     """
     path = driver.find_element(parent_selector, parent_name)
     path.find_elements(By.TAG_NAME, "button")[index].click()
+    time.sleep(0.1) # In some tests it's necessary to add this explicit wait
     WebDriverWait(driver, 10).until(EC.alert_is_present())
     if alert_answer == "accept":
         driver.switch_to.alert.accept()
+        time.sleep(0.3) # Some sections need some time to continue
     elif alert_answer == "dismiss":
         driver.switch_to.alert.dismiss()
 
@@ -253,6 +269,7 @@ def filter_field(driver, keys, visible_element=None, invisible_element=None):
         WebDriverWait(driver, 5).until(
             EC.invisibility_of_element(invisible_element)
         )
+
 
 
 # By section functions
@@ -309,7 +326,7 @@ def search_fill_field(driver, element_id, value):
     ActionChains(driver).move_to_element(field).click(field).perform()
     for char in value:
         ActionChains(driver).send_keys(char).perform()
-    time.sleep(0.25)
+    time.sleep(0.3) # 0.25 gave error sometimes.
 
 def search_clear_field(driver, element_id, first_element_list=None):
     """
@@ -329,7 +346,7 @@ def search_clear_field(driver, element_id, first_element_list=None):
     if first_element_list:
         WebDriverWait(driver, 10).until(EC.staleness_of(first_element_list))
 
-def search_first_input(driver, path, id_element, input, count):
+def search_wait_first_input(driver, path, id_element, input, count):
     """
     As it's the first input, sometimes selenium doesn't load the script properly,
     so that, it refreshes the input up to 4 times.
@@ -349,6 +366,37 @@ def search_first_input(driver, path, id_element, input, count):
             search_clear_field(driver, id_element)
             search_fill_field(driver, id_element, input)
     return web_driver_wait_count(driver, path, count)
+
+def load_new_collected_option(driver, selected_option):
+    """
+    Try 4 times to select a collected status and load the invoices.
+    Parameters:
+    - driver: Webdriver
+    - selected_option: One of the available options: All, Uncollected, Collected
+    """
+    if selected_option == "All":
+        opt_index = 0
+        opt_value = "op1"
+    elif selected_option == "Collected":
+        opt_index = 2
+        opt_value = "op2"
+    else:
+        opt_index = 1
+        opt_value = "op3"
+
+    for _ in range(4):
+        try:
+            pick_option_by_index(driver, "id_collected", opt_index, selected_option)
+            time.sleep(0.5)
+            WebDriverWait(driver, 1).until(
+                EC.text_to_be_present_in_element_attribute(
+                    (By.ID, "id_collected"), "data-status", f"loaded-{opt_value}"
+                )
+            )
+        except TimeoutException:
+            continue
+        time.sleep(0.3)
+
 
 def multiple_driver_wait_count(driver, path, count, selector=By.CLASS_NAME, 
     selector_value="search-row"):
@@ -397,10 +445,11 @@ def web_driver_wait_count(driver, path, count, selector=By.CLASS_NAME,
         doc_list = path.find_elements(selector, selector_value)
     
     try: 
-        WebDriverWait(driver, 1).until(lambda d: len(doc_list) == count)
-        return doc_list
+        WebDriverWait(driver, 1).until(lambda d: len(doc_list) == count)   
     except TimeoutException:
         raise ValueError(
             f"web_driver_wait_count failed. Expected list len: {count}, "
             f"list_len output: {len(doc_list)}."
         )
+    
+    return doc_list

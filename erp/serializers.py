@@ -124,3 +124,11 @@ class SaleReceiptsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SaleReceipt
         fields = "__all__"
+
+class SaleReceiptsDynamicSerializer(baseDynamicSerializer):
+    """Create a dynamic serializer for particular sale receipt where it only adds 
+    the fields I need of each instance.
+    """
+    class Meta:
+        model = SaleReceipt
+        fields = []

@@ -11,10 +11,10 @@ from .serializers import (CClientSerializer, SupplierSerializer,
     PaymentMethodSerializer, PaymentTermSerializer, PointOfSellSerializer,
     DocTypesSerializer, SaleInvoicesSerializer, SaleReceiptsSerializer, 
     SInvoiceDynamicSerializer, DocTypeDynamicSerializer, CClientDynamicSerializer,
-    POSDynamicSerializer)
+    POSDynamicSerializer, SaleReceiptsDynamicSerializer)
 
 from .utils_api import (handle_multiple_instances, return_conflict_status, 
-    SerializerMixin, BulkDeleteMixin)
+    SerializerMixin, BulkDeleteMixin,)
 
 
 class CompanyClientAPI(generics.ListAPIView):
@@ -174,11 +174,14 @@ class SaleInvoicesAPI(SerializerMixin, generics.ListCreateAPIView):
         # Default Serializer
         else:
             return SaleInvoicesSerializer
+        
+class SaleInvoicesDeleteAPI(BulkDeleteMixin, generics.GenericAPIView):
+    """API delete a list of sale invoices"""
+    queryset = SaleInvoice.objects.all()
 
 class SaleInvoiceAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale invoice"""
     queryset = SaleInvoice.objects.all()
-    serializer_class = SaleInvoicesSerializer
  
     def destroy(self, request, *args, **kwargs):
         try:
@@ -202,7 +205,19 @@ class SaleReceiptsAPI(generics.ListCreateAPIView):
     queryset = SaleReceipt.objects.all()
     serializer_class = SaleReceiptsSerializer
 
-class SaleReceiptAPI(generics.RetrieveUpdateDestroyAPIView):
+class SaleReceiptsDeleteAPI(BulkDeleteMixin, generics.GenericAPIView):
+    """API delete a list of sale receipts"""
+    queryset = SaleReceipt.objects.all()
+
+class SaleReceiptAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale receipt"""
     queryset = SaleReceipt.objects.all()
-    serializer_class = SaleReceiptsSerializer
+
+    def get_serializer_class(self):
+        # Pick serializer acording to request
+        fields = self.request.query_params.get("fields", None)
+        if fields:
+            return SaleReceiptsDynamicSerializer
+        # Default Serializer
+        else:
+            return SaleReceiptsSerializer
