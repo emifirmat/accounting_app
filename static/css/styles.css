@@ -11,7 +11,6 @@
     }
 }
 
-
 .hidden {
     display: none;
 }
@@ -74,4 +73,16 @@
 
 .specific-person {
     border-bottom: 1px solid;
+}
+
+.numbered-item {
+    counter-increment: item;
+    position: relative;
+    padding-left: 25px;
+}
+
+.numbered-item::before {
+    content: counter(item) ".";
+    position: absolute;
+    left: 0;
 }

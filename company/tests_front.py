@@ -1,7 +1,9 @@
 """Tests for company app"""
 import datetime
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.test import tag
 from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from .models import Company, FinancialYear
 from utils.utils_tests import go_to_section
 
+@tag("company_front")
 class CompanyFrontTestCase(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
@@ -53,13 +56,47 @@ class CompanyFrontTestCase(StaticLiveServerTestCase):
         go_to_section(self.driver, "company", 4)
         self.assertEqual(self.driver.title, "Document Types")
 
+       
+    def test_company_year_addYear(self):
+        self.driver.get(f"{self.live_server_url}/company/year")
+
+        # Check there's only starting message
+        sections = self.driver.find_element(By.ID, "sections")
+        self.assertIn("In this page you can add or change", sections.text)
+        self.assertNotIn("Current Year:", sections.text)
+        
+        # Click New Year and check button appears
+        self.driver.find_element(By.ID, "add-year-tab").click()
+        WebDriverWait(self.driver, 5).until(
+            EC.visibility_of_element_located(
+                (By.XPATH, "//input[@value='Create Year']")
+            )
+        )
+        
+        # Check only New year section is visible
+        sections = self.driver.find_element(By.ID, "sections")
+        self.assertNotIn("Current Year:", sections.text)
+        self.assertNotIn("In this page you can add or change", sections.text)    
+    
+    
     def test_company_year_changeYear(self):
-        # Test page loads
         self.driver.get(f"{self.live_server_url}/company/year")
 
         # Test there is no current year
         current_year = self.driver.find_element(By.ID, "current-year")
         self.assertIn("and/or select a year.", current_year.text)
+        
+        # Go to change year section
+        self.driver.find_element(By.ID, "change-year-tab").click()
+
+        # Wait until change year section shows and year list load
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element_attribute(
+                (By.ID, "year-dropdown"), "data-status", "loaded")
+        )
+
+        sections = self.driver.find_element(By.ID, "sections")
+        self.assertNotIn("In this page you can add or change", sections.text)
         
         # Select new current year
         self.driver.find_element(By.ID, "year-dropdown").click()

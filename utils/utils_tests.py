@@ -245,7 +245,7 @@ def click_button_and_answer_alert(driver, parent_selector, parent_name,
     WebDriverWait(driver, 10).until(EC.alert_is_present())
     if alert_answer == "accept":
         driver.switch_to.alert.accept()
-        time.sleep(0.3) # Some sections need some time to continue
+        time.sleep(0.4) # Some sections need some time to continue (0.3 sometimes raise error)
     elif alert_answer == "dismiss":
         driver.switch_to.alert.dismiss()
 
@@ -269,6 +269,41 @@ def filter_field(driver, keys, visible_element=None, invisible_element=None):
         WebDriverWait(driver, 5).until(
             EC.invisibility_of_element(invisible_element)
         )
+
+def wait_visible_invisible(driver, locator_visible, locator_invisible):
+    """
+    Wait for one web element to be visible and another web element to be invisible.
+    Parameters:
+    - driver: Web Driver
+    - locator_visible: Tuple of selector and value for visible element.
+    - locator_invisible: Tuple of selector and value for invisible element.
+    """
+    WebDriverWait(driver, 5).until(
+        EC.visibility_of_element_located(locator_visible)
+    ) 
+    WebDriverWait(driver, 5).until(
+        EC.invisibility_of_element_located(locator_invisible)
+    )
+
+def view_and_answer_popup(driver, message, button_index=0):
+    """
+    Wait for the popup to appear, check the message, accepts/rejects and wait 
+    until it dissapear. 
+    Parameters: 
+    - driver: Webdriver.
+    - message: Message that the pop up should display.
+    - button_index: Default 0. 0= accept, 1= reject.
+    """
+    WebDriverWait(driver, 5).until(text_in_visible_element(
+            (By.CLASS_NAME, "popup"), message
+        )
+    )
+    path = driver.find_element(By.CLASS_NAME, "popup-footer")
+    path.find_elements(By.TAG_NAME, "button")[button_index].click()
+
+    WebDriverWait(driver, 5).until(
+        EC.invisibility_of_element_located((By.CLASS_NAME, "popup"))
+    )
 
 
 
@@ -326,7 +361,7 @@ def search_fill_field(driver, element_id, value):
     ActionChains(driver).move_to_element(field).click(field).perform()
     for char in value:
         ActionChains(driver).send_keys(char).perform()
-    time.sleep(0.3) # 0.25 gave error sometimes.
+    time.sleep(0.6) # 0.5 raise error sometimes.
 
 def search_clear_field(driver, element_id, first_element_list=None):
     """
@@ -369,7 +404,7 @@ def search_wait_first_input(driver, path, id_element, input, count):
 
 def load_new_collected_option(driver, selected_option):
     """
-    Try 4 times to select a collected status and load the invoices.
+    Try 5 times to select a collected status and load the invoices.
     Parameters:
     - driver: Webdriver
     - selected_option: One of the available options: All, Uncollected, Collected
@@ -384,10 +419,10 @@ def load_new_collected_option(driver, selected_option):
         opt_index = 1
         opt_value = "op3"
 
-    for _ in range(4):
+    for _ in range(5):
         try:
             pick_option_by_index(driver, "id_collected", opt_index, selected_option)
-            time.sleep(0.5)
+            time.sleep(0.6)
             WebDriverWait(driver, 1).until(
                 EC.text_to_be_present_in_element_attribute(
                     (By.ID, "id_collected"), "data-status", f"loaded-{opt_value}"
@@ -395,7 +430,7 @@ def load_new_collected_option(driver, selected_option):
             )
         except TimeoutException:
             continue
-        time.sleep(0.3)
+        time.sleep(0.5) # Sometimes it fails with 0.4 
 
 
 def multiple_driver_wait_count(driver, path, count, selector=By.CLASS_NAME, 

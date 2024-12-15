@@ -60,10 +60,12 @@ class Company(PersonModel, SingletonModel):
 
 class FinancialYear(models.Model):
     """Financial year of the company"""
-    year = models.CharField(unique=True, max_length=4, validators=[
-        validate_is_digit,
-        validate_in_creation_year,
-    ])
+    year = models.CharField(unique=True, max_length=4, error_messages= {
+        "unique": "The year already exists."}, validators=[
+            validate_is_digit,
+            validate_in_creation_year,
+        ]
+    )
     current = models.BooleanField(default=False)
 
     class Meta: 

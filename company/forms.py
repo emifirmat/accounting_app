@@ -1,4 +1,5 @@
 from django import forms
+from django.db import IntegrityError
 
 from .models import Company, FinancialYear
 
@@ -36,7 +37,7 @@ class FinancialYearForm(forms.ModelForm):
     class Meta:
         model = FinancialYear
         fields = ["year"]
-        labels = {"year": "Add a new year"}
+        labels = {"year": ""}
         widgets = {
             "year": forms.NumberInput(attrs={"placeholder": "XXXX"}),
         }

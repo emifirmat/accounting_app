@@ -159,8 +159,8 @@ class SaleInvoice(CommercialDocumentModel):
     point_of_sell = models.ForeignKey(PointOfSell, on_delete=models.PROTECT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
     recipient = models.ForeignKey(CompanyClient, on_delete=models.RESTRICT)
-    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
-    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.PROTECT)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.RESTRICT)
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.RESTRICT)
     collected = models.BooleanField(default=False)
 
     class Meta:
@@ -233,8 +233,8 @@ class PurchaseInvoice(CommercialDocumentModel):
     ])
     sender = models.ForeignKey(Supplier, on_delete=models.RESTRICT)
     recipient = models.ForeignKey(Company, on_delete=models.CASCADE)
-    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT)
-    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.PROTECT)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.RESTRICT)
+    payment_term = models.ForeignKey(PaymentTerm, on_delete=models.RESTRICT)
 
     class Meta:
         constraints = [

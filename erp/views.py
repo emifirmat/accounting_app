@@ -192,8 +192,8 @@ def supplier_index(request):
 
 def payment_conditions(request):
     """Payment conditions webpage"""
-    payment_methods = PaymentMethod.objects.all()
-    payment_terms = PaymentTerm.objects.all()
+    payment_methods = PaymentMethod.objects.first()
+    payment_terms = PaymentTerm.objects.first()
     term_form = PaymentTermForm()
     method_form = PaymentMethodForm()
 

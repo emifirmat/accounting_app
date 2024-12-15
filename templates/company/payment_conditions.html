@@ -7,57 +7,98 @@
 
     <h2>Payment Conditions</h2>
 
-    <div id="message-section"></div>
+    <br>
+    <!-- Main nav -->
+    <ul class="nav nav-pills justify-content-center mb-4" id="main-tab-section" 
+    role="tablist">
+        <li class="nav-item me-4" role="presentation">
+            <button class="nav-link" id="method-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab1" data-condition="method" data-empty="{{ payment_methods|yesno:'no,yes' }}"  
+            type="button" role="tab" aria-controls="tab1" aria-selected="false"
+            data-clicked="false">
+            Methods</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="term-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab2" data-condition="term" data-empty="{{ payment_terms|yesno:'no,yes' }}"
+            type="button" role="tab" aria-controls="tab2" aria-selected="false"
+            data-clicked="false">
+            Terms</button>
+        </li>
+    </ul>
+    <!-- Second line nav -->
+    <ul class="nav nav-pills justify-content-center mb-4 hidden" 
+    id="sec-tab-section" role="tablist">
+        <li class="nav-item me-4" role="presentation">
+            <button class="nav-link" id="default-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab3" type="button" role="tab" aria-controls="tab3" 
+            aria-selected="false">Add Default</button>
+        </li>
+        <li class="nav-item me-4" role="presentation">
+            <button class="nav-link" id="new-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab4" type="button" role="tab" aria-controls="tab4" 
+            aria-selected="false">New</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="show-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab5" type="button" role="tab" aria-controls="tab5" 
+            aria-selected="false">Show All</button>
+        </li>
+    </ul>
     
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-6">
-                <h3>Payment Terms</h3>
-                <div data-section="term">
-                    {% if not payment_terms %}
-                        <form>
-                            {% csrf_token %}
-                            <button class="default-button">Add default</button>
-                        </form>
-                    {% endif %}
-                        <button class="add-button">New payment term</button>
-                        <div id="new-term" class="hidden">
-                            <form>
-                                {% csrf_token %}
-                                {{ term_form.as_p }}
-                                <button>Add</button>
-                            </form>
-                        </div>
-                    {% if payment_terms%}
-                        <button class="view-button">Show all terms</button>
-                    {% endif %}
-                </div>
-                <h3>Payment Methods</h3>
-                <div data-section="method">
-                    {% if not payment_methods %}
-                        <form>
-                            {% csrf_token %}
-                            <button class="default-button">Add default</button>
-                        </form>
-                    {% endif %}
-                        <button class="add-button">New payment method</button>
-                        <div id="new-method" class="hidden">
-                            <form>
-                                {% csrf_token %}
-                                {{ method_form.as_p }}
-                                <button>Add</button>
-                            </form>
-                        </div>
-                    {% if payment_methods %}
-                        <button class="view-button">Show all methods</button>
-                    {% endif %}
-                </div>
+    <!-- Sections -->
+    <div class="container-fluid d-flex justify-content-center">
+        <!-- Terms --> 
+        <div id="term-section">
+            <div id="default-term" class="hidden">
+                {% if not payment_terms %}
+                <form>
+                    {% csrf_token %}
+                    <p>The following terms will be added: 0, 15, 30, 60.</p>
+                    <button class="load-button">Load</button>
+                </form>
+                {% else %}
+                <p>You can't add payment term's default values.</p>
+                {% endif %}
             </div>
-            <div class="col-6" id="view-section">
-                <h3 id="view-title"></h3>
-                <ul id="view-list"></ul>
+            
+            <div id="new-term" class="hidden">
+                <form>
+                    {% csrf_token %}
+                    {{ term_form.as_p }}
+                    <button>Add Term</button>
+                </form>
             </div>
         </div>
+        <!-- Methods --> 
+        <div id="method-section">
+            <div id="default-method" class="hidden">
+            {% if not payment_methods %}
+                <form>
+                    {% csrf_token %}
+                    <p>The following methods will be added: Cash, Transfer, Check.
+                    </p>
+                    <button class="load-button">Load</button>
+                </form>
+            {% else %}
+                <p>You can't add payment method's default values.</p>
+            {% endif %}
+            </div>
+            <div id="new-method" class="hidden">
+                <form>
+                    {% csrf_token %}
+                    {{ method_form.as_p }}
+                    <button>Add Method</button>
+                </form>
+            </div>
+        </div>
+        <!-- Information -->
+        <div id="show-section">
+            <h3 id="show-title"></h3>
+            <div id="show-list"></div>
+        </div>
+        <div id="welcome-section"><p>In this page you can manage the payment terms and methods necessary 
+        for issuing invoices.</p></div>
     </div>
 
 {% endblock body %}

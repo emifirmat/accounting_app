@@ -306,6 +306,13 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             wrong_content=["Transfer"]
         )
 
+    def test_payment_method_delete_conflict_api(self):
+        self.check_api_delete_response(
+            ["erp:payment_method_api", {"pk": self.pay_method1.pk}],
+            status.HTTP_409_CONFLICT,
+            (PaymentMethod, 2)
+        )
+
     def test_payment_terms_api(self):
         self.check_api_get_response(
            "/erp/api/payment_conditions/terms",
@@ -327,6 +334,13 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             ["erp:payment_term_api", {"pk": self.pay_term2.pk}],
             page_content=["30"],
             wrong_content=["1"] # pay_term1.pk
+        )
+
+    def test_payment_term_delete_conflict_api(self):
+        self.check_api_delete_response(
+            ["erp:payment_term_api", {"pk": self.pay_term1.pk}],
+            status.HTTP_409_CONFLICT,
+            (PaymentTerm, 2)
         )
 
     def test_points_of_sell_api(self):

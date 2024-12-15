@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
             comDocumentList = await preloadComDocuments(comDocument, 
                 comDocumentList, collectedField);
             // Add loaded status useful for testing
-            console.log(event.target)
             collectedField.dataset.status = `loaded-${collectedField.value}`;
 
             searchComDocuments(comDocument, comDocumentList, searchFields);

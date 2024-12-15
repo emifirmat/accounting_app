@@ -66,7 +66,7 @@ class PaymentTermForm(forms.ModelForm):
         model = PaymentTerm
         fields = "__all__"
         labels = {
-            "pay_term": "New payment term",
+            "pay_term": "",
         }
 
 
@@ -76,7 +76,7 @@ class PaymentMethodForm(forms.ModelForm):
         model = PaymentMethod
         fields = "__all__"
         labels = {
-            "pay_method": "New payment method",
+            "pay_method": "",
         }
         
 

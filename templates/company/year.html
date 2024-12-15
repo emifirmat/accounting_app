@@ -7,36 +7,61 @@
 
     <h2>Financial year</h2>
     
-    <p id="current-year">Current Year: 
+    <p id="current-year"> 
         {% if current_year %} 
-            {{ current_year }}
+            Current Year: {{ current_year }}
         {% else %}
             Please, create and/or select a year.
         {% endif %}
     </p>
-    {% if years.count > 1 %}
-        <div class="dropdown">
-            <button id="year-dropdown" class="btn btn-secondary dropdown-toggle" 
-            type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Change Current Year
-            </button>
-            <ul class="dropdown-menu" id="change-year-menu">
-                {% for year in years %}
-                    <li><a href="#" class="dropdown-item year{% if year.current == True %} disabled{% endif %}">
-                    {{ year }}</a></li>
-                {% endfor %}
-            </ul>
+
+    <ul class="nav nav-pills justify-content-center mb-4" id="tab-section" role="tablist">
+        <li class="nav-item me-4" role="presentation">
+            <button class="nav-link" id="add-year-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab1" type="button" role="tab" aria-controls="tab1" 
+            aria-selected="false">New Year</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="change-year-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab2" type="button" role="tab" aria-controls="tab2" 
+            aria-selected="false">Change Year</button>
+        </li>
+    </ul>
+
+    <div id="sections" class="container text-center">
+        {% if years.count > 1 %}
+            <div id="change-year-section" class="dropdown hidden">
+                <button id="year-dropdown" class="btn btn-secondary dropdown-toggle" 
+                type="button" data-bs-toggle="dropdown" data-status="empty" aria-expanded="false">
+                    Current Year: {{ current_year }}
+                </button>
+                <ul class="dropdown-menu" id="change-year-menu">
+                    {% for year in years %}
+                        <li><a href="#" class="dropdown-item year{% if year.current == True %} disabled{% endif %}">
+                        {{ year }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <p>You have to add a new year first.</p>
+        {% endif %}
+        <div id="add-year-section" class="hidden">
+            <form action="{% url 'company:year' %}" method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="submit" value="Create Year">
+            </form>
         </div>
-    {% endif %}
-    <form action="{% url 'company:year' %}" method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="Create Year">
-    </form>
+        <div id="starting-section">
+            <p>In this page you can add or change the current year. This is necessary
+            for creating or managing documents and current accounts. Please, note
+            that you can't delete any existing year.</p>
+        </div>
+    </div>
 
 {% endblock body %}
 
 {% block script %}
-    <script src="{% static 'js/company.js' %}"></script>
+    <script src="{% static 'js/financial_year.js' %}"></script>
     <script src="{% static 'js/crud.js' %}"></script>
 {% endblock script %}

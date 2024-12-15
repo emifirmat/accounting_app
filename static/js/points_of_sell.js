@@ -1,61 +1,67 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     // Add new pos
-    document.querySelector('#new-pos').addEventListener('click', () => 
-        addNewPOS());
+    document.querySelector('#new-pos').addEventListener('click', event => 
+        addNewPOS(event));
     // Show pos list
     document.querySelector('#show-pos-button').addEventListener('click', () =>
         showPOSList());
     // Disable a pos
-    document.querySelectorAll('.dropdown-item.pos').forEach( function (element) {
-        element.addEventListener('click', () => disablePOS());
-    });
+    document.querySelectorAll('.dropdown-item.pos').forEach(element => 
+        element.addEventListener('click', event => disablePOS(event))
+    );
 
 })
 
-async function addNewPOS() {
+async function addNewPOS(event) {
     // Add a POS through api
     event.preventDefault();
     const confirmNew = confirm('Add new POS?');
-    if (confirmNew) {
-        const form = document.querySelector('#new-pos-form');
-        data = {['pos_number']: form.elements['pos_number'].value};
-
-        await postData(`/erp/api/points_of_sell`, data); // crud.js
     
-        messageElement = document.querySelector('#message-section');
-        messageElement.innerHTML = `Point of Sell added succesfully.`;
-        setTimeout(() => location.reload(), 1000);
-    };
+    if (!confirmNew) return
+     
+    // Post new pos form
+    const form = document.querySelector('#new-pos-form');
+    data = {['pos_number']: form.elements['pos_number'].value};
+    await postData(`/erp/api/points_of_sell`, data); // crud.js
+
+    // Show success msg to user
+    const msg = `Point of Sell added succesfully.`
+    showMsgAndRestart(msg); // utils.js
+    
 }
 
 
 async function showPOSList() {
     // Get and show list of POS
-    const list = await getList('/erp/api/points_of_sell'); // crud.js
+    const POSlist = await getList('/erp/api/points_of_sell'); // crud.js
     
     // Clean list
-    const listSection = document.querySelector('#pos-list');
-    listSection.innerHTML = '';
+    const POSlistSection = document.querySelector('#pos-list');
+    POSlistSection.innerHTML = '';
 
     // Add Title
     const titleSection = document.querySelector('#show-pos-title');
     titleSection.innerHTML = 'Points of Sell';
     
     // Add item from the list
-    list.forEach(item => {
-        const listItem = createElementComplete({
+    POSlist.forEach(item => {
+        const POSlistItem = createElementComplete({
             tagName: 'li',
             innerHTML: item.pos_number
         });
-        listSection.append(listItem);
+        POSlistSection.append(POSlistItem);
     })
 }
 
-async function disablePOS() { 
+async function disablePOS(event) { 
     // Disable a POS
-    const POSNumber = event.target.innerHTML.trim()
-    const confirmElement = confirm(`Are you sure that you want to disable the POS number ${POSNumber}?`);
+    const POSNumber = event.target.text
+    const confirmElement = confirm(
+        `Are you sure that you want to disable the POS number ${POSNumber}?`
+    );
+    if (!confirmElement) return
+    
     const POSList = await getList('/erp/api/points_of_sell'); // crud.js
     let POSId;
 
@@ -66,20 +72,19 @@ async function disablePOS() {
             break;
         }
     }
+    // No match
     if (POSId === undefined) {
         console.error('POSId not found.');
         return;
     }
     
-    // If aler accepted, modify status
-    if (confirmElement) {
-        const url = `/erp/api/points_of_sell/${POSId}`;
-        // Disable POS
-        await changeOneAttribute(url, 'disabled', true,
-            'POS disabled successfully.'); // crud.js
-        
-        messageElement = document.querySelector('#message-section')
-        messageElement.innerHTML = `Point of Sell ${POSNumber} disabled.`;
-        setTimeout(() => location.reload(), 1000);
-    }
+    // Disable POS
+    const url = `/erp/api/points_of_sell/${POSId}`;
+    await changeOneAttribute(url, 'disabled', true,
+        'POS disabled successfully.'); // crud.js
+    
+    // Show message to user
+    const msg = `Point of Sell ${POSNumber} disabled.`;
+    showMsgAndRestart(msg); // utils.js
+
 }

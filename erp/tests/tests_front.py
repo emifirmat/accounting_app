@@ -26,7 +26,7 @@ from utils.utils_tests import (go_to_section, element_has_selected_option,
     search_clear_field, click_and_redirect, multiple_driver_wait_count, 
     get_columns_data, web_driver_wait_count, click_and_wait, search_wait_first_input,
     find_visible_elements, filter_field, text_in_visible_element, scroll_page,
-    load_new_collected_option)
+    load_new_collected_option, wait_visible_invisible, view_and_answer_popup)
 from utils.base_tests import CreateDbInstancesMixin
 
 
@@ -121,6 +121,7 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
         )
 
     def create_first_invoice_and_receipt(self):
+        self.create_doc_types()
         self.sale_invoice1 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 21), 
             type = self.doc_type1, 
@@ -394,7 +395,6 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_front_client_delete")
     def test_client_delete_conflict(self):
         # Go to client delete webpage.
-        self.create_doc_types()
         self.create_first_invoice_and_receipt()
         self.driver.get(f"{self.live_server_url}/erp/client/delete")
         
@@ -404,25 +404,10 @@ class ErpFrontTestCase(FrontBaseTest):
         click_button_and_answer_alert(
             self.driver, By.ID, "person-details", "accept"
         )
-        
-        # Wait for popup and cancel.
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        path.find_elements(By.TAG_NAME, "button")[1].click()
-        WebDriverWait(self.driver, 5).until(
-            EC.invisibility_of_element_located((By.CLASS_NAME, "popup"))
-        )
-
-        #  Delete again  
-        click_button_and_answer_alert(
-            self.driver, By.ID, "person-details", "accept"
-        )
     
         # Wait for popup to appear and accept
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        path.find_elements(By.TAG_NAME, "button")[0].click()
-        
+        view_and_answer_popup(self.driver, "The client couldn't be deleted")
+       
         webDriverWait_visible_element(self.driver, By.ID, "rd-title")
 
         self.assertEqual(self.driver.title, "Related Documents")
@@ -431,7 +416,6 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_front_client_delete")
     def test_client_delete_multiple_conflict_filter(self):
         self.create_company_clients()
-        self.create_doc_types()
         self.create_first_invoice_and_receipt()
         # Go to delete client page
         self.driver.get(f"{self.live_server_url}/erp/client/delete")
@@ -466,19 +450,8 @@ class ErpFrontTestCase(FrontBaseTest):
             self.driver, By.ID, "person-details", "accept"
         )
 
-        # check pop up has one button and accept
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        buttons = path.find_elements(By.TAG_NAME, "button")
-        
-        self.assertEqual(len(buttons), 1)
-        self.assertEqual(buttons[0].text, "Accept")
-
-        buttons[0].click()
-        
-        WebDriverWait(self.driver, 5).until(
-            EC.invisibility_of_element_located((By.CLASS_NAME, "popup"))
-        )
+        # Accept popup
+        view_and_answer_popup(self.driver, "Couldn't delete the selected clients")
 
         self.assertEqual(CompanyClient.objects.all().count(), 7)
 
@@ -687,7 +660,6 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_front_supplier_delete")
     def test_client_delete_conflict(self):
         # Go to client delete webpage.
-        self.create_doc_types()
         self.create_first_invoice_and_receipt()
         self.driver.get(f"{self.live_server_url}/erp/client/delete")
         
@@ -710,9 +682,7 @@ class ErpFrontTestCase(FrontBaseTest):
         )
     
         # Wait for popup to appear and accept
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        path.find_elements(By.TAG_NAME, "button")[0].click()
+        view_and_answer_popup(self.driver, "The client couldn't be deleted")
         
         webDriverWait_visible_element(self.driver, By.ID, "rd-title")
 
@@ -722,7 +692,6 @@ class ErpFrontTestCase(FrontBaseTest):
     @tag("erp_front_supplier_delete")
     def test_client_delete_multiple_conflict_filter(self):
         self.create_company_clients()
-        self.create_doc_types()
         self.create_first_invoice_and_receipt()
         # Go to delete client page
         self.driver.get(f"{self.live_server_url}/erp/client/delete")
@@ -757,19 +726,8 @@ class ErpFrontTestCase(FrontBaseTest):
             self.driver, By.ID, "person-details", "accept"
         )
 
-        # check pop up has one button and accept
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        buttons = path.find_elements(By.TAG_NAME, "button")
-        
-        self.assertEqual(len(buttons), 1)
-        self.assertEqual(buttons[0].text, "Accept")
-
-        buttons[0].click()
-        
-        WebDriverWait(self.driver, 5).until(
-            EC.invisibility_of_element_located((By.ID, "detail-section"))
-        )
+        # Accept pop up 
+        view_and_answer_popup(self.driver, "The client couldn't be deleted")
 
         self.assertEqual(self.driver.title, "Delete Client")
         self.assertEqual(CompanyClient.objects.all().count(), 7)
@@ -778,7 +736,6 @@ class ErpFrontTestCase(FrontBaseTest):
 
     @tag("erp_front_client_rel_docs_links")
     def test_client_rel_docs_links_invoice(self):
-        self.create_doc_types()
         self.create_first_invoice_and_receipt()
         # Go to invoice 1 rel receipts webpage.
         url = f"{self.live_server_url}/erp/client/{self.c_client1.pk}"
@@ -792,7 +749,6 @@ class ErpFrontTestCase(FrontBaseTest):
 
     @tag("erp_front_client_rel_docs_links")
     def test_sales_invoice_rel_receipts_links_receipt(self):
-        self.create_doc_types()
         self.create_first_invoice_and_receipt()
         # Go to invoice 1 rel receipts webpage.
         url = f"{self.live_server_url}/erp/client/{self.c_client1.pk}"
@@ -804,144 +760,311 @@ class ErpFrontTestCase(FrontBaseTest):
         go_to_link(self.driver, By.CLASS_NAME, "rec-section", url, 0)
         self.assertEqual(self.driver.title, "Receipt 00001-00000001")
 
-    @tag("erp_payment_term_d")
+    @tag("erp_payment_conditions")
+    def test_payment_conditions_tags(self):
+        # Clean payment cond instances and try all the tabs.
+        PaymentTerm.objects.all().delete()
+        PaymentMethod.objects.all().delete()
+        self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
+
+        # Se welcome message
+        welcome_section = self.driver.find_element(By.ID, "welcome-section")
+        self.assertIn("you can manage the payment", welcome_section.text)
+
+        # Click on add default methods and change to terms
+        methods_button = self.driver.find_element(By.ID, "method-tab")
+        methods_button.click()
+        default_button = self.driver.find_element(By.ID, "default-tab")
+        wait_visible_invisible(self.driver,
+            (By.ID, "default-tab"), (By.ID, "welcome-section")
+        )
+        
+        default_button.click()
+        WebDriverWait(self.driver, 5).until(
+            EC.visibility_of_element_located((By.ID, "default-method"))
+        )
+
+        # Click on term and check changes
+        terms_button = self.driver.find_element(By.ID, "term-tab")
+        terms_button.click()
+        wait_visible_invisible(self.driver,
+            (By.ID, "default-term"), (By.ID, "default-method")
+        )
+
+        # Check new method and term buttons
+        new_button = self.driver.find_element(By.ID, "new-tab")
+        new_button.click()
+        wait_visible_invisible(self.driver,
+            (By.ID, "new-term"), (By.ID, "default-term")
+        )
+
+        methods_button.click()
+        methods_button.click() # Check double click works well
+        wait_visible_invisible(self.driver,
+            (By.ID, "new-method"), (By.ID, "new-term")
+        )
+
+        # Check show method and term buttons
+        show_button = self.driver.find_element(By.ID, "show-tab")
+        show_button.click()
+ 
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element_located((By.ID, "new-method"))
+        )
+        WebDriverWait(self.driver, 5).until(EC.text_to_be_present_in_element(
+            (By.ID, "show-list"), "added any method")
+        )
+
+        terms_button.click()
+        terms_button.click() # Double click check
+        WebDriverWait(self.driver, 5).until(EC.text_to_be_present_in_element(
+                (By.ID, "show-list"), "added any term")
+        )
+        
+    
+    @tag("erp_payment_cond_def")
     def test_payment_conditions_term_default(self):
         # Clean payment cond instances and go to Payment Conditions page.
         PaymentTerm.objects.all().delete()
-        PaymentMethod.objects.all().delete()
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
-        # Click on default
-        pay_conditions_click_default(self.driver, 0)
-
-        WebDriverWait(self.driver, 10).until(
+        # Click on terms < default < load
+        self.driver.find_element(By.ID, "term-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-tab")
+        self.driver.find_element(By.ID, "default-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-term")
+        click_button_and_answer_alert(self.driver, By.ID, "default-term", "dismiss")
+        click_button_and_answer_alert(self.driver, By.ID, "default-term", "accept")
+        WebDriverWait(self.driver, 5).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"), "Default for term loaded successfully."
+                (By.CLASS_NAME, "popup"), "Default terms loaded successfully."
             )
         )
 
-    @tag("erp_payment_method_d")
+        # Check other default is disabled
+        self.driver.find_element(By.ID, "method-tab").click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element_attribute(
+                (By.ID, "default-tab"), "class", "disabled"
+            )
+        )
+        def_section = self.driver.find_element(By.ID, "default-method")
+        self.assertIn("payment method's", def_section.text)
+
+
+    @tag("erp_payment_cond_def")
     def test_payment_conditions_method_default(self):
         # Clean payment cond instances and go to Payment Conditions page.
-        PaymentTerm.objects.all().delete()
         PaymentMethod.objects.all().delete()
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
         # Click on default
-        pay_conditions_click_default(self.driver, 1)
-
-        WebDriverWait(self.driver, 10).until(
+        self.driver.find_element(By.ID, "method-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-tab")
+        self.driver.find_element(By.ID, "default-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-method")
+        click_button_and_answer_alert(self.driver, By.ID, "default-method", "dismiss")
+        click_button_and_answer_alert(self.driver, By.ID, "default-method", "accept")
+        WebDriverWait(self.driver, 5).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"), "Default for method loaded successfully."
+                (By.CLASS_NAME, "popup"), "Default methods loaded successfully."
             )
         )
 
-    @tag("erp_payment_term_n")
+        # Check other default is disabled
+        self.driver.find_element(By.ID, "term-tab").click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element_attribute(
+                (By.ID, "default-tab"), "class", "disabled"
+            )
+        )
+        def_section = self.driver.find_element(By.ID, "default-term")
+        self.assertIn("payment term's", def_section.text)
+
+    @tag("erp_payment_cond_new")
     def test_payment_conditions_term_new(self):
         # Go to Payment Conditions page.
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
         # Click on new
-        self.driver.find_elements(By.CLASS_NAME, "add-button")[0].click()
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "new-term"), "New payment term"
-            )
+        self.driver.find_element(By.ID, "term-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "new-tab")
+        self.driver.find_element(By.ID, "new-tab").click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "new-term"), "Add Term")
         )
-        
-        
+
+        # Fill field and confirm
         path = self.driver.find_element(By.ID, "new-term")
-        # Add and submit data in form
         fill_field(self.driver, path, "pay_term", "180")
-        path.find_element(By.TAG_NAME, "button").click()
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
-        # Accept alert
-        self.driver.switch_to.alert.accept()
-        WebDriverWait(self.driver, 10).until(
+        click_button_and_answer_alert(self.driver, By.ID, "new-term", "dismiss")
+        click_button_and_answer_alert(self.driver, By.ID, "new-term", "accept")
+       
+        WebDriverWait(self.driver, 5).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"), "New term added successfully"
+                (By.CLASS_NAME, "popup"), "New term added successfully."
             )
         )
 
-
-    @tag("erp_payment_method_n")
+    @tag("erp_payment_cond_new")
     def test_payment_conditions_method_new(self):
         # Go to Payment Conditions page.
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
         # Click on new
-        self.driver.find_elements(By.CLASS_NAME, "add-button")[1].click()
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "new-method"), "New payment method"
-            )
+        self.driver.find_element(By.ID, "method-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "new-tab")
+        self.driver.find_element(By.ID, "new-tab").click()
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "new-method"), "Add Method")
         )
         
+         # Fill field and confirm
         path = self.driver.find_element(By.ID, "new-method")
-        
-        # Add and submit data in form
         fill_field(self.driver, path, "pay_method", "Hand")
-        path.find_element(By.TAG_NAME, "button").click()
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
-        # Accept alarm
-        self.driver.switch_to.alert.accept()
-        WebDriverWait(self.driver, 10).until(
+        click_button_and_answer_alert(self.driver, By.ID, "new-method", "dismiss")
+        click_button_and_answer_alert(self.driver, By.ID, "new-method", "accept")
+        
+        WebDriverWait(self.driver, 5).until(
             EC.text_to_be_present_in_element(
-                (By.ID, "message-section"), "New method added successfully"
+                (By.CLASS_NAME, "popup"), "New method added successfully."
             )
         )
 
-    @tag("erp_payment_term_v")
+    @tag("erp_payment_cond_view")
     def test_payment_terms_view_list_and_delete(self):
         # Create data
         self.create_extra_pay_terms()
         self.assertEqual(PaymentTerm.objects.all().count(), 5)
-
-        # Go to Payment Conditions page.
+        
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
         # Click on show methods
-        self.driver.find_elements(By.CLASS_NAME, "view-button")[0].click()
-
-        # Check title and list
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "view-title"), "Payment terms"
-            )
+        self.driver.find_element(By.ID, "term-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "show-tab")
+        self.driver.find_element(By.ID, "show-tab").click()
+        WebDriverWait(self.driver, 5).until(EC.text_to_be_present_in_element(
+                (By.ID, "show-section"), "Payment terms")
         )
-        path = self.driver.find_element(By.ID, "view-list")
-        self.assertIn("180", path.text)
+        # Check list
+        list_section = self.driver.find_element(By.ID, "show-list")
+        for value in ["0", "30", "60", "90", "180"]:
+            self.assertIn(value, list_section.text)
 
         # Delete an entry
-        pay_conditions_delete_confirm_button(self.driver, path)
-        self.assertEqual(PaymentTerm.objects.all().count(), 4)
+        delete_buttons = list_section.find_elements(By.CLASS_NAME, "delete-item")
+        delete_buttons[2].click()  
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "show-list"), "Confirm"
+            )
+        )
+        # Click in confirm
+        delete_buttons[2].click()
+        WebDriverWait(self.driver, 10).until(EC.staleness_of(delete_buttons[2]))
 
-    @tag("erp_payment_method_v")
+        self.assertEqual(PaymentTerm.objects.all().count(), 4)
+        self.assertNotIn("60", list_section.text)
+
+    @tag("erp_payment_cond_view")
     def test_payment_methods_view_list_and_delete(self):
         # Create data
         self.create_extra_pay_methods()
         self.assertEqual(PaymentMethod.objects.all().count(), 4)
     
-
-        # Go to Payment Conditions page.
         self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
 
         # Click on show methods
-        self.driver.find_elements(By.CLASS_NAME, "view-button")[1].click()
-
-        # Check title and list
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
-                (By.ID, "view-title"),
-                "Payment methods"
-            )
+        self.driver.find_element(By.ID, "method-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "show-tab")
+        self.driver.find_element(By.ID, "show-tab").click()
+        WebDriverWait(self.driver, 5).until(EC.text_to_be_present_in_element(
+                (By.ID, "show-section"), "Payment methods")
         )
-        path = self.driver.find_element(By.ID, "view-list")
-        self.assertIn("Transfer", path.text)
 
+        # Check list
+        list_section = self.driver.find_element(By.ID, "show-list")
+        for value in ["Cash", "Transfer", "Debit Card", "Check"]:
+            self.assertIn(value, list_section.text)
+        
+        # Delete 2 entries
+        for index in [-1, 0]:
+            delete_buttons = list_section.find_elements(By.CLASS_NAME, "delete-item")
+            delete_buttons[index].click()  
+            WebDriverWait(self.driver, 5).until(
+                EC.text_to_be_present_in_element(
+                    (By.ID, "show-list"), "Confirm"
+                )
+            )
+            delete_buttons[index].click()
+            WebDriverWait(self.driver, 10).until(EC.staleness_of(delete_buttons[index]))
+
+        self.assertEqual(PaymentMethod.objects.all().count(), 2)
+        self.assertNotIn("Cash", list_section.text)
+        self.assertNotIn("Check", list_section.text)
+
+    @tag("erp_payment_cond_delete_conflict")
+    def test_payment_terms_delete_conflict(self):
+        # Go to client delete webpage.
+        self.create_first_invoice_and_receipt()
+        self.assertEqual(PaymentTerm.objects.all().count(), 2)
+        self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
+        
+        # Click on show methods
+        self.driver.find_element(By.ID, "term-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "show-tab")
+        self.driver.find_element(By.ID, "show-tab").click()
+        WebDriverWait(self.driver, 5).until(EC.text_to_be_present_in_element(
+                (By.ID, "show-section"), "Payment terms")
+        )
+        
         # Delete an entry
-        pay_conditions_delete_confirm_button(self.driver, path)
-        self.assertEqual(PaymentMethod.objects.all().count(), 3)
+        list_section = self.driver.find_element(By.ID, "show-list")
+        delete_buttons = list_section.find_elements(By.CLASS_NAME, "delete-item")
+        delete_buttons[0].click()  
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "show-list"), "Confirm")
+        )
+        # Click on confirm
+        delete_buttons[0].click()
+        
+        # Wait for popup and cancel.
+        view_and_answer_popup(self.driver, "invoices using this term")
+
+        self.assertEqual(PaymentTerm.objects.all().count(), 2)
+        self.assertIn("30", list_section.text)
+
+    @tag("erp_payment_cond_delete_conflict")
+    def test_payment_methods_delete_conflict(self):
+        # Go to client delete webpage.
+        self.create_first_invoice_and_receipt()
+        self.assertEqual(PaymentMethod.objects.all().count(), 2)
+        self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
+        
+        # Click on show methods
+        self.driver.find_element(By.ID, "method-tab").click()
+        webDriverWait_visible_element(self.driver, By.ID, "show-tab")
+        self.driver.find_element(By.ID, "show-tab").click()
+        WebDriverWait(self.driver, 5).until(EC.text_to_be_present_in_element(
+                (By.ID, "show-section"), "Payment methods")
+        )
+        
+        # Delete an entry
+        list_section = self.driver.find_element(By.ID, "show-list")
+        delete_buttons = list_section.find_elements(By.CLASS_NAME, "delete-item")
+        delete_buttons[0].click()  
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element((By.ID, "show-list"), "Confirm")
+        )
+        # Click on confirm
+        delete_buttons[0].click()
+        
+        # Wait for popup and cancel.
+        view_and_answer_popup(self.driver, "invoices using this method")
+
+        self.assertEqual(PaymentTerm.objects.all().count(), 2)
+        self.assertIn("Cash", list_section.text)
+        self.assertIn("Transfer", list_section.text)
 
 
     @tag("erp_pos_n")
@@ -1057,7 +1180,6 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         FinancialYear.objects.create(year="2024", current=True)        
         self.pos2 = PointOfSell.objects.create(pos_number = "00002")
-        self.create_doc_types() # FrontBaseTest function
         self.create_first_invoice_and_receipt()# FrontBaseTest function
         
     def create_extra_invoices(self):
@@ -1661,34 +1783,19 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             "search-row")
         self.assertNotIn("00001-00000002", invoice_list[0].text)
         
-        # Click on delete button   
-        path = self.driver.find_element(By.ID, "invoice-list")     
-        delete_button = path.find_element(By.CLASS_NAME, "delete-button")
-        self.driver.execute_script('arguments[0].click();', delete_button)
+        # Click on delete button
         # Accept emergent alert
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
-        self.driver.switch_to.alert.accept()
-        # Wait for popup to appear
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-  
-        # Cancel pop up
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        path.find_elements(By.TAG_NAME, "button")[1].click()
+        click_button_and_answer_alert(self.driver, By.CLASS_NAME, "search-row", 
+            "accept", 2)
+        # Wait for popup to appear and reject
+        view_and_answer_popup(self.driver, "The invoice couldn't be deleted", 1)
 
-        #  Delete again  
-        path = self.driver.find_element(By.ID, "invoice-list")     
-        delete_button = path.find_element(By.CLASS_NAME, "delete-button")
-        self.driver.execute_script('arguments[0].click();', delete_button)
-        
+        # Delete again     
         # Accept emergent alert
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
-        self.driver.switch_to.alert.accept()
-        # Wait for popup to appear
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        click_button_and_answer_alert(self.driver, By.CLASS_NAME, "search-row",
+            "accept", 2)
         # Accept pop up
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        accept_button = path.find_elements(By.TAG_NAME, "button")[0]
-        accept_button.click()
+        view_and_answer_popup(self.driver, "The invoice couldn't be deleted")
         webDriverWait_visible_element(self.driver, By.ID, "rr-title")
 
         self.assertEqual(self.driver.title, "Related Receipts")
@@ -1766,20 +1873,8 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         click_button_and_answer_alert(self.driver, By.ID, "delete-all", 
             "accept")
         
-        # Wait for popup to appear
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-        # Accept pop up
-        popup = self.driver.find_element(By.CLASS_NAME, "popup")
-        
-        self.assertIn("The selected invoices couldn't be deleted because", popup.text)
-        
-        accept_button = popup.find_element(By.TAG_NAME, "button")
-        accept_button.click()
-        
-        WebDriverWait(self.driver, 5).until(
-            EC.invisibility_of_element(popup)
-        )
-
+        # Wait and accept popup 
+        view_and_answer_popup(self.driver, "The selected invoices couldn't be deleted")
         self.assertEqual(SaleInvoice.objects.all().count(), 10)
 
 
@@ -1852,26 +1947,18 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Invoice A 00001-00000001")
 
         # Click on delete button
-        self.driver.find_element(By.ID, "delete-button").click()
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
-        self.driver.switch_to.alert.accept()
-        
-        # Wait for popup and cancel.
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        click_button_and_answer_alert(self.driver, By.CLASS_NAME, "container", 
+            "accept")
 
-        # Cancel pop up
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        path.find_elements(By.TAG_NAME, "button")[1].click()
+        # Wait for and cancel pop up
+        view_and_answer_popup(self.driver, "The invoice couldn't be deleted", 1)
 
-        #  Delete again  
-        self.driver.find_element(By.ID, "delete-button").click()
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
-        self.driver.switch_to.alert.accept()
+        #  Delete again 
+        click_button_and_answer_alert(self.driver, By.CLASS_NAME, "container", 
+            "accept")
     
         # Wait for popup to appear and accept
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
-        path = self.driver.find_element(By.CLASS_NAME, "popup-footer")
-        path.find_elements(By.TAG_NAME, "button")[0].click()
+        view_and_answer_popup(self.driver, "The invoice couldn't be deleted")
         webDriverWait_visible_element(self.driver, By.ID, "rr-title")
 
         self.assertEqual(self.driver.title, "Related Receipts")

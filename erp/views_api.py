@@ -13,8 +13,8 @@ from .serializers import (CClientSerializer, SupplierSerializer,
     SInvoiceDynamicSerializer, DocTypeDynamicSerializer, CClientDynamicSerializer,
     POSDynamicSerializer, SaleReceiptsDynamicSerializer)
 
-from .utils_api import (handle_multiple_instances, return_conflict_status, 
-    SerializerMixin, BulkDeleteMixin,)
+from .utils_api import (handle_multiple_instances, SerializerMixin, BulkDeleteMixin, 
+    DeleteConflictMixin)
 
 
 class CompanyClientAPI(generics.ListAPIView):
@@ -26,16 +26,9 @@ class CompanyClientDeleteAPI(BulkDeleteMixin, generics.GenericAPIView):
     """API delete a list of clients"""
     queryset = CompanyClient.objects.all()
 
-class DetailCompanyClientAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIView):
+class DetailCompanyClientAPI(SerializerMixin, DeleteConflictMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific client"""
     queryset = CompanyClient.objects.all()
-
-    def destroy(self, request, *args, **kwargs):
-        # Identify when there is RestrictError (FK) with 409 status.
-        try:
-            return super().destroy(request, *args, **kwargs)
-        except RestrictedError:
-            return return_conflict_status(RestrictedError)
         
     def get_serializer_class(self):
         # Pick serializer acording to request
@@ -55,17 +48,10 @@ class SupplierDeleteAPI(BulkDeleteMixin, generics.GenericAPIView):
     """API delete a list of suppliers"""
     queryset = Supplier.objects.all()
 
-class DetailSupplierAPI(generics.RetrieveUpdateDestroyAPIView):
+class DetailSupplierAPI(DeleteConflictMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific supplier"""
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
-
-    def destroy(self, request, *args, **kwargs):
-        try:
-            return super().destroy(request, *args, **kwargs)
-        except RestrictedError:
-            return return_conflict_status(RestrictedError)
-
 
 class PaymentMethodAPI(generics.ListCreateAPIView):
     """CRUD API of payment methods"""
@@ -80,11 +66,10 @@ class PaymentMethodAPI(generics.ListCreateAPIView):
             return super().create(request, *args, **kwargs)
 
 
-class DetailPaymentMethodAPI(generics.RetrieveUpdateDestroyAPIView):
+class DetailPaymentMethodAPI(DeleteConflictMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific payment method"""
     queryset = PaymentMethod.objects.all()
     serializer_class = PaymentMethodSerializer
-
 
 class PaymentTermAPI(generics.ListCreateAPIView):
     """CRUD API of payment terms"""
@@ -99,7 +84,7 @@ class PaymentTermAPI(generics.ListCreateAPIView):
             return super().create(request, *args, **kwargs)
 
 
-class DetailPaymentTermAPI(generics.RetrieveUpdateDestroyAPIView):
+class DetailPaymentTermAPI(DeleteConflictMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific payment term"""
     queryset = PaymentTerm.objects.all()
     serializer_class = PaymentTermSerializer
@@ -179,17 +164,9 @@ class SaleInvoicesDeleteAPI(BulkDeleteMixin, generics.GenericAPIView):
     """API delete a list of sale invoices"""
     queryset = SaleInvoice.objects.all()
 
-class SaleInvoiceAPI(SerializerMixin, generics.RetrieveUpdateDestroyAPIView):
+class SaleInvoiceAPI(SerializerMixin, DeleteConflictMixin, generics.RetrieveUpdateDestroyAPIView):
     """CRUD API of specific sale invoice"""
     queryset = SaleInvoice.objects.all()
- 
-    def destroy(self, request, *args, **kwargs):
-        try:
-            return super().destroy(request, *args, **kwargs)
-        except RestrictedError as e:
-            return return_conflict_status(
-                "The invoice you're trying to delete has related receipts."
-            )
         
     def get_serializer_class(self):
         # Pick serializer acording to request

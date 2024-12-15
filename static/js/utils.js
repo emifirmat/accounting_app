@@ -100,3 +100,17 @@ function popupOneButton() {
     popupFooter.querySelectorAll('.popup-button')[0].remove();
     popupFooter.style.justifyContent = 'center';
 }
+
+function showMsgAndRestart(msg) {
+    // Show a msg to the user informing the event and restarts the page
+
+    document.querySelector('#message-section').innerHTML = msg;
+    setTimeout(() => location.reload(), 1000);
+}
+
+function hideSections(...sections) {
+    // Hide sections 
+    
+    sections.forEach(section => section.classList.add('hidden'));
+
+}

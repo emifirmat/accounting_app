@@ -70,10 +70,14 @@ class BulkDeleteMixin:
         return Response(
             {"Deletions": deleted_count}, status=status.HTTP_204_NO_CONTENT
         )
-    
 
-
-    
+class DeleteConflictMixin:
+    """
+    Mixin that handle different deletion conflicts according to the error type.
+    Returns:
+        - No content or generic error status response.
+        - Conflict error status response.
+    """
     def destroy(self, request, *args, **kwargs):
         # Identify when there is RestrictError (FK) with 409 status.
         try:
