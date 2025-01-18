@@ -86,3 +86,10 @@
     position: absolute;
     left: 0;
 }
+
+.item-disabled {
+    color: #a1a1a1; 
+    text-decoration: line-through; 
+    font-style: italic; 
+    opacity: 0.8;
+}

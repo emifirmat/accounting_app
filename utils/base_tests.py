@@ -6,7 +6,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from company.models import Company, FinancialYear
-from erp.models import PaymentTerm, PaymentMethod, CompanyClient, Supplier
+from erp.models import (PaymentTerm, PaymentMethod, CompanyClient, Supplier,
+    PointOfSell)
 
 
 class CreateDbInstancesMixin:
@@ -25,7 +26,14 @@ class CreateDbInstancesMixin:
             PaymentMethod(pay_method="Debit Card"),
             PaymentMethod(pay_method="Check"),
         ])
-    
+
+    def create_extra_pos(self):
+        """Create additional points of sell for testing."""
+        PointOfSell.objects.bulk_create([  
+            PointOfSell(pos_number="00003", disabled=True),
+            PointOfSell(pos_number="00004")
+        ])
+
     def create_company_clients(self):
         self.c_client3 = CompanyClient.objects.create(
             tax_number = "27451008780",

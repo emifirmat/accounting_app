@@ -144,9 +144,12 @@ function displaySection(pCondition, hideIfTerm, hideIfMethod, category) {
 
 function prepareDefaultSection(pCondition) {
     // Add event to default term and default method buttons in advance
-
     const defSection = document.querySelector(`#default-${pCondition}`);
     const defLoadButton = defSection.querySelector('button');
+    
+    // Add loaded status to run click load event once.
+    if (defSection.dataset.loaded === 'true') return
+    defSection.dataset.loaded = 'true';
 
     // Add event to load section
     defLoadButton.addEventListener('click', async event => {

@@ -1,14 +1,38 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async () => {
 
-    // Add new pos
-    document.querySelector('#new-pos').addEventListener('click', event => 
+    // Show sections
+    const newPosButton = document.querySelector('#new-tab');
+    const disablePosButton = document.querySelector('#disable-tab');
+    const showPosButton = document.querySelector('#show-tab');
+    const newSection = document.querySelector('#new-section');
+    const disableSection = document.querySelector('#disable-section');
+    const showSection = document.querySelector('#show-section');
+    
+    // POS list is used for both show and disable functions
+    let posList = await getPosList();
+
+    newPosButton.addEventListener('click', () => {
+        hideSections(disableSection, showSection);
+        newSection.classList.remove('hidden');
+    })
+    disablePosButton.addEventListener('click', () => {
+        hideSections(newSection, showSection);
+        disableSection.classList.remove('hidden');
+    })
+
+    showPosButton.addEventListener('click', async () => {
+        hideSections(disableSection, newSection);
+        showPOSList(posList);
+        showSection.classList.remove('hidden');
+    })
+
+
+    // Event handler for add pos button
+    document.querySelector('#add-pos-button').addEventListener('click', event => 
         addNewPOS(event));
-    // Show pos list
-    document.querySelector('#show-pos-button').addEventListener('click', () =>
-        showPOSList());
-    // Disable a pos
+    // Event handler for Disable pos dropdown
     document.querySelectorAll('.dropdown-item.pos').forEach(element => 
-        element.addEventListener('click', event => disablePOS(event))
+        element.addEventListener('click', event => disablePOS(event, posList))
     );
 
 })
@@ -31,60 +55,76 @@ async function addNewPOS(event) {
     
 }
 
-
-async function showPOSList() {
+async function getPosList() {
     // Get and show list of POS
-    const POSlist = await getList('/erp/api/points_of_sell'); // crud.js
+    try {
+        return await getList('/erp/api/points_of_sell'); // crud.js
+    } catch {
+        console.error('There was an issue trying to get the POS list.')
+    }
+}
+
+
+async function showPOSList(posList) {
     
     // Clean list
-    const POSlistSection = document.querySelector('#pos-list');
-    POSlistSection.innerHTML = '';
+    const posListSection = document.querySelector('#pos-list');
+    posListSection.innerHTML = '';
 
     // Add Title
     const titleSection = document.querySelector('#show-pos-title');
     titleSection.innerHTML = 'Points of Sell';
+
+    // Case: empty list
+    if (!posList.length) posListSection.textContent = 'No Point of Sell has been created yet.';
     
     // Add item from the list
-    POSlist.forEach(item => {
-        const POSlistItem = createElementComplete({
+    posList.forEach(({ pos_number, disabled }) => {
+        const content = `${pos_number}`;
+        
+        const posListItem = createElementComplete({
             tagName: 'li',
-            innerHTML: item.pos_number
+            innerHTML: content,
+            className: disabled ? 'item-disabled' : undefined
         });
-        POSlistSection.append(POSlistItem);
+
+        posListSection.append(posListItem);
     })
 }
 
-async function disablePOS(event) { 
+async function disablePOS(event, posList) { 
     // Disable a POS
-    const POSNumber = event.target.text
+    const posNumber = event.target.text
     const confirmElement = confirm(
-        `Are you sure that you want to disable the POS number ${POSNumber}?`
+        `Are you sure that you want to disable the POS number ${posNumber}?`
     );
     if (!confirmElement) return
     
-    const POSList = await getList('/erp/api/points_of_sell'); // crud.js
-    let POSId;
-
+    let posId;
     // get pos id
-    for (let item of POSList) {
-        if (item.pos_number === POSNumber) {
-            POSId = item.id;
+    for (let item of posList) {
+        if (item.pos_number === posNumber) {
+            posId = item.id;
             break;
         }
     }
     // No match
-    if (POSId === undefined) {
-        console.error('POSId not found.');
+    if (!posId) {
+        console.error('POS id not found.');
         return;
     }
     
     // Disable POS
-    const url = `/erp/api/points_of_sell/${POSId}`;
-    await changeOneAttribute(url, 'disabled', true,
-        'POS disabled successfully.'); // crud.js
+    try {
+        const url = `/erp/api/points_of_sell/${posId}`;
+        await changeOneAttribute(url, 'disabled', true,
+            'POS disabled successfully.'); // crud.js
+    } catch {
+        console.log(`There was an error trying to disable the POS ${posNumber}.`)
+    }
     
     // Show message to user
-    const msg = `Point of Sell ${POSNumber} disabled.`;
+    const msg = `Point of Sell ${posNumber} disabled.`;
     showMsgAndRestart(msg); // utils.js
 
 }

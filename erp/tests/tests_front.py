@@ -881,6 +881,64 @@ class ErpFrontTestCase(FrontBaseTest):
         def_section = self.driver.find_element(By.ID, "default-term")
         self.assertIn("payment term's", def_section.text)
 
+    @tag("erp_payment_cond_def")
+    def test_payment_conditions_term_default_multiple_clicks(self):
+        # Clean payment cond instances and go to Payment Conditions page.
+        PaymentTerm.objects.all().delete()
+        self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
+ 
+        method_tab = self.driver.find_element(By.ID, "method-tab")
+        term_tab = self.driver.find_element(By.ID, "term-tab")
+        default_tab = self.driver.find_element(By.ID, "default-tab")
+        
+        # Click on term > default
+        term_tab.click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-tab")
+        default_tab.click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-term")
+
+        # swap between method and term a few times
+        for _ in range(4): 
+            method_tab.click()
+            webDriverWait_visible_element(self.driver, By.ID, "default-method")
+            term_tab.click()
+            webDriverWait_visible_element(self.driver, By.ID, "default-term")
+        
+        # Click and Dismiss alert
+        click_button_and_answer_alert(self.driver, By.ID, "default-term", "dismiss")
+
+        # If code works correctly, term tab can be clicked
+        method_tab.click()
+    
+    @tag("erp_payment_cond_def")
+    def test_payment_conditions_method_default_multiple_clicks(self):
+        # Clean payment cond instances and go to Payment Conditions page.
+        PaymentMethod.objects.all().delete()
+        self.driver.get(f"{self.live_server_url}/erp/payment_conditions")
+ 
+        method_tab = self.driver.find_element(By.ID, "method-tab")
+        term_tab = self.driver.find_element(By.ID, "term-tab")
+        default_tab = self.driver.find_element(By.ID, "default-tab")
+        
+        # Click on method > default
+        method_tab.click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-tab")
+        default_tab.click()
+        webDriverWait_visible_element(self.driver, By.ID, "default-method")
+
+        # swap between method and term a few times
+        for _ in range(4): 
+            term_tab.click()
+            webDriverWait_visible_element(self.driver, By.ID, "default-term")
+            method_tab.click()
+            webDriverWait_visible_element(self.driver, By.ID, "default-method")
+        
+        # Click and Dismiss alert
+        click_button_and_answer_alert(self.driver, By.ID, "default-method", "dismiss")
+
+        # If code works correctly, term tab can be clicked
+        term_tab.click()
+
     @tag("erp_payment_cond_new")
     def test_payment_conditions_term_new(self):
         # Go to Payment Conditions page.
@@ -1067,33 +1125,73 @@ class ErpFrontTestCase(FrontBaseTest):
         self.assertIn("Transfer", list_section.text)
 
 
-    @tag("erp_pos_n")
-    def test_pos_new(self):
+    @tag("erp_front_pos")
+    def test_pos_toggle(self):
         # Go to POS page.
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
 
-        path = self.driver.find_element(By.ID, "new-pos-form")
+        # check sections are hidden
+        new_section = self.driver.find_element(By.ID, "new-section")
+        show_section = self.driver.find_element(By.ID, "show-section")
+        disable_section = self.driver.find_element(By.ID, "disable-section")
+
+        for section in [new_section, show_section, disable_section]:
+            self.assertFalse(section.is_displayed())
+
+        # Toggle tabs
+        new_tab = self.driver.find_element(By.ID, "new-tab")
+        show_tab = self.driver.find_element(By.ID, "show-tab")
+        disable_tab = self.driver.find_element(By.ID, "disable-tab")
+
+        # New POS
+        click_and_wait(self.driver, "new-tab")
+        WebDriverWait(self.driver, 5).until(
+            text_in_visible_element((By.ID, "new-pos-form"), "Add a new POS")
+        )
+        for section in [show_section, disable_section]:
+            self.assertFalse(section.is_displayed())
+
+        # Show POS
+        click_and_wait(self.driver, "show-tab", 0.2)
+        WebDriverWait(self.driver, 5).until(
+            text_in_visible_element((By.ID, "show-pos-title"), "Points of Sell")
+        )
+        for section in [new_section, disable_section]:
+            self.assertFalse(section.is_displayed())
+
+        # Disable Pos
+        click_and_wait(self.driver, "disable-tab", 0.2)
+        webDriverWait_visible_element(self.driver, By.ID, "dropdown-disable-menu")
+        for section in [new_section, show_section]:
+            self.assertFalse(section.is_displayed())
+
+    @tag("erp_front_pos")
+    def test_pos_new(self):
+        self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
+
+        # Go to new POS section
+        click_and_wait(self.driver, "new-tab", 0.2)
+        webDriverWait_visible_element(self.driver, By.ID, "new-section")
+        new_pos_form = self.driver.find_element(By.ID, "new-pos-form")
         
-        # Write new pos in form        
-        fill_field(self.driver, path, "pos_number", "00003")
-        path.find_element(By.TAG_NAME, "button").click()
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        # Write new pos in form   
+        fill_field(self.driver, new_pos_form, "pos_number", "00003")
+        click_button_and_answer_alert(self.driver, By.ID, "new-pos-form", "accept")
     
         # Check if it was added
-        self.driver.switch_to.alert.accept()
         WebDriverWait(self.driver, 10).until(
             EC.text_to_be_present_in_element(
                 (By.ID, "message-section"), "Point of Sell added succesfully."
             )
         )
 
-    @tag("erp_pos_v")
+    @tag("erp_front_pos")
     def test_pos_view(self):
-        # Go to POS page.
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
         
-        # click on show all POS
-        self.driver.find_element(By.ID, "show-pos-button").click()
+        # Go to show POS section
+        click_and_wait(self.driver, "show-tab", 0.2)
+        webDriverWait_visible_element(self.driver, By.ID, "show-section")
         
         # Check that list appears
         WebDriverWait(self.driver, 10).until(
@@ -1102,31 +1200,58 @@ class ErpFrontTestCase(FrontBaseTest):
                 "Points of Sell"
             )
         )
-        path = self.driver.find_element(By.ID, "pos-list")
-        self.assertIn("00001", path.text)
-    
-    @tag("erp_pos_d")
-    def test_pos_disable(self):
-        # Go to POS page.
+        pos_list = self.driver.find_element(By.ID, "pos-list")
+        self.assertIn("00001", pos_list.text)
+
+    @tag("erp_front_pos_n")
+    def test_pos_view_empty(self):
+        self.pos1.delete()
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
+        
+        # Go to show POS section
+        click_and_wait(self.driver, "show-tab")
+        webDriverWait_visible_element(self.driver, By.ID, "show-section")
+        
+        # Check that text appears
+        WebDriverWait(self.driver, 5).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "pos-list"), "No Point of Sell has been"
+            )
+        )
+        pos_list = self.driver.find_element(By.ID, "pos-list")
+        self.assertNotIn("00001", pos_list.text)
+
+    
+    @tag("erp_front_pos")
+    def test_pos_disable(self):
+        url = f"{self.live_server_url}/erp/points_of_sell"
+        self.driver.get(url)
+
+        # Go to disable POS section
+        click_and_wait(self.driver, "disable-tab", 1) # 0.8 is not enough
+        webDriverWait_visible_element(self.driver, By.ID, "disable-section")
 
         # click on disable a pos
         self.driver.find_element(By.ID, "dropdown-disable-menu").click()
         self.driver.find_elements(By.CSS_SELECTOR, ".dropdown-item.pos")[0].click()
-        WebDriverWait(self.driver, 10).until(EC.alert_is_present())
+        WebDriverWait(self.driver, 5).until(EC.alert_is_present())
         
         # Confirm and Check if it was disabled
         self.driver.switch_to.alert.accept()
-        WebDriverWait(self.driver, 10).until(
-            EC.text_to_be_present_in_element(
+        WebDriverWait(self.driver, 5).until(EC.text_to_be_present_in_element(
                 (By.ID, "message-section"),
                 "Point of Sell 00001 disabled."
             )
         )
         
-        # Check new page with no pos
-        path = self.driver.find_element(By.ID, "no-pos")
-        self.assertIn("No Point of Sell has been created yet.", path.text)
+        # Check disabled status 
+        time.sleep(1.5) # Sleep 1.5 sec to let page reload
+        self.driver.find_element(By.ID, "show-tab").click()
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "item-disabled")
+
+        self.driver.find_element(By.ID, "disable-tab").click()
+        disable_section = self.driver.find_element(By.ID, "disable-section")
+        self.assertIn('No Point of Sell', disable_section.text)
 
     @tag("erp_doc_types")
     def test_doc_types_visibility(self):
@@ -1420,17 +1545,17 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Search Receipt")
         go_to_section(self.driver, "receivables", 4)    
         self.assertEqual(self.driver.title, "Receipt List")
-
+         
     def test_sales_new_invoice_numbers(self):
         # Go to Sales new invoice page.
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/new")
         
-        # Check sender field is the company
+            # Check sender field is the company
         sender_field = Select(self.driver.find_element(By.ID, "id_sender"))
         selected_option = sender_field.first_selected_option
         self.assertIn("TEST COMPANY SRL", selected_option.text)
-        
+
         # Check number field is ""
         number_field = self.driver.find_element(By.ID, "id_number")
         self.assertEqual(number_field.get_attribute('value'), "")
@@ -2573,7 +2698,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             "accept")
         
         # Check popup appears and wait for receipt list to disappear
-        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        view_and_answer_popup(self.driver, "receipts have been deleted", buttons=False)
         WebDriverWait(self.driver, 10).until(
             EC.url_changes(url)
         )
@@ -2581,7 +2706,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(SaleReceipt.objects.all().count(), 0)
 
         self.sale_invoice1.refresh_from_db()
-        time.sleep(0.1)
+        time.sleep(0.2) # 0.1 sometimes raise error
         self.assertEqual(self.sale_invoice1.collected, False)
 
         # Check invoices are not there anymore

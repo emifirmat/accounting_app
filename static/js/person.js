@@ -83,7 +83,7 @@ async function getPersonDetails(person, personId) {
 
 }
 
-function showPersonDetails(personDetails, detailDisplay){
+function showPersonDetails(personDetails, detailDisplay) {
     
     // Reset detailDisplay
     detailDisplay.innerHTML = '';

@@ -804,6 +804,15 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         
         self.assertIn("tax number already exists", page_content)
 
+    def test_client_new_multiple_post_wrong_columns(self):
+        # Get file dir to test
+        file = get_file("erp/tests/files/sales/invoice_one_line.csv")
+   
+        page_content = self.check_page_post_response(["erp:person_new_multiple",
+            {"person_type": "client"}], {"file": file}, 400, (CompanyClient, 2)
+        )
+        
+        self.assertIn("The columns in your file don't match", page_content)
 
     def test_client_new_multiple_post_wrong_data(self):
         # Get file dir to test
@@ -976,13 +985,17 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
 
     def test_sales_new_invoice_get_webpage(self):
-        # Note: 019 | E must be hidden, so it shouldn't appear in the webpage
+        self.create_extra_pos()
+        self.assertEqual(PointOfSell.objects.count(), 4)
+        
+        # type 019 | E and pos 00003 must be hidden, so it shouldn't appear in 
+        # the webpage
         self.check_page_get_response(
             "/erp/sales/invoices/new", 
             "erp:sales_new", 
             "erp/sales_new.html", 
-            ["Create a new invoice", "002 | B"],
-            "019 | E"
+            ["Create a new invoice", "002 | B", "00001", "00002", "00004"],
+            ["019 | E", "00003"]
         )
 
     def test_sales_new_invoice_post_single_line_webpage(self):
@@ -1295,6 +1308,14 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
     
+    def test_sales_new_massive_invoice_post_wrong_columns(self):
+        file = get_file("erp/tests/files/receivables/receipt_one.csv")
+
+        page_content = self.check_page_post_response("erp:sales_new_massive", 
+            {"file": file}, 400, (SaleInvoice, 1))
+        
+        self.assertIn("The columns in your file don't match", page_content)
+    
     def test_sales_new_massive_invoice_post_wrong_data(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong.csv")
 
@@ -1345,6 +1366,16 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertIn("Row 10: Your invoice's information doesn't match with row 9",
             page_content)
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+
+    def test_sales_new_massive_invoices_disabled_pos(self):
+        self.create_extra_pos()
+        file = get_file("erp/tests/files/sales/invoices_disabled_pos.csv")
+  
+        page_content = self.check_page_post_response("erp:sales_new_massive", 
+            {"file": file}, 400, (SaleInvoice, 1))
+
+        self.assertIn("Row 2, general: You cannot include a disabled point of sell.",
+            page_content)
 
     def test_sales_invoice_webpage(self):
         self.create_extra_invoices()
@@ -1535,11 +1566,18 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
 
     def test_receivables_new_receipt_get_webpage(self):
+        self.create_extra_pos()
+        self.assertEqual(PointOfSell.objects.count(), 4)
+        
+        # 00003 should be hidden as it disabled
         self.check_page_get_response(
             "/erp/receivables/receipts/new", 
             "erp:receivables_new",
             "erp/receivables_new.html", 
-            ["Create a new receipt", "Related invoice", "Number"]                   
+            ["Create a new receipt", "Related invoice", "Number", "00001",
+                "00002", "00004"],
+            "00003"
+
         )        
 
     @tag("erp_db_view_receivables_new_post")
@@ -1762,6 +1800,16 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.sale_invoice1.refresh_from_db()
         self.assertEqual(self.sale_invoice1.collected, True)
 
+    def test_receivables_new_massive_receipt_post_wrong_columns(self):
+        file = get_file(
+            "erp/tests/files/sales/invoice_one_line.xlsx"
+        )
+        
+        page_content = self.check_page_post_response("erp:receivables_new_massive", 
+            {"file": file}, 400, (SaleReceipt, 1))
+
+        self.assertIn("The columns in your file don't match", page_content)
+    
     def test_receivables_new_massive_receipt_post_wrong_number_descripcion(self):
         self.create_extra_invoices()
 
@@ -1822,6 +1870,18 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             {"file": file}, 400, (SaleReceipt, 1))
         
         self.assertIn("column recipient doesn't exist in the records.",
+            page_content)
+
+    
+    def test_receivables_new_massive_receipt_disabled_pos(self):
+        self.create_extra_pos()
+        self.create_extra_invoices()
+        file = get_file("erp/tests/files/receivables/receipt_one_disabled_pos.csv")
+  
+        page_content = self.check_page_post_response("erp:receivables_new_massive", 
+            {"file": file}, 400, (SaleReceipt, 1))
+
+        self.assertIn("Row 2, general: You cannot include a disabled point of sell.",
             page_content)
 
     

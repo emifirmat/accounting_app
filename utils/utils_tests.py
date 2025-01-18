@@ -224,7 +224,7 @@ def webDriverWait_visible_element(driver, selector, element_name):
     - selector: Element selector. By.CLASS_NAME, By.TAG_NAME, etc.
     - selector_name: Name of the element that the selector will search.
     """
-    WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, 5).until(
         EC.visibility_of_element_located((selector, element_name))
     )
 
@@ -242,12 +242,13 @@ def click_button_and_answer_alert(driver, parent_selector, parent_name,
     path = driver.find_element(parent_selector, parent_name)
     path.find_elements(By.TAG_NAME, "button")[index].click()
     time.sleep(0.1) # In some tests it's necessary to add this explicit wait
-    WebDriverWait(driver, 10).until(EC.alert_is_present())
+    WebDriverWait(driver, 5).until(EC.alert_is_present())
     if alert_answer == "accept":
         driver.switch_to.alert.accept()
         time.sleep(0.4) # Some sections need some time to continue (0.3 sometimes raise error)
     elif alert_answer == "dismiss":
         driver.switch_to.alert.dismiss()
+    WebDriverWait(driver, 5).until_not(EC.alert_is_present())
 
 def filter_field(driver, keys, visible_element=None, invisible_element=None):
     """
@@ -285,7 +286,7 @@ def wait_visible_invisible(driver, locator_visible, locator_invisible):
         EC.invisibility_of_element_located(locator_invisible)
     )
 
-def view_and_answer_popup(driver, message, button_index=0):
+def view_and_answer_popup(driver, message, button_index=0, buttons=True):
     """
     Wait for the popup to appear, check the message, accepts/rejects and wait 
     until it dissapear. 
@@ -293,21 +294,24 @@ def view_and_answer_popup(driver, message, button_index=0):
     - driver: Webdriver.
     - message: Message that the pop up should display.
     - button_index: Default 0. 0= accept, 1= reject.
+    - buttons: default True, determine if the pop-up have buttons or not.
     """
     WebDriverWait(driver, 5).until(text_in_visible_element(
             (By.CLASS_NAME, "popup"), message
         )
     )
-    path = driver.find_element(By.CLASS_NAME, "popup-footer")
-    path.find_elements(By.TAG_NAME, "button")[button_index].click()
+    if buttons:
+        path = driver.find_element(By.CLASS_NAME, "popup-footer")
+        path.find_elements(By.TAG_NAME, "button")[button_index].click()
+        time.sleep(0.2)
 
     WebDriverWait(driver, 5).until(
         EC.invisibility_of_element_located((By.CLASS_NAME, "popup"))
     )
 
 
-
 # By section functions
+
 
 def delete_person_click_on_delete(driver): # TODO
     """In delete client/supplier section, click on delete button"""
@@ -412,17 +416,20 @@ def load_new_collected_option(driver, selected_option):
     if selected_option == "All":
         opt_index = 0
         opt_value = "op1"
+        waiting_time = 1 
     elif selected_option == "Collected":
         opt_index = 2
         opt_value = "op2"
+        waiting_time = 0.3 
     else:
         opt_index = 1
         opt_value = "op3"
+        waiting_time = 0.5 
 
     for _ in range(5):
         try:
             pick_option_by_index(driver, "id_collected", opt_index, selected_option)
-            time.sleep(0.6)
+            time.sleep(waiting_time)
             WebDriverWait(driver, 1).until(
                 EC.text_to_be_present_in_element_attribute(
                     (By.ID, "id_collected"), "data-status", f"loaded-{opt_value}"

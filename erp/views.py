@@ -74,10 +74,16 @@ def person_new_multiple(request, person_type):
             df = read_uploaded_file(file)
             
             # Check all columns exist and Standarize columns names and blanks
-            check_column_len(df, 5)
-            df = standarize_dataframe(df)
-            person_fields = get_model_fields_name(PersonModel)
-            check_column_names(df, person_fields)
+            try: 
+                check_column_len(df, 5)
+                df = standarize_dataframe(df)
+                person_fields = get_model_fields_name(PersonModel)
+                check_column_names(df, person_fields)
+            except ValueError:
+                return HttpResponseBadRequest(
+                    f"The columns in your file don't match the required format."
+                )
+            
 
             # Pass all values in model
             try:
@@ -285,16 +291,21 @@ def sales_new_massive(request):
             # Read file according to the extension
             df = read_uploaded_file(file, "issue_date")
            
-            # Check all columns exist   
-            check_column_len(df, 12)
-             # Standarize and check all columns have the right name
-            df = standarize_dataframe(df)
-            document_fields = get_model_fields_name(SaleInvoice, "collected")
-            line_fields = get_model_fields_name(SaleInvoiceLine, "total_amount",
-                "sale_invoice"
-            )
-            total_fields = document_fields + line_fields
-            check_column_names(df, total_fields)
+            try:
+                # Check all columns exist   
+                check_column_len(df, 12)
+                # Standarize and check all columns have the right name
+                df = standarize_dataframe(df)
+                document_fields = get_model_fields_name(SaleInvoice, "collected")
+                line_fields = get_model_fields_name(SaleInvoiceLine, "total_amount",
+                    "sale_invoice"
+                )
+                total_fields = document_fields + line_fields
+                check_column_names(df, total_fields)
+            except ValueError:   
+                return HttpResponseBadRequest(
+                    f"The columns in your file don't match the required format."
+                )
      
             # Pass all values in model
             try:
@@ -553,15 +564,20 @@ def receivables_new_massive(request):
             # Read file according to the extension
             df = read_uploaded_file(file, "issue_date")
            
-            # Check all columns exist   
-            check_column_len(df, 10)
-            # Standarize and check all columns have the right name
-            df = standarize_dataframe(df)
-            document_fields = get_model_fields_name(SaleReceipt, "related_invoice")
-            for field in ["ri_type", "ri_pos", "ri_number"]:
-                document_fields.append(field)
-
-            check_column_names(df, document_fields)
+            try:
+                # Check all columns exist   
+                check_column_len(df, 10)
+                # Standarize and check all columns have the right name
+                df = standarize_dataframe(df)
+                document_fields = get_model_fields_name(SaleReceipt, "related_invoice")
+                for field in ["ri_type", "ri_pos", "ri_number"]:
+                    document_fields.append(field)
+                check_column_names(df, document_fields)
+            except ValueError:   
+                 return HttpResponseBadRequest(
+                        f"The columns in your file don't match the required format."
+                    )
+     
      
             # Pass all values in model
             try:

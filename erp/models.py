@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from .validators import (validate_is_digit, validate_in_current_year, 
     validate_invoices_date_number_correlation, validate_receipt_date_number_correlation,
-    validate_receipt_total_amount)
+    validate_receipt_total_amount, validate_not_disabled_pos)
 from company.models import PersonModel, Company
 
 # Create your models here.
@@ -92,11 +92,11 @@ class PointOfSell(models.Model):
     pos_number = models.CharField(max_length=5, unique=True, validators=[
         validate_is_digit
     ])
-    # Delete is now allowed in POS
+    # Delete is not allowed in POS
     disabled = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        # Complete numbers with 0
+        # Fill numbers with 0
         self.pos_number = self.pos_number.zfill(5)
         return super(PointOfSell, self).save(*args, **kwargs)
     
@@ -185,9 +185,10 @@ class SaleInvoice(CommercialDocumentModel):
         return f"{self.type.type} {self.point_of_sell}-{self.number}"
     
     def clean(self):
-        """Add date validator for invoice"""
+        """Add date and pos validators for invoice"""
         super().clean()
         validate_invoices_date_number_correlation(__class__, self)
+        validate_not_disabled_pos(self)
         
 class SaleInvoiceLine(CommercialDocumentLineModel):
     """Product/service detail of the sale invoice"""
@@ -223,6 +224,7 @@ class SaleReceipt(CommercialDocumentModel):
         super().clean()
         validate_receipt_date_number_correlation(__class__, self)
         validate_receipt_total_amount(__class__, self)
+        validate_not_disabled_pos(self)
 
 class PurchaseInvoice(CommercialDocumentModel):
     """Record a purchase invoice"""

@@ -48,7 +48,7 @@ def list_file_errors(error_type, row_index):
 def check_column_len(df, length):
     """Control that the file has the expected number of columns"""
     if len(df.columns) != length:
-        return HttpResponseBadRequest(f"The number of columns must be {length}")
+        raise ValueError
     
 def standarize_dataframe(df): 
     """Standarize columns' name and change NaN cells to blank"""
@@ -59,7 +59,7 @@ def check_column_names(df, field_list):
     """Check that the name of each column matches the fields' name of the model"""
     for field in field_list:
         if field not in df.columns:
-            return HttpResponseBadRequest(f"Column {field} not found.")
+            raise ValueError
         
 def get_model_fields_name(model, *exclude):
     """Get the names of the fields in a model"""

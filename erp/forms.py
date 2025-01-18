@@ -122,17 +122,20 @@ class SaleInvoiceForm(forms.ModelForm):
         # Customize issue_date field
         self.fields["issue_date"].input_formats = ["%d/%m/%Y"]
         self.fields["issue_date"].initial = datetime.now()
+
+        # Type field, show only visible types
+        self.fields["type"].queryset = DocumentType.objects.filter(hide=False)
         
+        # Point of sell field, show only enabled POS
+        self.fields["point_of_sell"].queryset = PointOfSell.objects.filter(disabled=False)
+
         # Define sender as the company
         sender = Company.objects.first()
         if sender:
             self.fields["sender"].initial = sender
             self.fields["sender"].disabled = True
 
-        # In type field, show only visible types
-        self.fields["type"].queryset = DocumentType.objects.filter(hide=False)
-
-
+    
 class SaleInvoiceLineForm(forms.ModelForm):
     """Create a new line of products details for an especific invoice"""
     class Meta:
@@ -145,7 +148,6 @@ class SaleInvoiceLineForm(forms.ModelForm):
             "taxable_amount": "Total amount.",
             "vat_amount": "Total amount.",
         }
-
 
 SaleInvoiceLineFormSet = inlineformset_factory(
     SaleInvoice, SaleInvoiceLine, form=SaleInvoiceLineForm, extra=1, 
@@ -263,6 +265,9 @@ class SaleReceiptForm(forms.ModelForm):
         self.fields["issue_date"].input_formats = ["%d/%m/%Y"]
         self.fields["issue_date"].initial = datetime.now()
         
+        # Point of sell: show only enabled pos
+        self.fields["point_of_sell"].queryset = PointOfSell.objects.filter(disabled=False)
+
         # Define sender as the company
         sender = Company.objects.first()
         if sender:
@@ -282,6 +287,9 @@ class SaleReceiptForm(forms.ModelForm):
             self.fields["related_invoice"].queryset = SaleInvoice.objects.filter(
                 collected=False
             )
+
+        
+
 
 class SearchReceiptForm(forms.Form):
     """Fields for the receipt search"""

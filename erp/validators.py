@@ -95,3 +95,10 @@ def validate_receipt_total_amount(model, instance):
         raise ValidationError(
             f"The sum of your receipts cannot be higher than invoice total amount."
         )
+
+def validate_not_disabled_pos(instance):
+    """Check that the pos field has false in disabled attribute"""
+    if instance.point_of_sell.disabled:
+        raise ValidationError(
+            f"You cannot include a disabled point of sell."
+        )
