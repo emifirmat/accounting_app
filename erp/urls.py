@@ -20,6 +20,10 @@ urlpatterns = [
     # Show a person's related documents webpage
     path("<str:person_type>/<int:person_pk>/related_documents", 
         views.person_related_docs, name="person_rel_docs"),
+    # Show a person's current account webpage
+    path("<str:person_type>/current_account", 
+        views.person_current_account, name="person_cur_account"),
+    
     # Payment conditions
     path("payment_conditions", views.payment_conditions, name="payment_conditions"),
     # Point of sells
@@ -106,4 +110,6 @@ urlpatterns = [
         name="sale_receipts_delete_api"),
     path("api/sale_receipts/<int:pk>", views_api.SaleReceiptAPI.as_view(), 
         name="sale_receipt_api"),
+
+
 ]

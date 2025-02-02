@@ -123,6 +123,14 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
             payment_term = cls.pay_term2,
         )
 
+        cls.sale_invoice2_line1 = SaleInvoiceLine.objects.create(
+            sale_invoice = cls.sale_invoice2,
+            description = "Test sale invoice 2",
+            taxable_amount = Decimal("999.99"),
+            not_taxable_amount = Decimal("0.02"),
+            vat_amount = Decimal("209.09"),
+        )
+
         cls.sale_invoice3 = SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 23),
             type = cls.doc_type1,

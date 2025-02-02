@@ -1,10 +1,14 @@
 {% extends "erp/sales_new.html" %}
 
-{% block title %}Edit Invoice {% endblock title %}
+{% block title %}Edit Invoice{% endblock title %}
 
 {% block edit_title %}
-    <h3 id="document-title" data-document="invoice" data-action="edit">Edit Invoice</h3>
-    <p id="invoice-link"><a  href="{{ invoice.get_absolute_url }}">Go back</a> to invoice detail.</p>    
+    <h3 id="document-title" data-document="invoice" data-action="edit">
+        Edit Invoice <span class="smaller-text">{{ invoice }}</span></h3>
+    
+    <p id="invoice-link">
+        Go to <a href="{{ invoice.get_absolute_url }}">invoice detail</a>.
+    </p>    
 {% endblock edit_title %}
 
 {% block edit_form_action %}{% url 'erp:sales_edit' invoice.pk %}{% endblock edit_form_action %}

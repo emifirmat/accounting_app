@@ -152,10 +152,11 @@ function searchComDocuments(comDocument, comDocumentList, ...fields) {
         }
         
         createHeaders(searchHeaders, headers);
-        
         let baseUrl = '';
+        
         for (let cDocument of filteredCDocumentList) {
-            // Create list item and buttons in html     
+            // Create list item and buttons in html    
+            let endUrl = '';   
             let gridColumns = '';
             let itemContent = `<div class=search-cell>
             <input type=checkbox class="checkbox" data-id="${cDocument.id}"></div>`;

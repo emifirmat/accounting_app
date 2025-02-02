@@ -96,16 +96,6 @@ async function deleteMultipleDocuments(commercialDocument, selectedIds, redirect
             return false;
         }
 
-        // If a receipt was deleted, update collected status in invoice
-        if (commercialDocument === 'receipt') {
-            relatedInvoices.forEach(async rInvoice => {
-                if (rInvoice.total_amount != 0) {
-                    const updateUrl = `/erp/api/sale_invoices/${rInvoice.related_invoice}`; // crud.js
-                    await changeOneAttribute(updateUrl, 'collected', false); // crud.js
-                }
-            })
-        }
-
         // element to append the popup
         showPopUp('animation', redirectUrl,
             `The ${commercialDocument}s have been deleted successfully.`

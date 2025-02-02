@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ person_type|capfirst }} Current Account {% endblock title %}
+
+{% block body %}
+
+    <h3>Client Current Account</h3>
+
+    <ul class="nav nav-pills justify-content-center mb-4" id="main-tab-section" 
+    role="tablist">
+        <li class="nav-item me-4 disabled" role="presentation">
+            <button class="nav-link" id="overview-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab1" data-condition="method" type="button" role="tab" 
+            aria-controls="tab1" aria-selected="false" data-clicked="false">
+            Overview</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="search-tab" data-bs-toggle="tab" 
+            data-bs-target="#tab2" data-condition="term" type="button" role="tab" 
+            aria-controls="tab2" aria-selected="false" data-clicked="false">
+            Search</button>
+        </li>
+    </ul>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-5">
+                <h5>Current account by 31/12/{{ current_year.year }}</h5>
+                <h6>$ {{ total_clients|floatformat:2 }}</h6>
+            </div>
+            <div class="col-1"></div>
+            <div class="col-5">
+                <h5>Current account by 31/12/{{ current_year.year|add:"-1" }}</h5>
+                <h6>$ {{ total_clients_prev|floatformat:2 }}</h6>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-5">
+                <div class="row headers">
+                    <div class="col-4">{{ person_type|capfirst }}</div>
+                    <div class="col-4">Tax Number</div>
+                    <div class="col-4">Balance</div>
+                </div>
+                {% for client in clients_current_ca %}
+                    <div class="specific-person row">
+                        <div class="col-4">{{ client.client__name }}</div>
+                        <div class="col-4">{{ client.client__tax_number }}</div>
+                        <div class="col-4">$ {{ client.global_balance|floatformat:2 }}</div>
+                    </div>
+                {% empty %}
+                    <p>You haven't done any transactions this year.</p>   
+                {% endfor %}
+            </div>
+            <div class="col-1"></div>
+            <div class="col-5">
+                <div class="row headers">
+                    <div class="col-4">{{ person_type|capfirst }}</div>
+                    <div class="col-4">Tax Number</div>
+                    <div class="col-4">Balance</div>
+                </div>
+                {% for client in clients_prev_ca %}
+                    <div class="specific-person row">
+                        <div class="col-4">{{ client.client__name }}</div>
+                        <div class="col-4">{{ client.client__tax_number }}</div>
+                        <div class="col-4">$ {{ client.global_balance|floatformat:2 }}</div>
+                    </div>
+                {% empty %}
+                    <p>You haven't done any transactions this year.</p>   
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+{% endblock body %}

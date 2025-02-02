@@ -1,10 +1,12 @@
 import csv, os
 import pandas as pd
+from datetime import datetime
 from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.conf import settings
 from django.db import transaction, IntegrityError
 from django.db.models import Sum, F
+from django.db.models.functions import Coalesce
 from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
@@ -19,7 +21,7 @@ from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermFor
     SaleReceiptForm, SearchReceiptForm, AddSaleReceiptsFileForm)
 from .models import (Company, CompanyClient, Supplier, PaymentMethod, 
     PaymentTerm, PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine,
-    SaleReceipt, PurchaseInvoice, PurchaseReceipt)
+    SaleReceipt, PurchaseInvoice, PurchaseReceipt, ClientCurrentAccount)
 from .utils import (read_uploaded_file, check_column_len, standarize_dataframe,
 check_column_names, list_file_errors, get_model_fields_name, get_sale_invoice_objects,
 update_invoice_collected_status)
@@ -185,6 +187,36 @@ def person_related_docs(request, person_type, person_pk):
         "receipt_list": receipt_list,
     })
 
+def person_current_account(request, person_type):
+    """Clients/Supplier's current account"""
+    financial_year = FinancialYear.objects.filter(current=True).first()
+    prev_year = int(financial_year.year) - 1
+    # current year cca
+    clients_current_ca = ClientCurrentAccount.objects.filter(
+        date__lte=datetime(int(financial_year.year), 12, 31)
+    ).values("client", "client__name", 'client__tax_number').annotate(
+        global_balance=Coalesce(Sum("amount"), Decimal(0))
+    ).order_by("-global_balance")
+    total_clients_cur = clients_current_ca.aggregate(total_sum=Sum("global_balance"))["total_sum"] or 0
+
+    # previous year cca
+    clients_prev_ca = ClientCurrentAccount.objects.filter(
+        date__lte=datetime(prev_year, 12, 31)
+    ).values("client", "client__name", 'client__tax_number').annotate(
+        global_balance=Coalesce(Sum("amount"), Decimal(0))
+    ).order_by("-global_balance")
+    total_clients_prev = clients_prev_ca.aggregate(total_sum=Sum("global_balance"))["total_sum"] or 0
+
+    return render(request, "erp/person_current_account.html", {
+        "person_type": person_type,
+        "current_year": financial_year,
+        "clients_current_ca": clients_current_ca,
+        "clients_prev_ca": clients_prev_ca,
+        "total_clients": total_clients_cur,
+        "total_clients_prev": total_clients_prev
+
+    })
+
 def supplier_index(request):
     """Supplier's overview page"""
     financial_year = FinancialYear.objects.filter(current=True).first()
@@ -259,15 +291,21 @@ def sales_index(request):
 def sales_new(request):
     """New sale invoices webpage"""
     if request.method == "POST":
+        # Get invoices and invoice's lines forms
         invoice_form = SaleInvoiceForm(request.POST)
         line_formset = SaleInvoiceLineFormSet(request.POST)
+        
         if invoice_form.is_valid() and line_formset.is_valid():
+            # Process forms and update client's current account
             with transaction.atomic():
                 sale_invoice = invoice_form.save()
                 sale_lines = line_formset.save(commit=False)
                 for sale_line in sale_lines:
                     sale_line.sale_invoice = sale_invoice
                     sale_line.save() 
+                
+                sale_invoice.update_current_account()
+                
                 return HttpResponseRedirect(reverse("erp:sales_invoice", 
                     args=[sale_invoice.id]
                 ))
@@ -400,6 +438,8 @@ def sales_new_massive(request):
                             new_line.save()
                         except ValidationError as ve:
                             raise ValueError(list_file_errors(ve, index))
+                        # Update client's current account
+                        new_invoice.update_current_account()
             except ValueError as e:
                  return HttpResponseBadRequest(str(e))   
                     
@@ -445,6 +485,7 @@ def sales_edit(request, inv_pk):
             with transaction.atomic():
                 invoice_form.save()
                 line_formset.save()
+                invoice.update_current_account()
 
             return HttpResponseRedirect(
                 reverse("erp:sales_invoice", args=[invoice.id])
@@ -539,11 +580,6 @@ def receivables_new(request):
         receipt_form = SaleReceiptForm(request.POST)
         if receipt_form.is_valid():
             receipt = receipt_form.save()
-            
-            # Check and update invoice's collected attribute
-            invoice = receipt.related_invoice
-            invoice.collected = update_invoice_collected_status(invoice)
-            invoice.save()
 
             return HttpResponseRedirect(reverse("erp:receivables_receipt", 
                 args=[receipt.id]))
@@ -577,8 +613,6 @@ def receivables_new_massive(request):
                  return HttpResponseBadRequest(
                         f"The columns in your file don't match the required format."
                     )
-     
-     
             # Pass all values in model
             try:
                 with transaction.atomic():
@@ -604,7 +638,6 @@ def receivables_new_massive(request):
                                 f"doesn't exist in the records."
                             )
                             raise ValueError(error_message)
-
                         # Control if it's new invoice or line
                         try:
                             new_receipt = SaleReceipt(
@@ -635,12 +668,6 @@ def receivables_new_massive(request):
                                 f"{new_receipt.number} already exists or "
                                 f"repeated in file."
                             )
-                        # Update invoice collected status
-                        else:
-                            invoice = new_receipt.related_invoice
-                            invoice.collected = update_invoice_collected_status(
-                                invoice)
-                            invoice.save()
                         
             except ValueError as e:
                  return HttpResponseBadRequest(str(e))   
@@ -682,11 +709,7 @@ def receivables_edit(request, rec_pk):
             if old_r_invoice != invoice:
                 old_r_invoice.collected = update_invoice_collected_status(
                     old_r_invoice)
-                old_r_invoice.save()
-
-            # Check and update invoice's collected attribute
-            invoice.collected = update_invoice_collected_status(invoice)
-            invoice.save()     
+                old_r_invoice.save()   
 
             return HttpResponseRedirect(reverse("erp:receivables_receipt", 
                 args=[receipt.pk]

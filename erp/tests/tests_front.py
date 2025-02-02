@@ -18,7 +18,8 @@ from selenium.webdriver.support.ui import WebDriverWait, Select
 
 from company.models import Company, FinancialYear
 from ..models import (CompanyClient, Supplier, PaymentMethod, PaymentTerm,
-    PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt)
+    PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine, SaleReceipt,
+    ClientCurrentAccount)
 from utils.utils_tests import (go_to_section, element_has_selected_option, 
     click_button_and_show, fill_field, webDriverWait_visible_element,
     click_button_and_answer_alert, pay_conditions_click_default, go_to_link,
@@ -131,8 +132,6 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
             recipient = self.c_client1,
             payment_method = self.pay_method1,
             payment_term = self.pay_term1,
-            # Set collected manually, as this attribute is modified in views.
-            collected = True, 
         )
         
         self.sale_invoice1_line1 = SaleInvoiceLine.objects.create(
@@ -149,6 +148,7 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
             not_taxable_amount = Decimal("00.01"),
             vat_amount = Decimal("209.99"),
         )
+        self.sale_invoice1.update_current_account()
 
         self.sale_receipt1 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
@@ -159,7 +159,7 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
             sender = self.company,
             recipient = self.c_client1,
             total_amount = Decimal("2509.01"),
-        )
+        )    
 
 
 """Tests"""
@@ -1190,7 +1190,7 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
         
         # Go to show POS section
-        click_and_wait(self.driver, "show-tab", 0.2)
+        click_and_wait(self.driver, "show-tab", 0.4)
         webDriverWait_visible_element(self.driver, By.ID, "show-section")
         
         # Check that list appears
@@ -1228,7 +1228,7 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.get(url)
 
         # Go to disable POS section
-        click_and_wait(self.driver, "disable-tab", 1) # 0.8 is not enough
+        click_and_wait(self.driver, "disable-tab", 1.5) # 1.2 is not enough
         webDriverWait_visible_element(self.driver, By.ID, "disable-section")
 
         # click on disable a pos
@@ -1465,11 +1465,16 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             vat_amount = Decimal("10"),
         )
         
+        for invoice in [self.sale_invoice2, self.sale_invoice3, self.sale_invoice4,
+            self.sale_invoice5, self.sale_invoice6, self.sale_invoice7, 
+            self.sale_invoice8, self.sale_invoice9, self.sale_invoice10
+        ]:
+            invoice.update_current_account()
+       
+
     def create_extra_receipts(self): 
         """Create extra receipts if it's necessary """
         self.create_extra_invoices() # Function dependant
-        self.sale_invoice2.collected = True # Update invoice 2 status
-        self.sale_invoice2.save()
         
         self.sale_receipt2 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 22),
@@ -1479,7 +1484,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             related_invoice = self.sale_invoice2,
             sender = self.company,
             recipient = self.c_client1,
-            total_amount = Decimal("600.01"),
+            total_amount = Decimal("600.10"),
         )
         self.sale_receipt3 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 23),
@@ -1837,13 +1842,46 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertIn("00001", invoice_list[0].text)
         
         # Click on edit button
-        click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url, path)
+        click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url, path, -1)
         self.assertEqual(self.driver.title, "Edit Invoice")
+        WebDriverWait(self.driver, 7).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "document-title"), "A 00001-00000001"
+            )
+        )
+
+    @tag("erp_front_invoice_search_edit")
+    def test_sales_invoice_search_edit_middle(self):
+        self.create_extra_invoices()
+        url = f"{self.live_server_url}/erp/sales/invoices/search"
+        self.driver.get(url)
+
+        # Click to load invoices in js.
+        click_and_wait(self.driver, "id_year")
+
+        path = self.driver.find_element(By.ID, "invoice-list")
+        
+        # Search invoice A 00002-00000001: 
+        # type
+        search_fill_field(self.driver, "id_type", "a ")
+        invoice_list = search_wait_first_input(self.driver, path, "id_type", "a", 4)
+        
+        self.assertIn("A", invoice_list[0].text)
+        
+        # Click on edit button
+        click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url, path, 1)
+        self.assertEqual(self.driver.title, "Edit Invoice")
+        WebDriverWait(self.driver, 7).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "document-title"), "A 00002-00000001"
+            )
+        )
         
     @tag("erp_front_invoice_search_delete")
     def test_sales_invoice_search_delete(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 13)
 
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_month")
@@ -1877,11 +1915,13 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             EC.staleness_of(path)
         )
         self.assertEqual(SaleInvoice.objects.all().count(), 9)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 12)
 
-    @tag("erp_front_invoice_search_delete_conflict")
+    @tag("erp_front_invoice_search_delete")
     def test_sales_invoice_search_delete_conflict(self):
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/search")
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 13)
 
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_pos")
@@ -1925,6 +1965,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         self.assertEqual(self.driver.title, "Related Receipts")
         self.assertEqual(SaleInvoice.objects.all().count(), 10)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 13)
 
 
     @tag("erp_front_invoice_search_delete_multiple")
@@ -1932,6 +1973,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.create_extra_invoices()
         url = f"{self.live_server_url}/erp/sales/invoices/search"
         self.driver.get(url)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 13)
 
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_month")
@@ -1966,6 +2008,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         )
         
         self.assertEqual(SaleInvoice.objects.all().count(), 7)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 10)
 
         # Check invoices are not there anymore
         overview = self.driver.find_element(By.TAG_NAME, "main")
@@ -1977,6 +2020,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.create_extra_invoices()
         url = f"{self.live_server_url}/erp/sales/invoices/search"
         self.driver.get(url)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 13)
 
         # Click to load invoices in js.
         click_and_wait(self.driver, "id_month")
@@ -2001,6 +2045,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Wait and accept popup 
         view_and_answer_popup(self.driver, "The selected invoices couldn't be deleted")
         self.assertEqual(SaleInvoice.objects.all().count(), 10)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 13)
 
 
     @tag("erp_front_invoice_edit")
@@ -2049,10 +2094,11 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
     @tag("erp_front_invoice_delete")
     def test_sales_invoice_delete(self):
-        # Go to invoice 1 webpage.
+        # Go to invoice 7 webpage.
         self.create_extra_invoices()
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice7.pk}")
         self.assertEqual(self.driver.title, "Invoice A 00002-00000001")
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 13)
 
         # Click on delete button
         self.driver.find_element(By.ID, "delete-button").click()
@@ -2064,12 +2110,16 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             EC.url_changes(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice7.pk}")
         )
         self.assertEqual(self.driver.title, "Sales")
+        
+        # Check client CA was updated
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 12)
 
     @tag("erp_front_invoice_delete")
     def test_sales_invoice_delete_conflict(self):
         # Go to invoice 1 webpage.
         self.driver.get(f"{self.live_server_url}/erp/sales/invoices/{self.sale_invoice1.pk}")
         self.assertEqual(self.driver.title, "Invoice A 00001-00000001")
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
 
         # Click on delete button
         click_button_and_answer_alert(self.driver, By.CLASS_NAME, "container", 
@@ -2088,6 +2138,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         self.assertEqual(self.driver.title, "Related Receipts")
         self.assertEqual(SaleInvoice.objects.all().count(), 1)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
 
     @tag("erp_front_invoice_rel_receipts_link")
     def test_sales_invoice_rel_receipts_links_invoice(self):
@@ -2614,7 +2665,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         url = f"{self.live_server_url}/erp/receivables/receipts/search"
         self.driver.get(url)
 
-        # Click to load invoices in js.
+        # Click to load receipts in js.
         click_and_wait(self.driver, "id_year")
 
         path = self.driver.find_element(By.ID, "receipt-list")
@@ -2630,6 +2681,35 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Click on edit button
         click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url)
         self.assertEqual(self.driver.title, "Edit Receipt") 
+
+    @tag("erp_front_receipt_search_edit")
+    def test_receivables_receipt_search_edit_middle(self):
+        self.create_extra_receipts()
+        url = f"{self.live_server_url}/erp/receivables/receipts/search"
+        self.driver.get(url)
+
+        # Click to load receipts in js.
+        click_and_wait(self.driver, "id_year")
+
+        path = self.driver.find_element(By.ID, "receipt-list")
+        
+        # Search receipt 00001-00000003: 
+        # type
+        search_fill_field(self.driver, "id_pos", "1")
+        receipt_list = search_wait_first_input(self.driver, path, "id_pos",
+            "1", 4)
+        
+        self.assertIn("00001-00000004", receipt_list[0].text)  
+        
+        # Click on edit button
+        click_and_redirect(self.driver, By.CLASS_NAME, "edit-button", url, index=1)
+        self.assertEqual(self.driver.title, "Edit Receipt")
+        WebDriverWait(self.driver, 7).until(
+            EC.text_to_be_present_in_element(
+                (By.ID, "document-title"), "00001-00000003"
+            )
+        )
+        
 
     @tag("erp_front_receipt_search_delete")
     def test_receivables_search_receipt_delete(self):
@@ -2667,8 +2747,10 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.sale_invoice2.refresh_from_db()
         time.sleep(0.1)
         self.assertEqual(self.sale_invoice2.collected, False)
+        # 2 clients + 10 invoices + 6 - 1 receipts
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 17)
 
-    @tag("erp_front_receipt_search_delete_multiple")
+    @tag("erp_front_receipt_search_delete")
     def test_receivables_search_receipt_delete_multiple(self):
         self.create_extra_receipts()
         url = f"{self.live_server_url}/erp/receivables/receipts/search"
@@ -2706,8 +2788,10 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(SaleReceipt.objects.all().count(), 0)
 
         self.sale_invoice1.refresh_from_db()
-        time.sleep(0.2) # 0.1 sometimes raise error
+        time.sleep(0.3) # 0.2 sometimes raises error
         self.assertEqual(self.sale_invoice1.collected, False)
+        # 2 clients + 10 invoices + 6 - 6 receipts
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 12)
 
         # Check invoices are not there anymore
         overview = self.driver.find_element(By.TAG_NAME, "main")
@@ -2760,7 +2844,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Check number field is 1
         ri_field = self.driver.find_element(By.ID, "id_related_invoice")
         # Blank option + 8 uncollected invoices + edited invoice
-        web_driver_wait_count(self.driver, ri_field, 10,By.TAG_NAME, "option")
+        web_driver_wait_count(self.driver, ri_field, 10, By.TAG_NAME, "option")
 
         # Pick pos and check new number field
         checkbox = self.driver.find_element(By.ID, "id-collected")
@@ -2803,7 +2887,9 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         # Check DB update
         self.assertEqual(SaleReceipt.objects.all().count(), 0)
         self.sale_invoice1.refresh_from_db()
-        self.assertEqual(self.sale_invoice1.collected, False) 
+        self.assertEqual(self.sale_invoice1.collected, False)
+        # 2 clients + 1 invoice + 1 - 1 receipts
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 3)
         
     @tag("erp_front_receipt_show_list_tabs")
     def test_receivables_show_list_tabs(self):

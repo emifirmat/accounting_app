@@ -49,7 +49,7 @@
     max-width: 50%;
 }
 
-#search-headers, #headers {
+#search-headers, #headers, .headers {
     font-weight: bold;
     text-align: center;
     padding: 10px;
@@ -92,4 +92,8 @@
     text-decoration: line-through; 
     font-style: italic; 
     opacity: 0.8;
+}
+
+.smaller-text {
+    font-size: 0.5em;
 }

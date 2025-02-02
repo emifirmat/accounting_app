@@ -2,6 +2,8 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Sum, Q
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
 
 from .validators import (validate_is_digit, validate_in_current_year, 
@@ -12,13 +14,11 @@ from company.models import PersonModel, Company
 # Create your models here.
 class CurrentAccountModel(models.Model):
     """Base model for a person's current account"""
-    """Amount is the amount of a transaction, not the total"""
-    amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         abstract = True
-
 
 class CommercialDocumentModel(models.Model):
     """Base model for commercial documents"""
@@ -72,16 +72,27 @@ class Supplier(PersonModel):
 
 class ClientCurrentAccount(CurrentAccountModel):
     """Track client's current account"""
-    client = models.ForeignKey(CompanyClient, on_delete=models.CASCADE)
+    client = models.ForeignKey(CompanyClient, on_delete=models.CASCADE, 
+        related_name="current_account")
+    
+    invoice = models.ForeignKey("SaleInvoice", on_delete=models.CASCADE, 
+        blank=True, null=True)
+    receipt = models.ForeignKey("SaleReceipt", on_delete=models.CASCADE,
+        blank=True, null=True)
     
     def __str__(self):
         return f"{self.client}: $ {self.amount}"
-    
+
 
 class SupplierCurrentAccount(CurrentAccountModel):
     """Track suppliers's current account"""
-    """Amount is the amount of a transaction, not the total"""
-    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE,
+        related_name="current_account")
+    
+    invoice = models.ForeignKey("PurchaseInvoice", on_delete=models.CASCADE, 
+        blank=True, null=True)
+    receipt = models.ForeignKey("PurchaseReceipt", on_delete=models.CASCADE,
+        blank=True, null=True)
 
     def __str__(self):
         return f"{self.supplier}: $ {self.amount}"
@@ -158,7 +169,8 @@ class SaleInvoice(CommercialDocumentModel):
     type = models.ForeignKey(DocumentType, on_delete=models.PROTECT)
     point_of_sell = models.ForeignKey(PointOfSell, on_delete=models.PROTECT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(CompanyClient, on_delete=models.RESTRICT)
+    recipient = models.ForeignKey(
+        CompanyClient, on_delete=models.RESTRICT, related_name="invoices")
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.RESTRICT)
     payment_term = models.ForeignKey(PaymentTerm, on_delete=models.RESTRICT)
     collected = models.BooleanField(default=False)
@@ -181,6 +193,16 @@ class SaleInvoice(CommercialDocumentModel):
         )["lines_sum"]
         return round(total_sum, 2)
     
+    def update_current_account(self):
+        """Update client's current account"""
+        ClientCurrentAccount.objects.update_or_create(
+            invoice = self, defaults= {
+                "date": self.issue_date,
+                "client": self.recipient,
+                "amount": self.total_lines_sum()
+            }    
+        )
+      
     def __str__(self):
         return f"{self.type.type} {self.point_of_sell}-{self.number}"
     
@@ -189,6 +211,7 @@ class SaleInvoice(CommercialDocumentModel):
         super().clean()
         validate_invoices_date_number_correlation(__class__, self)
         validate_not_disabled_pos(self)
+
         
 class SaleInvoiceLine(CommercialDocumentLineModel):
     """Product/service detail of the sale invoice"""
@@ -200,7 +223,9 @@ class SaleReceipt(CommercialDocumentModel):
     point_of_sell = models.ForeignKey(PointOfSell, on_delete=models.PROTECT)
     related_invoice = models.ForeignKey(SaleInvoice, on_delete=models.RESTRICT)
     sender = models.ForeignKey(Company, on_delete=models.CASCADE)
-    recipient = models.ForeignKey(CompanyClient, on_delete=models.RESTRICT)
+    recipient = models.ForeignKey(
+        CompanyClient, on_delete=models.RESTRICT, related_name="receipts"
+    )
     description = models.CharField(max_length=280)
     total_amount = models.DecimalField(max_digits=15, decimal_places=2)
 
@@ -225,6 +250,7 @@ class SaleReceipt(CommercialDocumentModel):
         validate_receipt_date_number_correlation(__class__, self)
         validate_receipt_total_amount(__class__, self)
         validate_not_disabled_pos(self)
+
 
 class PurchaseInvoice(CommercialDocumentModel):
     """Record a purchase invoice"""

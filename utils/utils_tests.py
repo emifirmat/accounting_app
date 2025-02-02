@@ -83,7 +83,7 @@ def click_and_wait(driver, element_id, waiting_time=0.5):
     time.sleep(waiting_time)
 
 def click_and_redirect(driver, selector, selector_name, current_url, 
-        parent_element=None):
+        parent_element=None, index=0):
     """
     Do a click on an element and wait until current url changes.
     Paramenters:
@@ -92,9 +92,10 @@ def click_and_redirect(driver, selector, selector_name, current_url,
     - selector_name: Selector's name of the element, necessary for searching it.
     - current_url: Current url before clicking.
     - parent_element: Parent element of the target one. Default: None.
+    - index: Default 0. If there are multiple objects, click on the index one.
     """
     root = parent_element or driver
-    root.find_element(selector, selector_name).click()
+    root.find_elements(selector, selector_name)[index].click()
     WebDriverWait(driver, 10).until(EC.url_changes(current_url))
 
 def click_button_and_show(driver, parent_selector, parent_name, show_selector, 
@@ -224,7 +225,7 @@ def webDriverWait_visible_element(driver, selector, element_name):
     - selector: Element selector. By.CLASS_NAME, By.TAG_NAME, etc.
     - selector_name: Name of the element that the selector will search.
     """
-    WebDriverWait(driver, 5).until(
+    WebDriverWait(driver, 10).until(
         EC.visibility_of_element_located((selector, element_name))
     )
 
@@ -365,7 +366,7 @@ def search_fill_field(driver, element_id, value):
     ActionChains(driver).move_to_element(field).click(field).perform()
     for char in value:
         ActionChains(driver).send_keys(char).perform()
-    time.sleep(0.6) # 0.5 raise error sometimes.
+    time.sleep(0.7) # 0.6 raise error sometimes.
 
 def search_clear_field(driver, element_id, first_element_list=None):
     """
@@ -416,7 +417,7 @@ def load_new_collected_option(driver, selected_option):
     if selected_option == "All":
         opt_index = 0
         opt_value = "op1"
-        waiting_time = 1 
+        waiting_time = 1.2 
     elif selected_option == "Collected":
         opt_index = 2
         opt_value = "op2"

@@ -172,7 +172,7 @@ class BackBaseTest(TestCase):
         it has kwargs, being the second element a dict.
         - post_object: Dict. Object submitted in POST.
         - expected_status: Status I expect to receive in response.
-        - model_result: Touple. First arg is name of model, second arg is the 
+        - model_result: Tuple. First arg is name of model, second arg is the 
         number of instances I expect.
 
         Returns:

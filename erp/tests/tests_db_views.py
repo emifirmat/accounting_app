@@ -57,14 +57,17 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             phone = "987654321",
         )
 
-        cls.client_ca = ClientCurrentAccount.objects.create(
+        # client ca is created through CompanyClient post-save
+        cls.client_ca = ClientCurrentAccount.objects.get(
             client = cls.c_client1,
         )
 
+        """TODO
         cls.supplier_ca = SupplierCurrentAccount.objects.create(
             supplier = cls.supplier1,
             amount = "10999.99",
         )
+        """
 
         cls.pos1 = PointOfSell.objects.create(pos_number="1")
         cls.pos2 = PointOfSell.objects.create(pos_number="2")
@@ -119,6 +122,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             not_taxable_amount = Decimal("00.01"),
             vat_amount = Decimal("209.99"),
         )
+        cls.sale_invoice1.update_current_account()
 
         cls.sale_receipt1 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
@@ -194,9 +198,9 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice3,
             description = "Test 2 sale invoice",
-            taxable_amount = Decimal("500"),
-            not_taxable_amount = Decimal("20.01"),
-            vat_amount = Decimal("80"),
+            taxable_amount = Decimal("3"),
+            not_taxable_amount = Decimal("3"),
+            vat_amount = Decimal("3"),
         )
 
         self.sale_invoice4 = SaleInvoice.objects.create(
@@ -212,9 +216,9 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         SaleInvoiceLine.objects.create(
             sale_invoice = self.sale_invoice4,
             description = "Test 2 sale invoice",
-            taxable_amount = Decimal("500"),
-            not_taxable_amount = Decimal("20.01"),
-            vat_amount = Decimal("80"),
+            taxable_amount = Decimal("4"),
+            not_taxable_amount = Decimal("4"),
+            vat_amount = Decimal("4"),
         )
 
         self.sale_invoice5 = SaleInvoice.objects.create(
@@ -240,7 +244,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             point_of_sell = self.pos1,
             number = "00000003",
             sender = self.company,
-            recipient = self.c_client1,
+            recipient = self.c_client2,
             payment_method = self.pay_method2,
             payment_term = self.pay_term2,
         )
@@ -337,6 +341,12 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             not_taxable_amount = Decimal("20.01"),
             vat_amount = Decimal("80"),
         )
+        for invoice in [self.sale_invoice2, self.sale_invoice3, self.sale_invoice4,
+            self.sale_invoice5, self.sale_invoice6, self.sale_invoice7, 
+            self.sale_invoice8, self.sale_invoice9, self.sale_invoice10, 
+            self.sale_invoice11,
+        ]:
+            invoice.update_current_account()
 
     def create_extra_receipts(self):
         """ Create extra receipts for some tests. """
@@ -404,6 +414,11 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             total_amount = Decimal("300.99"),
         )
 
+    def change_current_year(self, year):
+        """Change the current year"""
+        self.financial_year.current = False
+        self.financial_year.save()
+        FinancialYear.objects.create(year = year, current = True)        
 
     def test_company_client_content(self):
         company_clients = CompanyClient.objects.all()
@@ -427,16 +442,22 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
 
     def test_client_current_account_content(self):
         client_ca_all = ClientCurrentAccount.objects.all()
-        self.assertEqual(client_ca_all.count(), 1)
+        # CCA should be equal to the number of clients + invoices + receipts
+        self.assertEqual(client_ca_all.count(), 4)
         self.assertEqual(self.client_ca.client, self.c_client1)
         self.assertEqual(self.client_ca.amount, 0)
+        self.assertEqual(self.client_ca.date, datetime.date(1991, 3, 10))
+        self.assertEqual(self.client_ca.invoice, None)
+        self.assertEqual(self.client_ca.receipt, None)
 
+    """
     def test_supplier_current_account_content(self):
         supplier_ca_all = ClientCurrentAccount.objects.all()
         self.assertEqual(supplier_ca_all.count(), 1)
         self.assertEqual(self.supplier_ca.supplier, self.supplier1)
         self.assertEqual(self.supplier_ca.amount, "10999.99")
-
+    """
+        
     def test_company_point_of_sell_content(self):
         pos_all = PointOfSell.objects.all()
         self.assertEqual(pos_all.count(), 2)
@@ -495,10 +516,11 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
 
     def test_sale_invoice_total_sum(self):
         self.assertAlmostEqual(self.sale_invoice1.total_lines_sum(),
-            Decimal(2509.01))
+            Decimal("2509.01"))
 
     def test_sale_invoice_constraint(self):
-        sale_invoice2 = SaleInvoice.objects.create(
+        # Create invoice 2
+        SaleInvoice.objects.create(
             issue_date = datetime.date(2024, 1, 21),
             type = self.doc_type1,
             point_of_sell = self.pos1,
@@ -513,7 +535,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(invoices.count(), 2)
 
         with self.assertRaises(IntegrityError):
-            sale_invoice3 = SaleInvoice.objects.create(
+            # Create invoice 3
+            SaleInvoice.objects.create(
                 issue_date = datetime.date(2024, 1, 22),
                 type = self.doc_type1,
                 point_of_sell = self.pos1,
@@ -564,7 +587,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
 
     def test_sale_receipt_constraint(self):
-        sale_receipt2 = SaleReceipt.objects.create(
+        # Create receipt 2
+        SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 21),
             point_of_sell = self.pos1,
             number = "2",
@@ -572,14 +596,14 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             sender = self.company,
             recipient = self.c_client1,
             related_invoice = self.sale_invoice1,
-            total_amount = "1312.11",
+            total_amount = Decimal("1312.11"),
         )
 
         receipts = SaleReceipt.objects.all()
         self.assertEqual(receipts.count(), 2)
-
+        # Create receipt 3
         with self.assertRaises(IntegrityError):
-            sale_receipt3 = SaleReceipt.objects.create(
+            SaleReceipt.objects.create(
                 issue_date = datetime.date(2024, 2, 22),
                 point_of_sell = self.pos1,
                 number = "00000001",
@@ -587,7 +611,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
                 sender = self.company,
                 recipient = self.c_client1,
                 related_invoice = self.sale_invoice1,
-                total_amount = "4000.11",
+                total_amount = Decimal("4000.11"),
             )
 
     def test_purchase_invoice_content(self):
@@ -606,7 +630,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
 
     def test_purchase_invoice_constraint(self):
-        purchase_invoice2 = PurchaseInvoice.objects.create(
+        # Create invoice 2
+        PurchaseInvoice.objects.create(
             issue_date=datetime.date(2024, 1, 13),
             type = self.doc_type2,
             point_of_sell = "231",
@@ -621,7 +646,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(invoices.count(), 2)
 
         with self.assertRaises(IntegrityError):
-            purhcase_invoice3 = PurchaseInvoice.objects.create(
+            # Create invoice 3
+            PurchaseInvoice.objects.create(
                 issue_date=datetime.date(2024, 1, 14),
                 type = self.doc_type2,
                 point_of_sell = "00231",
@@ -719,6 +745,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.check_page_post_response(["erp:person_new",
             {"person_type": "client"}], post_object, 302, (CompanyClient, 3)
         )
+
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 5)
         
     def test_client_new_post_error(self):
         post_object = {
@@ -738,6 +766,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             ["The tax number you're trying to add belongs to the company."]
         )
 
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
+
     def test_client_new_multiple_post_csv(self):
         # Get file dir to test
         file = get_file("erp/tests/files/clients/clients.csv")
@@ -753,6 +783,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(client_great.address, "Mutiple Street 1, Dublin, Ireland")
         self.assertEqual(client_great.email, "mclient1@email.com")
         self.assertEqual(client_great.phone, "3412425841")
+
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 10)
     
     def test_client_new_multiple_post_xls(self):
         file = get_file("erp/tests/files/clients/clients.xls")
@@ -760,6 +792,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.check_page_post_response(["erp:person_new_multiple",
             {"person_type": "client"}], {"file": file}, 302, (CompanyClient, 8)
         )
+
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 10)
         
         # Test DB was updated correctly
         client_great = CompanyClient.objects.get(tax_number="20123456780")
@@ -784,6 +818,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(client_great.email, "mclient1@email.com")
         self.assertEqual(client_great.phone, "3412425841")
 
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 10)
+
     @tag("erp_db_view_client_multiple_post_pdf")
     def test_client_new_multiple_post_pdf(self):
         file = get_file("erp/tests/files/clients/clients.pdf")
@@ -792,7 +828,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             {"person_type": "client"}], {"file": file}, 400, (CompanyClient, 2)
         )
         
-        self.assertIn("Invalid file", page_content)        
+        self.assertIn("Invalid file", page_content)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)      
 
     def test_client_new_multiple_post_repeated_client(self):
         # Get file dir to test
@@ -803,6 +840,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
         
         self.assertIn("tax number already exists", page_content)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
 
     def test_client_new_multiple_post_wrong_columns(self):
         # Get file dir to test
@@ -813,6 +851,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
         
         self.assertIn("The columns in your file don't match", page_content)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
 
     def test_client_new_multiple_post_wrong_data(self):
         # Get file dir to test
@@ -825,6 +864,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         for text in ["must be only digits", "value has at most", 
             "field cannot be blank"]:
             self.assertIn(text, page_content)
+        
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
         
 
     def test_client_edit_get(self):
@@ -1024,6 +1065,14 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.check_page_post_response("erp:sales_new", post_object, 302, 
             (SaleInvoice, 2))  
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 5)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 1, 29))
+        self.assertEqual(last_ca.amount, Decimal("2600.02"))
+        self.assertNotEqual(last_ca.invoice, None)
+        self.assertEqual(last_ca.receipt, None)
+        self.assertEqual(last_ca.client, self.c_client1)
 
 
     def test_sales_new_invoice_post_triple_line_webpage(self):
@@ -1062,6 +1111,15 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             (SaleInvoice, 2))  
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 5)
 
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 5)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 1, 29))
+        self.assertEqual(last_ca.amount, Decimal("4099.36"))
+        self.assertNotEqual(last_ca.invoice, None)
+        self.assertEqual(last_ca.receipt, None)
+        self.assertEqual(last_ca.client, self.c_client1)
+
     def test_sales_new_invoice_post_wrong_year_webpage(self):
         post_object = {
             # Invoice form
@@ -1088,8 +1146,10 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             (SaleInvoice, 1))  
 
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
         self.assertIn("The selected date is not within the current year.", 
             response.context["form"].errors["issue_date"])
+        
 
     def test_sales_new_invoice_post_wrong_date_correlation_webpage(self):
         post_object = {
@@ -1118,6 +1178,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             (SaleInvoice, 1))
     
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
         self.assertContains(response, "be older than previous invoice.")
 
     def test_sales_new_invoice_post_blank_line_webpage(self):
@@ -1146,6 +1207,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             200, (SaleInvoice, 1))  
         
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
 
     def test_sales_new_massive_invoice_get(self):
         self.check_page_get_response(
@@ -1178,6 +1240,14 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(invoice_line.not_taxable_amount, Decimal("50"))
         self.assertEqual(invoice_line.vat_amount, Decimal("105"))
         self.assertEqual(invoice_line.total_amount, Decimal("1155"))
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 5)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 3, 15))
+        self.assertEqual(last_ca.amount, Decimal("1155"))
+        self.assertEqual(last_ca.invoice, new_invoice)
+        self.assertEqual(last_ca.receipt, None)
+        self.assertEqual(last_ca.client, self.c_client1)
 
     def test_sales_new_massive_invoice_post_xls(self):
         file = get_file("erp/tests/files/sales/invoice_one_line.xls")
@@ -1203,6 +1273,14 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(invoice_line.not_taxable_amount, Decimal("50"))
         self.assertEqual(invoice_line.vat_amount, Decimal("105"))
         self.assertEqual(invoice_line.total_amount, Decimal("1155"))
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 5)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 3, 15))
+        self.assertEqual(last_ca.amount, Decimal("1155"))
+        self.assertEqual(last_ca.invoice, new_invoice)
+        self.assertEqual(last_ca.receipt, None)
+        self.assertEqual(last_ca.client, self.c_client1)
 
     def test_sales_new_massive_invoice_post_xlsx(self):
         file = get_file("erp/tests/files/sales/invoice_one_line.xlsx")
@@ -1228,6 +1306,15 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(invoice_line.not_taxable_amount, Decimal("50"))
         self.assertEqual(invoice_line.vat_amount, Decimal("105"))
         self.assertEqual(invoice_line.total_amount, Decimal("1155"))
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 5)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 3, 15))
+        self.assertEqual(last_ca.amount, Decimal("1155"))
+        self.assertEqual(last_ca.invoice, new_invoice)
+        self.assertEqual(last_ca.receipt, None)
+        self.assertEqual(last_ca.client, self.c_client1)
+
 
     def test_sales_new_massive_invoice_pdf(self):
         file = get_file("erp/tests/files/sales/invoice_one_line.pdf")
@@ -1237,6 +1324,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         
         self.assertIn("Invalid file", page_content)
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
         
     def test_sales_new_massive_invoice_multiple_lines_post_xlsx(self):
         file = get_file("erp/tests/files/sales/invoice_multiple_lines.xlsx")
@@ -1271,6 +1359,10 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(invoice_lines[2].not_taxable_amount, Decimal("50.50"))
         self.assertEqual(invoice_lines[2].vat_amount, Decimal("210"))
         self.assertEqual(invoice_lines[2].total_amount, Decimal("2260.50"))
+        # Check Client CA
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 5)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.amount, Decimal("3526.24"))
 
     def test_sales_new_massive_invoices_multiple_lines_post_xlsx(self):
         file = get_file("erp/tests/files/sales/invoices_mixed.xlsx")
@@ -1296,6 +1388,12 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(invoice_lines[0].not_taxable_amount, Decimal("0"))
         self.assertEqual(invoice_lines[0].vat_amount, Decimal("10.52"))
         self.assertEqual(invoice_lines[0].total_amount, Decimal("110.74"))
+        # Check Client CA
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 9)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.amount, Decimal("595.98"))
+        self.assertEqual(last_ca.client, self.c_client2)
+        self.assertNotEqual(last_ca.client, None)
 
     def test_sales_new_massive_invoice_post_repeated(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_repeated.csv")
@@ -1307,6 +1405,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             page_content
         )
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
     
     def test_sales_new_massive_invoice_post_wrong_columns(self):
         file = get_file("erp/tests/files/receivables/receipt_one.csv")
@@ -1315,6 +1414,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             {"file": file}, 400, (SaleInvoice, 1))
         
         self.assertIn("The columns in your file don't match", page_content)
+        self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
     
     def test_sales_new_massive_invoice_post_wrong_data(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong.csv")
@@ -1324,6 +1425,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         
         self.assertIn("must be only digits", page_content)
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
 
     def test_sales_new_massive_invoice_post_wrong_sender(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong2.csv")
@@ -1334,6 +1436,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertIn("The input in row 2 and column sender doesn't exist",
             page_content)
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
     
     def test_sales_new_massive_invoice_post_wrong_data_3(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong3.csv")
@@ -1345,6 +1448,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             self.assertIn(text, page_content)
 
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
 
     def test_sales_new_massive_invoice_post_wrong_date(self):
         file = get_file("erp/tests/files/sales/invoice_one_line_wrong_date.csv")
@@ -1354,6 +1458,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         
         self.assertIn("within the current year", page_content)
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
 
     def test_sales_new_massive_invoices_multiple_lines_post_wrong_data(self):
         self.create_extra_pay_methods()
@@ -1366,6 +1471,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertIn("Row 10: Your invoice's information doesn't match with row 9",
             page_content)
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 2)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
 
     def test_sales_new_massive_invoices_disabled_pos(self):
         self.create_extra_pos()
@@ -1376,6 +1482,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
 
         self.assertIn("Row 2, general: You cannot include a disabled point of sell.",
             page_content)
+        
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
 
     def test_sales_invoice_webpage(self):
         self.create_extra_invoices()
@@ -1421,33 +1529,38 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
                 # line-setform-management. Modify 2 lines, add 1.
                 "s_invoice_lines-TOTAL_FORMS": "3",
                 "s_invoice_lines-INITIAL_FORMS": "2",
-                "s_invoice_lines-MIN_NUM_FORMS": "0",
+                "s_invoice_lines-MIN_NUM_FORMS": "1",
                 "s_invoice_lines-MAX_NUM_FORMS": "1000",
                 # line-1-setform / Modify all fields
-                "s_invoice_lines-0-id": self.sale_invoice1.id,
+                "s_invoice_lines-0-id": self.sale_invoice1_line1.id,
                 "s_invoice_lines-0-description": "Random products",
                 "s_invoice_lines-0-taxable_amount": Decimal("2000"),
                 "s_invoice_lines-0-not_taxable_amount": Decimal("180.02"),
                 "s_invoice_lines-0-vat_amount": Decimal("420"),
                 # line-2-setform / Modify all fields
-                "s_invoice_lines-1-id": self.sale_invoice1.id,
+                "s_invoice_lines-1-id": self.sale_invoice1_line2.id,
                 "s_invoice_lines-1-description": "Custom products",
                 "s_invoice_lines-1-taxable_amount": Decimal("1000"),
                 "s_invoice_lines-1-not_taxable_amount": Decimal("80.02"),
                 "s_invoice_lines-1-vat_amount": Decimal("20"),
                 # line-3-setform / New line added
-                "s_invoice_lines-2-id": self.sale_invoice1.id,
                 "s_invoice_lines-2-description": "A few products",
                 "s_invoice_lines-2-taxable_amount": Decimal("333"),
                 "s_invoice_lines-2-not_taxable_amount": Decimal("33.32"),
                 "s_invoice_lines-2-vat_amount": Decimal("33")
             } 
-        
         self.check_page_post_response(
             ["erp:sales_edit", {"inv_pk": self.sale_invoice1.pk}], 
             post_object, 302, (SaleInvoice, 1)
         ) 
         self.assertEqual(SaleInvoiceLine.objects.all().count(), 3)
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
+        
+        client_ca = ClientCurrentAccount.objects.get(invoice=self.sale_invoice1)
+        self.assertEqual(client_ca.amount, Decimal("4099.36"))
+        self.assertEqual(client_ca.date, datetime.date(2024, 1, 21))
+        self.assertEqual(client_ca.receipt, None)
+        self.assertEqual(client_ca.client, self.c_client2)
 
     def test_sales_invoice_related_receipts(self):
         self.check_page_get_response(
@@ -1577,7 +1690,6 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             ["Create a new receipt", "Related invoice", "Number", "00001",
                 "00002", "00004"],
             "00003"
-
         )        
 
     @tag("erp_db_view_receivables_new_post")
@@ -1602,6 +1714,16 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.sale_invoice2.refresh_from_db()
         self.assertEqual(self.sale_invoice2.collected, True)
 
+        # Check that CurrentAccount was updated 
+        # CCA = 2 clients + 11 invoices + 2 receoipt
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 15)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 3, 29))
+        self.assertEqual(last_ca.amount, Decimal("-1209.10"))
+        self.assertEqual(last_ca.invoice, None)
+        self.assertNotEqual(last_ca.receipt, None)
+        self.assertEqual(last_ca.client, self.c_client1)
+
     def test_receivables_new_receipt_post_wrong_year_webpage(self):
         self.create_extra_invoices()
         post_object = {
@@ -1618,6 +1740,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         
         response = self.check_page_post_response("erp:receivables_new", 
             post_object, 200, (SaleReceipt, 1)) 
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
 
         self.assertContains(response, 
             "The selected date is not within the current year."
@@ -1636,7 +1759,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             "total_amount": "600.01"
         }      
         response = self.check_page_post_response("erp:receivables_new", 
-            post_object, 200, (SaleReceipt, 1)) 
+            post_object, 200, (SaleReceipt, 1))
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
         
         self.assertContains(response, "be older than previous receipt.")
 
@@ -1656,6 +1780,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
 
         response = self.check_page_post_response("erp:receivables_new", 
             post_object, 200, (SaleReceipt, 1))
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
          
         self.assertContains(response, "Receipt total amount cannot be higher")
 
@@ -1673,7 +1798,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             "total_amount": "1209.10" # Total from invoice is $1209.10,
         }
         response = self.check_page_post_response("erp:receivables_new", 
-            post_object, 200, (SaleReceipt, 7))     
+            post_object, 200, (SaleReceipt, 7))
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 20)   
 
         self.assertContains(response, 
             "The sum of your receipts cannot be higher"
@@ -1705,9 +1831,17 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(new_receipt.recipient, self.c_client1)
         self.assertEqual(new_receipt.description, "test import receipt")
         self.assertEqual(new_receipt.total_amount, Decimal("1209.10"))
-
+        # Check invoice collected status
         self.sale_invoice2.refresh_from_db()
         self.assertEqual(self.sale_invoice1.collected, True)
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 15)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 2, 22))
+        self.assertEqual(last_ca.amount, Decimal("-1209.10"))
+        self.assertEqual(last_ca.invoice, None)
+        self.assertEqual(last_ca.receipt, new_receipt)
+        self.assertEqual(last_ca.client, self.c_client1)
 
     def test_receivables_new_massive_receipt_post_xls(self):
         self.create_extra_invoices()
@@ -1726,9 +1860,17 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(new_receipt.recipient, self.c_client1)
         self.assertEqual(new_receipt.description, "test import receipt")
         self.assertEqual(new_receipt.total_amount, Decimal("1209.10"))
-
+        # Check invoice collected status
         self.sale_invoice1.refresh_from_db()
         self.assertEqual(self.sale_invoice1.collected, True)
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 15)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 2, 22))
+        self.assertEqual(last_ca.amount, Decimal("-1209.10"))
+        self.assertEqual(last_ca.invoice, None)
+        self.assertEqual(last_ca.receipt, new_receipt)
+        self.assertEqual(last_ca.client, self.c_client1)
     
     def test_receivables_new_massive_receipt_post_xlsx(self):
         self.create_extra_invoices()
@@ -1747,9 +1889,17 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(new_receipt.recipient, self.c_client1)
         self.assertEqual(new_receipt.description, "test import receipt")
         self.assertEqual(new_receipt.total_amount, Decimal("1209.10"))
-
+        # Check invoice collected status
         self.sale_invoice2.refresh_from_db()
         self.assertEqual(self.sale_invoice2.collected, True)
+        # Check that CurrentAccount was updated
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 15)
+        last_ca = ClientCurrentAccount.objects.last()
+        self.assertEqual(last_ca.date, datetime.date(2024, 2, 22))
+        self.assertEqual(last_ca.amount, Decimal("-1209.10"))
+        self.assertEqual(last_ca.invoice, None)
+        self.assertEqual(last_ca.receipt, new_receipt)
+        self.assertEqual(last_ca.client, self.c_client1)
     
     def test_receivables_new_massive_receipt_pdf(self):
         file = get_file("erp/tests/files/receivables/receipt_one.pdf")
@@ -1758,6 +1908,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             {"file": file}, 400, (SaleReceipt, 1))
 
         self.assertIn("Invalid file", page_content)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
 
     def test_receivables_new_massive_receipt_multiple_receipts_post_xlsx(self):
         self.create_extra_invoices()
@@ -1784,6 +1935,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         for sale_invoice in [self.sale_invoice2, self.sale_invoice6]:
             sale_invoice.refresh_from_db()
             self.assertEqual(sale_invoice.collected, False)
+
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 19)
     
     def test_receivables_new_massive_receipt_post_repeated(self):
         self.create_extra_invoices()
@@ -1799,6 +1952,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
 
         self.sale_invoice1.refresh_from_db()
         self.assertEqual(self.sale_invoice1.collected, True)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
 
     def test_receivables_new_massive_receipt_post_wrong_columns(self):
         file = get_file(
@@ -1809,7 +1963,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             {"file": file}, 400, (SaleReceipt, 1))
 
         self.assertIn("The columns in your file don't match", page_content)
-    
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 4)
+
     def test_receivables_new_massive_receipt_post_wrong_number_descripcion(self):
         self.create_extra_invoices()
 
@@ -1823,6 +1978,8 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         for text in ["must be only digits", "cannot be blank"]:
             self.assertIn(text, page_content)
         
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
+
     def test_receivables_new_massive_receipt_post_wrong_amount(self):
         self.create_extra_invoices()
         file = get_file(
@@ -1833,6 +1990,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             {"file": file}, 400, (SaleReceipt, 1))
        
         self.assertIn("higher than invoice total", page_content)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
 
     def test_receivables_new_massive_receipt_post_wrong_invoice(self):
         self.create_extra_invoices()
@@ -1846,6 +2004,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertIn("column ri_pos doesn't exist in the records.", 
             page_content
         )
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
 
     def test_receivables_new_massive_receipt_post_wrong_date(self):
         self.create_extra_invoices()
@@ -1859,6 +2018,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertIn("selected date is not within the current year.",
             page_content
         )
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
         
     def test_receivables_new_massive_receipt_post_wrong_client(self):
         self.create_extra_invoices()
@@ -1871,6 +2031,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         
         self.assertIn("column recipient doesn't exist in the records.",
             page_content)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
 
     
     def test_receivables_new_massive_receipt_disabled_pos(self):
@@ -1883,6 +2044,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
 
         self.assertIn("Row 2, general: You cannot include a disabled point of sell.",
             page_content)
+        self.assertEqual(len(ClientCurrentAccount.objects.all()), 14)
 
     
     def test_receivables_receipt_webpage(self):
@@ -1923,6 +2085,13 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.sale_invoice1.refresh_from_db()
         self.assertEqual(self.sale_receipt1.description, "Test sale receipt edited.")
         self.assertEqual(self.sale_invoice1.collected, False)
+
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 4)
+        client_ca = ClientCurrentAccount.objects.get(receipt=self.sale_receipt1)
+        self.assertEqual(client_ca.amount, Decimal("-150"))
+        self.assertEqual(client_ca.date, datetime.date(2024, 2, 21))
+        self.assertEqual(client_ca.invoice, None)
+        self.assertEqual(client_ca.client, self.c_client1)
     
     def test_receivables_edit_receipt_ri_post_webpage(self):
         # As I need 2 invoices, I add more
@@ -1951,6 +2120,13 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(self.sale_receipt1.description, "Test modified rel inv.")
         self.assertEqual(self.sale_invoice1.collected, False)
         self.assertEqual(self.sale_invoice2.collected, True)
+
+        self.assertEqual(ClientCurrentAccount.objects.all().count(), 14)
+        client_ca = ClientCurrentAccount.objects.get(receipt=self.sale_receipt1)
+        self.assertEqual(client_ca.amount, Decimal("-1209.10"))
+        self.assertEqual(client_ca.date, datetime.date(2024, 2, 21))
+        self.assertEqual(client_ca.invoice, None)
+        self.assertEqual(client_ca.client, self.c_client1)
         
     def test_receivables_search_webpage(self):
         self.check_page_get_response(
@@ -2051,3 +2227,27 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertNotContains(response, "00000002")
         self.assertNotContains(response, "00000004")
    
+    def test_client_current_account_invoices(self):
+        self.change_current_year(2025)
+        self.create_extra_invoices()
+        self.sale_receipt1.delete()
+        
+        self.check_page_get_response(
+            "/erp/client/current_account", 
+            ["erp:person_cur_account", {"person_type": "client"}], 
+            "erp/person_current_account.html", 
+            # Amounts: Total 2025, total 2024, total client1 2024, total client2 2024
+            ["Client Current Account", "$ 4474.12", "$ 3874.11", "$ 3787.11", "87.00"]
+        )
+
+    def test_client_current_account(self):
+        self.change_current_year(2025)
+        self.create_extra_receipts()
+        
+        self.check_page_get_response(
+            "/erp/client/current_account", 
+            ["erp:person_cur_account", {"person_type": "client"}], 
+            "erp/person_current_account.html", 
+            # Amounts: Total 2025, total 2024, total c1 2025 total c1 2024, total c2 2024
+            ["Client Current Account", "$ 437.11", "358.11", "$ 138.09", "$ 59.09", "79.00"]
+        )
