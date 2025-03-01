@@ -18,7 +18,7 @@
 /* Popup (appears on center) */
 .popup {
     display: block; /* it forces child elements to align vertically*/
-    
+    width: 30%;
     background-color: #555;
     color: #fff;
     text-align: center;
@@ -49,11 +49,16 @@
     max-width: 50%;
 }
 
-#search-headers, #headers, .headers {
+#search-headers, #headers, .headers, #pca-headers {
     font-weight: bold;
     text-align: center;
     padding: 10px;
     border-bottom: 2px solid;
+}
+
+#pca-headers, #total-section, .transaction {
+    width: 75%;
+    margin-left: 10%;
 }
 
 #search-headers {
@@ -96,4 +101,62 @@
 
 .smaller-text {
     font-size: 0.5em;
+}
+
+.transaction, #total-section{
+    margin-bottom: 10px;
+    justify-content: center;
+    align-items: center;
+    text-align: left;
+}
+
+.date-val {
+    text-align: center;
+}
+
+.detail-val {
+    padding-left: 10%;
+}
+
+#total-section {
+    font-weight: bold;
+    border-top: 2px solid;
+    padding-top: 1%;
+}
+
+.amount-val{
+    padding-left: 8%;
+}
+
+.total-val {
+    text-align: left;
+    padding-left: 8%;
+}
+
+.person-list {
+    background-color: #333333;
+    padding: 2%;
+    border-radius: 5px;
+}
+
+.person {
+
+    text-align: left;
+    white-space: nowrap;
+    margin: 5px 5px;
+
+}
+.person.row:hover {
+    background-color: #222222;
+    cursor: pointer;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); 
+    z-index: 0; 
 }

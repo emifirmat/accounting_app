@@ -64,7 +64,7 @@ class CreateDbInstancesMixin:
             phone = "4487654325",
         )
         self.c_client7 = CompanyClient.objects.create(
-            tax_number = "33546921",
+            tax_number = "33546920",
             name = "Client7 SA",
             address = "Client7 street, Client city, China",
             email = "client7@gmail.com",

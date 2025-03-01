@@ -23,6 +23,8 @@ urlpatterns = [
     # Show a person's current account webpage
     path("<str:person_type>/current_account", 
         views.person_current_account, name="person_cur_account"),
+    path("<str:person_type>/<int:person_pk>/current_account",
+        views.person_ca_detail, name="person_ca_detail"),
     
     # Payment conditions
     path("payment_conditions", views.payment_conditions, name="payment_conditions"),

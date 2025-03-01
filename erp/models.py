@@ -127,7 +127,7 @@ class DocumentType(models.Model):
                 code="Invalid doc type"
             )
     ])
-    type_description = models.CharField(max_length=20)
+    description = models.CharField(max_length=20)
     hide = models.BooleanField(default=True)
 
     def __str__(self):
@@ -137,7 +137,7 @@ class DocumentType(models.Model):
         # Format fields
         self.code = self.code.zfill(3)
         self.type = self.type.upper()
-        self.type_description = self.type_description.upper()
+        self.description = self.description.upper()
         return super(DocumentType, self).save(*args, **kwargs)
 
 

@@ -64,19 +64,19 @@ class APIErpTests(CreateDbInstancesMixin, APIBaseTest):
         cls.doc_type1 = DocumentType.objects.create(
             type = "A",
             code = "1",
-            type_description = "Invoice A",
+            description = "Invoice A",
             hide = False,
         )
         cls.doc_type2 = DocumentType.objects.create(
             type = "B",
             code = "2",
-            type_description = "Invoice B",
+            description = "Invoice B",
             hide = False,
         )
         cls.doc_type3 = DocumentType.objects.create(
             type = "E",
             code = "19",
-            type_description = "Invoice E",
+            description = "Invoice E",
         )
         
         cls.pay_method1 = PaymentMethod.objects.create(pay_method = "Cash")

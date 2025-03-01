@@ -233,6 +233,19 @@ class SearchByDateForm(forms.Form):
             }
         )
     )
+
+class cutOffDateForm(forms.Form):
+    """A form to complete with day and month"""
+    day = forms.IntegerField( 
+        min_value=0,
+        max_value=31,
+        required =True
+    )
+    month = forms.IntegerField(
+        min_value=0,
+        max_value=12,
+        required=True
+    )
   
 class SaleReceiptForm(forms.ModelForm):
     """Create a new receipt"""

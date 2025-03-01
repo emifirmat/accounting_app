@@ -75,19 +75,19 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         cls.doc_type1 = DocumentType.objects.create(
             type = "A",
             code = "001",
-            type_description = "Invoice A",
+            description = "Invoice A",
             hide = False,
         )
         cls.doc_type2 = DocumentType.objects.create(
             type = "B",
             code = "2",
-            type_description = "Invoice B",
+            description = "Invoice B",
             hide = False,
         )
         cls.doc_type3 = DocumentType.objects.create(
             type = "E",
             code = "19",
-            type_description = "Invoice E",
+            description = "Invoice E",
         )
 
         cls.pay_method1 = PaymentMethod.objects.create(pay_method = "Cash")
@@ -469,7 +469,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(doc_type_all.count(), 3)
         self.assertEqual(self.doc_type1.type, "A")
         self.assertEqual(self.doc_type1.code, "001")
-        self.assertEqual(self.doc_type1.type_description, "INVOICE A")
+        self.assertEqual(self.doc_type1.description, "INVOICE A")
         self.assertEqual(self.doc_type1.hide, False)
         self.assertEqual(str(self.doc_type1), "001 | A")
 
@@ -478,7 +478,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             doc_3 = DocumentType.objects.create(
                 type = "3",
                 code = "003",
-                type_description = "Invoice C",
+                description = "Invoice C",
             )
             doc_3.full_clean()
     
@@ -1491,7 +1491,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             f"/erp/sales/invoices/{self.sale_invoice1.pk}", 
             ["erp:sales_invoice", {"inv_pk": self.sale_invoice1.pk}],
             "erp/sales_invoice.html", 
-            ["Invoice N° 00001-00000001", "$ 1300.01", "$ 2509.01", "Collected"]                   
+            ["A N° 00001-00000001", "$ 1300.01", "$ 2509.01", "Collected"]                   
         )
 
         # Check invoice2 doesn't have "collected".
@@ -2251,3 +2251,140 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             # Amounts: Total 2025, total 2024, total c1 2025 total c1 2024, total c2 2024
             ["Client Current Account", "$ 437.11", "358.11", "$ 138.09", "$ 59.09", "79.00"]
         )
+    
+    def test_client_current_account_cutoff(self):
+        self.change_current_year(2025)
+        self.create_extra_receipts()
+
+        response = self.check_page_post_response(
+            ["erp:person_cur_account", {"person_type": "client"}], 
+            {"day": "25", "month": "1"},
+            200
+        )
+        # total 25/01/2024, total 25/01/2025
+        for page_content in ["25/01/2024", "25/01/2025", "$ 3817.11", "$ 138.09"]:
+            self.assertContains(response, page_content)
+
+    def test_client_current_account_cutoff_error(self):
+        self.create_extra_receipts()
+
+        response = self.check_page_post_response(
+            ["erp:person_cur_account", {"person_type": "client"}], 
+            {"day": "31", "month": "2"},
+            200
+        )
+        # total 25/01/2024, total 25/01/2025
+        for page_content in ["The date is invalid.", "31/12/2024", "31/12/2023",
+            "$ 138.09", "$ 0.00" ]:
+            self.assertContains(response, page_content)
+
+    def test_client_ca_detail(self):
+        self.create_extra_receipts()
+        self.check_page_get_response(
+            f"/erp/client/{self.c_client1.pk}/current_account", 
+            ["erp:person_ca_detail", {
+                "person_type": "client", 
+                "person_pk": self.c_client1.pk
+            }], 
+            "erp/person_ca_detail.html", 
+            # Amounts: Balance, an invoice amount, a receipt amount
+            ["CLIENT1 SRL Current Account", "$ 358.11", "$ 9.00", "$ -600.01",
+              "(I)", "A 00002-00000002", "(R)", "0001-00000003"],
+            "$ 18.00" # It belongs to client 2
+        )
+    
+    def test_client_ca_detail_post_year_webpage(self):
+        self.create_extra_receipts()
+        post_object = {"year": "2024", "form_type": "year",}
+
+        response = self.check_page_post_response(
+            ["erp:person_ca_detail", {
+                "person_type": "client", 
+                "person_pk": self.c_client2.pk
+            }],  
+            post_object,
+            200) 
+        # Invoice date, a receipt amount, an invoice amount.
+        for page_content in ["26/01/2024", "$ -8.00", "$ 79.00"]:
+            self.assertContains(response, page_content)
+
+        self.assertNotContains(response, "21/01/2024")
+
+     
+    def test_client_ca_detail_post_year_no_transaction(self):
+        self.create_extra_receipts()
+        post_object = {"year": "2025", "form_type": "year"}
+        
+        response = self.check_page_post_response(
+            ["erp:person_ca_detail", {
+                "person_type": "client", 
+                "person_pk": self.c_client2.pk
+            }],  
+            post_object,
+            200) 
+        
+        # By default, current's year invoices should appear
+        self.assertContains(response, "any transaction during this period of time.")
+    
+        
+    def test_client_ca_detail_post_dates_webpage(self):
+        self.create_extra_receipts()
+        post_object = {
+            "date_from": "23/01/2024",
+            "date_to": "24/01/2024",
+            "form_type": "date",
+        }
+
+        response = self.check_page_post_response(
+            ["erp:person_ca_detail", {
+                "person_type": "client", 
+                "person_pk": self.c_client2.pk
+            }],  
+            post_object,
+            200) 
+
+        for page_content in ["$ 12.00", "$ 18.00", "$ 30.00", "CLIENT2 SA"]:
+            self.assertContains(response, page_content)
+        
+        self.assertNotContains(response, "$ 27.00")
+
+    def test_client_ca_detail_post_dates_same_webpage(self):
+        self.create_extra_receipts()
+        post_object = {
+            "date_from": "23/01/2024",
+            "date_to": "23/01/2024",
+            "form_type": "date",
+        }
+        
+        response = self.check_page_post_response(
+            ["erp:person_ca_detail", {
+                "person_type": "client", 
+                "person_pk": self.c_client2.pk
+            }],  
+            post_object,
+            200) 
+        
+        for page_content in ["$ 12.00", "23/01/2024"]:
+            self.assertContains(response, "$ 12.00")
+        
+        self.assertNotContains(response, "$ 18.00")
+    
+    def test_client_ca_detail_post_dates_inverted_webpage(self):
+        self.create_extra_receipts()
+        post_object = {
+            "date_from": "24/04/2024",
+            "date_to": "23/04/2024",
+            "form_type": "date",
+        }
+        
+        response = self.check_page_post_response(
+            ["erp:person_ca_detail", {
+                "person_type": "client", 
+                "person_pk": self.c_client2.pk
+            }],  
+            post_object,
+            200) 
+        
+        self.assertContains(response, "should be older")
+        self.assertNotContains(response, "$ 12.00")
+        self.assertNotContains(response, "$ 18.00")

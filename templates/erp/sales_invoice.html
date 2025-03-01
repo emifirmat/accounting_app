@@ -7,7 +7,7 @@
 
 {% block body %}
 
-    <h2>Invoice N° {{ invoice.point_of_sell }}-{{ invoice.number }}</h2>
+    <h2>{{ invoice.type.description }} N° {{ invoice.point_of_sell }}-{{ invoice.number }}</h2>
     {% if invoice.collected %}<small>Collected</small>{% endif %}
     
     <a id="edit-button" class="edit-button" href="{% url 'erp:sales_edit' invoice.pk %}">Edit</a>
@@ -27,7 +27,7 @@
                 <p>{{ invoice.type.code }}</p>
             </div>
             <div class="col-5">
-                <h3>{{ invoice.type.type_description }}</h3>
+                <h3>{{ invoice.type.description }}</h3>
                 <p><b>Point of Sell:</b> {{ invoice.point_of_sell }} <b>Invoice Number:</b> 
                 {{ invoice.number }}
                 </p>

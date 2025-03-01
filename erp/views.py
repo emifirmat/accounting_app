@@ -18,7 +18,7 @@ from company.models import FinancialYear, PersonModel
 from .forms import (CclientForm, SupplierForm, PaymentMethodForm, PaymentTermForm, 
     PointOfSellForm, SaleInvoiceForm, SaleInvoiceLineFormSet, SearchInvoiceForm,
     AddPersonFileForm, AddSaleInvoicesFileForm, SearchByYearForm, SearchByDateForm,
-    SaleReceiptForm, SearchReceiptForm, AddSaleReceiptsFileForm)
+    SaleReceiptForm, SearchReceiptForm, AddSaleReceiptsFileForm, cutOffDateForm)
 from .models import (Company, CompanyClient, Supplier, PaymentMethod, 
     PaymentTerm, PointOfSell, DocumentType, SaleInvoice, SaleInvoiceLine,
     SaleReceipt, PurchaseInvoice, PurchaseReceipt, ClientCurrentAccount)
@@ -190,22 +190,61 @@ def person_related_docs(request, person_type, person_pk):
 def person_current_account(request, person_type):
     """Clients/Supplier's current account"""
     financial_year = FinancialYear.objects.filter(current=True).first()
+    cur_year = int(financial_year.year)
     prev_year = int(financial_year.year) - 1
-    # current year cca
-    clients_current_ca = ClientCurrentAccount.objects.filter(
-        date__lte=datetime(int(financial_year.year), 12, 31)
-    ).values("client", "client__name", 'client__tax_number').annotate(
-        global_balance=Coalesce(Sum("amount"), Decimal(0))
-    ).order_by("-global_balance")
-    total_clients_cur = clients_current_ca.aggregate(total_sum=Sum("global_balance"))["total_sum"] or 0
 
-    # previous year cca
-    clients_prev_ca = ClientCurrentAccount.objects.filter(
-        date__lte=datetime(prev_year, 12, 31)
-    ).values("client", "client__name", 'client__tax_number').annotate(
-        global_balance=Coalesce(Sum("amount"), Decimal(0))
-    ).order_by("-global_balance")
-    total_clients_prev = clients_prev_ca.aggregate(total_sum=Sum("global_balance"))["total_sum"] or 0
+    if request.method == "POST":
+        form_cutoff = cutOffDateForm(request.POST)
+        if form_cutoff.is_valid():
+            day = form_cutoff.cleaned_data["day"]
+            month = form_cutoff.cleaned_data["month"]
+            
+            # Check day and month are correct and add default date otherwise
+            try:
+                datetime(cur_year, month, day)
+            except ValueError:
+                form_cutoff.add_error(
+                    "day", "The date is invalid."
+                )
+                day = 31
+                month = 12
+
+            clients_current_ca = ClientCurrentAccount.objects.filter(
+                    date__lte=datetime(cur_year, month, day)
+            ).values("client", "client__name", 'client__tax_number').annotate(
+                global_balance=Coalesce(Sum("amount"), Decimal(0))
+            ).order_by("-date")
+        
+            clients_prev_ca = ClientCurrentAccount.objects.filter(
+                    date__lte=datetime(prev_year, month, day)
+            ).values("client", "client__name", 'client__tax_number').annotate(
+                global_balance=Coalesce(Sum("amount"), Decimal(0))
+            ).order_by("-date")
+            
+       
+    else:
+        # current year cca
+        day = 31
+        month = 12
+        clients_current_ca = ClientCurrentAccount.objects.filter(
+            date__lte=datetime(cur_year, month, day)
+        ).values("client", "client__name", 'client__tax_number').annotate(
+            global_balance=Coalesce(Sum("amount"), Decimal(0))
+        ).order_by("-global_balance")
+        # previous year cca
+        clients_prev_ca = ClientCurrentAccount.objects.filter(
+            date__lte=datetime(prev_year, month, day)
+        ).values("client", "client__name", 'client__tax_number').annotate(
+            global_balance=Coalesce(Sum("amount"), Decimal(0))
+        ).order_by("-global_balance")
+        # new cutoff form
+        form_cutoff = cutOffDateForm()
+
+    total_clients_cur = clients_current_ca.aggregate(total_sum=Sum(
+        "global_balance"))["total_sum"] or 0
+    total_clients_prev = clients_prev_ca.aggregate(total_sum=Sum(
+        "global_balance"))["total_sum"] or 0
+
 
     return render(request, "erp/person_current_account.html", {
         "person_type": person_type,
@@ -213,8 +252,55 @@ def person_current_account(request, person_type):
         "clients_current_ca": clients_current_ca,
         "clients_prev_ca": clients_prev_ca,
         "total_clients": total_clients_cur,
-        "total_clients_prev": total_clients_prev
+        "total_clients_prev": total_clients_prev,
+        "form_cutoff": form_cutoff,
+        "cutoff": f"{day}/{str(month).zfill(2)}"
+    })
 
+def person_ca_detail(request, person_type, person_pk):
+    """Clients/Supplier's current account"""
+    # current year cca
+    client = CompanyClient.objects.get(pk=person_pk)
+    client_ca = client.current_account.order_by("-date")
+    if request.method == "POST":
+        # Search between dates
+        if request.POST["form_type"] == "date":
+            form_year = SearchByYearForm()
+            form_date = SearchByDateForm(request.POST)
+            if form_date.is_valid():
+                date_from = form_date.cleaned_data["date_from"]
+                date_to = form_date.cleaned_data["date_to"]
+                # Add input control
+                if date_from > date_to:
+                    form_date.add_error(
+                        "date_from", "'From' should be older than 'To'."
+                    )
+                client_ca = client.current_account.filter(
+                        date__range=(date_from, date_to)
+                    ).order_by("-date")
+             # Search by year
+        elif request.POST["form_type"] == "year":
+            form_year = SearchByYearForm(request.POST)
+            form_date = SearchByDateForm()
+            if form_year.is_valid():
+                input_year=form_year.cleaned_data["year"]
+            
+                client_ca = client.current_account.filter(date__year=input_year).order_by(
+                    "-date"
+                )       
+    # Get method
+    else:
+        form_date = SearchByDateForm()
+        form_year = SearchByYearForm()
+
+    total_client_ca = client_ca.aggregate(total_sum=Sum("amount"))["total_sum"] or 0
+    return render(request, "erp/person_ca_detail.html", {
+        "person_type": person_type,
+        "client": client,
+        "client_ca": client_ca,
+        "total_client_ca": total_client_ca,
+        "form_date": form_date,
+        "form_year": form_year
     })
 
 def supplier_index(request):
@@ -275,7 +361,7 @@ def load_doc_types():
             DocumentType.objects.create(
                 code = str(row['code']),
                 type = str(row['initials']),
-                type_description = str(row['description']),
+                description = str(row['description']),
             )
 
 def sales_index(request):

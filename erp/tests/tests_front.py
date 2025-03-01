@@ -76,7 +76,7 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
 
         self.c_client2 = CompanyClient.objects.create(
             tax_number = "99999999999",
-            name = "Client2 SA",
+            name = "CA",
             address = "Client2 street, Client city, Chile",
             email = "client2@email.com",
             phone = "0987654321",
@@ -110,14 +110,14 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
         self.doc_type1 = DocumentType.objects.create(
             type = "A",
             code = "001",
-            type_description = "Invoice A",
+            description = "Invoice A",
             hide = False,
         )
 
         self.doc_type2 = DocumentType.objects.create(
             type = "B",
             code = "002",
-            type_description = "Invoice B",
+            description = "Invoice B",
             hide = False,
         )
 
@@ -1139,10 +1139,6 @@ class ErpFrontTestCase(FrontBaseTest):
             self.assertFalse(section.is_displayed())
 
         # Toggle tabs
-        new_tab = self.driver.find_element(By.ID, "new-tab")
-        show_tab = self.driver.find_element(By.ID, "show-tab")
-        disable_tab = self.driver.find_element(By.ID, "disable-tab")
-
         # New POS
         click_and_wait(self.driver, "new-tab")
         WebDriverWait(self.driver, 5).until(
@@ -1170,7 +1166,7 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
 
         # Go to new POS section
-        click_and_wait(self.driver, "new-tab", 0.2)
+        click_and_wait(self.driver, "new-tab", 0.4)
         webDriverWait_visible_element(self.driver, By.ID, "new-section")
         new_pos_form = self.driver.find_element(By.ID, "new-pos-form")
         
@@ -1190,7 +1186,7 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
         
         # Go to show POS section
-        click_and_wait(self.driver, "show-tab", 0.4)
+        click_and_wait(self.driver, "show-tab", 0.8)
         webDriverWait_visible_element(self.driver, By.ID, "show-section")
         
         # Check that list appears
@@ -1209,7 +1205,7 @@ class ErpFrontTestCase(FrontBaseTest):
         self.driver.get(f"{self.live_server_url}/erp/points_of_sell")
         
         # Go to show POS section
-        click_and_wait(self.driver, "show-tab")
+        click_and_wait(self.driver, "show-tab", 0.8)
         webDriverWait_visible_element(self.driver, By.ID, "show-section")
         
         # Check that text appears
@@ -1484,7 +1480,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
             related_invoice = self.sale_invoice2,
             sender = self.company,
             recipient = self.c_client1,
-            total_amount = Decimal("600.10"),
+            total_amount = Decimal("600.01"),
         )
         self.sale_receipt3 = SaleReceipt.objects.create(
             issue_date = datetime.date(2024, 2, 23),
@@ -3046,4 +3042,126 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         total_amount = last_row.find_elements(By.TAG_NAME, "td")[-1]
         self.assertEqual(number.text, "00000001")
         self.assertEqual(total_amount.text, "$ 5.00")
-  
+
+    @tag("erp_front_client_ca")
+    def test_client_cur_account_sort_and_hide(self):
+        self.create_company_clients()
+        self.create_extra_receipts()
+        self.driver.get(f"{self.live_server_url}/erp/client/current_account")
+
+        # Check 2024 clients current account
+        left_column = self.driver.find_element(By.CLASS_NAME, "left-side")
+        client_ca_list = left_column.find_elements(By.CLASS_NAME, "specific-person")
+        # First row
+        self.assertEqual(len(client_ca_list), 7)
+        for balance, i in zip(["$ 79.00", "$ 59.09", "$ 0.00"], range(3)): 
+            self.assertIn(balance, client_ca_list[i].text)
+         
+        # click on client
+        headers_container = left_column.find_element(By.CLASS_NAME, "headers")
+        headers = headers_container.find_elements(By.TAG_NAME, "div")
+        
+        # set list values to be compared acording to the first and last indices
+        pair_values = [
+            # Test client header
+            (["CLIENT1", "CLIENT7"], [0, -1]),
+            (["CLIENT7", "CLIENT1"], [0, -1]),
+            # tax number header
+            (["32546921", "99999999999"], [0, -1]),
+            (["99999999999", "32546921"], [0, -1]),
+            # balance header
+            (["$ 0.00", "$ 79.00"], [0, -1]),
+            (["$ 79.00", "$ 0.00"], [0, -1])
+        ]
+
+        # There are 3 headers. After the click I check the accounts are in asc 
+        # order and then desc order.
+        for header_index, pair_index in zip([0, 0, 1, 1, 2, 2], range(6)):
+            headers[header_index].click()
+            client_ca_list = left_column.find_elements(By.CLASS_NAME, "specific-person")
+            
+            expected_results, indices = pair_values[pair_index]
+            for expected_result, index in zip(expected_results, indices): 
+                self.assertIn(expected_result, client_ca_list[index].text)
+        
+        # click on hide settled accounts
+        self.driver.find_element(By.ID, "hide-tab").click()
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element(client_ca_list[-1])
+        )
+       
+        # Check that the 4th element is hidden
+        self.assertFalse(client_ca_list[3].is_displayed())
+
+        # test right column
+        right_column = self.driver.find_element(By.CLASS_NAME, "right-side")
+        client_ca_list = right_column.find_elements(By.CLASS_NAME, "specific-person")
+        # First row
+        self.assertEqual(len(client_ca_list), 7)
+        self.assertFalse(client_ca_list[0].is_displayed())
+
+        # Unhide settled buttons
+        self.driver.find_element(By.ID, "hide-tab").click()
+        self.assertTrue(client_ca_list[6].is_displayed())
+        for balance, i in zip(["$ 0.00", "$ 0.00"], [0, -1]): 
+            self.assertIn(balance, client_ca_list[i].text)
+
+        # click on client
+        headers_container = right_column.find_element(By.CLASS_NAME, "headers")
+        headers = headers_container.find_elements(By.TAG_NAME, "div")
+        pair_values = [
+            # Test client header
+            (["CLIENT1", "CLIENT7"], [0, -1]),
+            (["CLIENT7", "CLIENT1"], [0, -1]),
+        ]
+        for i in range(2):
+            headers[0].click()
+            client_ca_list = right_column.find_elements(By.CLASS_NAME, "specific-person")
+            expected_results, indices = pair_values[i]
+            for client_name, i in zip(expected_results, indices): 
+                self.assertIn(client_name, client_ca_list[i].text)
+
+    @tag("erp_front_client_ca_s")
+    def test_client_cur_account_search(self):
+        self.create_company_clients()
+        self.create_extra_receipts()
+        self.driver.get(f"{self.live_server_url}/erp/client/current_account")
+
+        # Click on search client
+        search_button = self.driver.find_element(By.ID, "search-tab")
+        search_button.click()
+
+        # Check popup shows client 
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "popup")
+        popup = self.driver.find_element(By.CLASS_NAME, "popup")
+        for c_client in ["CLIENT1 SRL", "99999999999", "CLIENT7 SA"]:
+            self.assertIn(c_client, popup.text)
+        
+        # Test overlay works by clicking a background button
+        left_column = self.driver.find_element(By.CLASS_NAME, "left-side")
+        client_ca_list = left_column.find_elements(By.CLASS_NAME, "specific-person")
+        self.assertEqual(len(client_ca_list), 7)
+
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "overlay")
+
+        # Cancel the pop up
+        popup.find_element(By.TAG_NAME, "button").click()
+
+        # Test overlay is gone by clicking a background button
+        self.driver.find_element(By.ID, "hide-tab").click()
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element((By.CLASS_NAME, "overlay"))
+        )
+
+        # Search again and click on a client
+        search_button.click()
+        
+        webDriverWait_visible_element(self.driver, By.CLASS_NAME, "overlay")
+
+        popup = self.driver.find_element(By.CLASS_NAME, "popup")
+        client_list = popup.find_elements(By.CLASS_NAME, "person")
+        client_list[1].click()
+
+        # Check it loads the correct webpage
+        webDriverWait_visible_element(self.driver, By.ID, "year-tab")
+        self.assertEqual(self.driver.title, "CLIENT2 SA Current Account")

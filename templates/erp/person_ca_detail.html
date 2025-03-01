@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block title %}{{ client.name }} Current Account {% endblock title %}
+
+{% block body %}
+    <br>
+    <h3>{{ client.name }} Current Account</h3>
+    <h6>Amount: $ {{ total_client_ca|floatformat:2 }}</h6>
+    <br>
+    
+    <div class="container-fluid">
+        <h5>Range of Time</h5>
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="date-tab" data-bs-toggle="tab"
+               data-bs-target="#date-tab-pane" type="button" role="tab" aria-controls="date-tab-pane"
+               aria-selected="true">By Date</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="year-tab" data-bs-toggle="tab" data-bs-target="#year-tab-pane"
+              type="button" role="tab" aria-controls="year-tab-pane" aria-selected="false">
+              By Year</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="section-search">
+            <div class="tab-pane fade show active" id="date-tab-pane" role="tabpanel"
+            aria-labelledby="date-tab" tabindex="0">
+                <form action="{% url 'erp:person_ca_detail' person_type client.id %}" method="POST">
+                    {% csrf_token %}
+                    {{ form_date.as_p }}
+                    <input type="hidden" name="form_type" value="date">
+                    <input type="submit" value="Search">
+                </form>
+            </div>
+            <div class="tab-pane fade" id="year-tab-pane" role="tabpanel" 
+            aria-labelledby="year-tab" tabindex="0">
+                <form action="{% url 'erp:person_ca_detail' person_type client.id %}" method="POST">
+                    {% csrf_token %}
+                    {{ form_year.as_p }}
+                    <input type="hidden" name="form_type" value="year">
+                    <input type="submit" value="Search">
+                </form>
+            </div>
+        </div>
+    </div>
+    <br>
+    {% if client_ca %}
+        <div id="transactions-section" class="container-fluid">
+            <div class="row justify-content-center align-items-center w-75" id="pca-headers">
+                <div class="header col-2">DATE</div>
+                <div class="header col-5">DETAIL</div>
+                <div class="header col-3">AMOUNT</div>
+            </div>
+            <br>
+            {% for transaction in client_ca %}
+                <div class="transaction row">
+                    <div class="col-2 date-val">{{ transaction.date|date:"d/m/Y" }}</div>
+                    {% if transaction.invoice %}
+                        <div class="col-5 detail-val">
+                            (I) <a href="{{ transaction.invoice.get_absolute_url }}">{{ transaction.invoice }}</a></div>
+                    {% elif transaction.receipt %}
+                        <div class="col-5 detail-val">
+                            (R) <a href="{{ transaction.receipt.get_absolute_url }}">{{ transaction.receipt }}</a></div>
+                    {% else %}    
+                        <div class="col-5 detail-val">INITIAL ENTRY</div>
+                    {% endif %}
+                    <div class="col-3 amount-val" >$ {{ transaction.amount }}</div>
+                </div>
+            {% endfor %}
+            <div class="row" id="total-section">
+                <div class="col-2"></div><div class="col-5 text-end">BALANCE</div>
+                <div class="col-3 total-val">$ {{ total_client_ca|floatformat:2 }}</div>
+            </div>
+    {% else %}
+        <p class="text-center">There wasn't any transaction during this period of time.</p>
+    {% endif %}
+    </div>
+
+{% endblock body %}

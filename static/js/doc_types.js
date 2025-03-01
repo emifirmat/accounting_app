@@ -37,7 +37,7 @@ function addDocTypeToList(docType, vList, iList) {
     const listItem = createElementComplete({ // utils.js
         tagName: 'li',
         className:'col-8',
-        innerHTML: `${docType.code} | ${docType.type_description}`
+        innerHTML: `${docType.code} | ${docType.description}`
     });
 
     // Set button content and location
