@@ -49,6 +49,9 @@ def validate_invoices_date_number_correlation(model, instance):
         # Case: The company decides to start adding invoices from a higer number
         except ObjectDoesNotExist:
             pass
+        # Case: instance.issue_date is a string instead of datetime.
+        except TypeError:
+            raise ValidationError("issue_date has a wrong type or format.")
 
 def validate_receipt_date_number_correlation(model, instance):    
     """Take the instance about to be save, check if there's a previous one and

@@ -2397,6 +2397,57 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         collected = last_row.find_elements(By.TAG_NAME, "td")[-1]
         self.assertEqual(collected.text, "No")
 
+    @tag("erp_front_receipt_overview")
+    def test_receivables_overview(self):
+        # Change closing date for testing purposes
+        self.company.closing_date = datetime.date(2024, 2, 28)
+        self.company.save()
+        self.create_extra_receipts()
+
+        # Go to Receivables new receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/receivables")
+        self.assertEqual(self.driver.title, "Receivables")
+
+        # Check total by 31/12/2024
+        global_section = self.driver.find_element(By.ID, "global_section")
+        total_by_2024 = global_section.find_elements(By.TAG_NAME, "p")[2]
+        total_by_2023 = global_section.find_elements(By.TAG_NAME, "p")[5]
+        self.assertEqual(total_by_2024.text, 
+            "Total amount collected by 31/12/2024: $ 3736.02"
+        )
+        self.assertEqual(total_by_2023.text, 
+            "Total amount collected by 31/12/2023: $ 0.00"
+        )
+
+
+        # Click on Financial year
+        date_section = self.driver.find_element(By.ID, "date_section")
+        date_section.find_elements(By.TAG_NAME, "span")[1].click()
+
+        # Check update
+        global_section = self.driver.find_element(By.ID, "global_section")
+        total_by_2024 = global_section.find_elements(By.TAG_NAME, "p")[2]
+        total_by_2023 = global_section.find_elements(By.TAG_NAME, "p")[5]
+        self.assertEqual(total_by_2024.text, 
+            "Total amount collected by 28/02/2024: $ 3718.02"
+        )
+        self.assertEqual(total_by_2023.text, 
+            "Total amount collected by 28/02/2023: $ 0.00"
+        )
+
+        # Click on Calendar year
+        date_section = self.driver.find_element(By.ID, "date_section")
+        date_section.find_elements(By.TAG_NAME, "span")[0].click()
+        global_section = self.driver.find_element(By.ID, "global_section")
+        total_2024 = global_section.find_elements(By.TAG_NAME, "p")[1]
+        total_2023 = global_section.find_elements(By.TAG_NAME, "p")[4]
+        self.assertEqual(total_2024.text, 
+            "Amount collected in 2024: $ 3736.02"
+        )
+        self.assertEqual(total_2023.text, 
+            "Amount collected in 2023: $ 0.00"
+        )
+
     @tag("erp_front_receipt_new")
     def test_receivables_new_receipt_numbers(self):
         # Go to Receivables new receipt page.

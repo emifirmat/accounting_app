@@ -1,6 +1,7 @@
 import csv, os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.conf import settings
@@ -653,11 +654,65 @@ def sales_list(request):
 
 def receivables_index(request):
     """Overview of receivables webpage"""
-    financial_year = FinancialYear.objects.filter(current=True).first()
+    financial_year = int(FinancialYear.objects.filter(current=True).first().year)
     receipt_list = SaleReceipt.objects.all()
+    year_type = request.GET.get("date_at", "calendar")
+    closing_date = Company.objects.first().closing_date
+
+    # Set date range
+    if year_type == "financial":
+        cur_start_date = date(
+            financial_year, closing_date.month, closing_date.day
+        ) - relativedelta(years=1) + relativedelta(days=1)
+        cur_end_date = date(
+            financial_year, closing_date.month, closing_date.day
+        )
+    else:
+        cur_start_date = date(financial_year, 1, 1)
+        cur_end_date = date(financial_year, 12, 31)
+    
+    prev_start_date = cur_start_date - relativedelta(years=1)
+    prev_end_date = cur_end_date - relativedelta(years=1)
+    
+    # Divide receipt list by year
+    cur_receipt_list = receipt_list.filter(
+        issue_date__range=(cur_start_date, cur_end_date)
+    )
+    prev_receipt_list = receipt_list.filter(
+        issue_date__range=(prev_start_date, prev_end_date)
+    )
+    
+    # Determine receipt lists sorts in a dictionary (max 10)
+    cur_receipt_dict = {
+        "count": len(cur_receipt_list),
+        "total_amount": cur_receipt_list.aggregate(
+            total_sum=Sum("total_amount")
+        )["total_sum"] or 0,
+        "accumulated_amount": receipt_list.filter(
+            issue_date__lte=cur_end_date
+        ).aggregate(total=Sum("total_amount"))["total"] or 0,
+        "by_date": cur_receipt_list.order_by("-issue_date")[:11],
+        "by_amount": cur_receipt_list.order_by("-total_amount")[:11]
+    }
+    prev_receipt_dict = {
+        "count": len(prev_receipt_list),
+        "total_amount": prev_receipt_list.aggregate(
+            total_sum=Sum("total_amount")
+        )["total_sum"] or 0,
+        "accumulated_amount": receipt_list.filter(
+            issue_date__lte=prev_end_date
+        ).aggregate(total=Sum("total_amount"))["total"] or 0,
+        "by_date": prev_receipt_list.order_by("-issue_date")[:11],
+        "by_amount": prev_receipt_list.order_by("-total_amount")[:11]
+    }
+
+    
     return render(request, "erp/receivables_index.html", {
         "receipt_list": receipt_list,
         "financial_year": financial_year,
+        "cur_receipt_dict": cur_receipt_dict,
+        "prev_receipt_dict": prev_receipt_dict,
+        "end_date": {"current": cur_end_date, "previous": prev_end_date}
     })
 
 def receivables_new(request):

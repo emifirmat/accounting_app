@@ -1671,11 +1671,13 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
 
    
     def test_receivables_overview_webpage(self):    
+        self.create_extra_receipts()
         self.check_page_get_response(
             "/erp/receivables", 
             "erp:receivables_index",
             "erp/receivables_index.html", 
-            ["Amount collected:", "Last Receipts"]                   
+            ["Amount collected in 2024: $ 3736.02", "Total amount collected by 31/12/2023: $ 0.00",
+            "Last Receipts", "Highest Receipts", "Receipts: 6", "You haven't issued any receipt in 2023."]                   
         )
 
     def test_receivables_new_receipt_get_webpage(self):

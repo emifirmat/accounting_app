@@ -5,43 +5,84 @@
 {% block body %}
 
     <h2>Receivables Overview</h2>
-
+    <small id="date_section">
+        <span><a href="?date_at=calendar">Calendar year</a></span>
+        <span><a href="?date_at=financial">Financial year</a></span>
+    </small>
     <div class="container-fluid">
-        <div class="row">
-            <div class="col">
-                <h5>{{ financial_year.year }}</h5>
-                <p>Receipts: --TODO--
-                <p>Amount collected: --To do--</p>
-                <p>Collected per month: --TODO--</p>
+        <div class="row" id="global_section">
+            <div class="col" >
+                <h5>{{ end_date.current|date:"d/m/Y" }}</h5>
+                <p>Receipts: {{ cur_receipt_dict.count }}
+                <p>Amount collected in {{ financial_year }}: $ {{ cur_receipt_dict.total_amount|floatformat:2 }}</p>
+                <p>Total amount collected by {{ end_date.current|date:"d/m/Y"  }}: $ {{ cur_receipt_dict.accumulated_amount|floatformat:2 }}</p>
             </div>
             <div class="col">
-                <h5>{{ financial_year.year|add:"-1" }}</h5>
-                <p>Receipts:  --TODO--
-                <p>Amount collected: --To do--</p>
-                <p>Collected per month: --TODO--</p>
+                <h5>{{ end_date.previous|date:"d/m/Y" }}</h5>
+                <p>Receipts: {{ prev_receipt_dict.count }}
+                <p>Amount collected in {{ financial_year|add:"-1" }}: $ {{ prev_receipt_dict.total_amount|floatformat:2 }}</p>
+                <p>Total amount collected by {{ end_date.previous|date:"d/m/Y"  }}: $ {{ prev_receipt_dict.accumulated_amount|floatformat:2 }}</p>
             </div>
         </div>
         <br>
         <div class="row">
             <div class="col">
-                <h5>Last Receipts: --TODO--order </h5>
-                <ul>
-                    {% for receipt in receipt_list %}
-                        <a href="{{ receipt.get_absolute_url }}"><li>{{ receipt }}</li></a>
+                <h5>Last Receipts</h5>
+                <div>
+                    {% for receipt in cur_receipt_dict.by_date %}
+                        <div>
+                            {{ receipt.issue_date|date:"d/m/Y" }}
+                            <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>
+                            $ {{ receipt.total_amount }}
+                        </div>
                     {% empty %}
-                        <p>You haven't issued any receipt in {{ financial_year.year }}.</p>
+                        <p>You haven't issued any receipt in {{ financial_year }}.</p>
                     {% endfor %}
-                </ul>
+                </div>
             </div>
             <div class="col">
-                <h5>Highest Receipts: --TODO-- order </h5>
-                <ul>
-                    {% for receipt in receipt_list %}
-                        <a href="{{ receipt.get_absolute_url }}"><li>{{ receipt }}</li></a>
+                <h5>Last Receipts</h5>
+                <div>
+                    {% for receipt in prev_receipt_dict.by_date %}
+                        <div>
+                            {{ receipt.issue_date|date:"d/m/Y" }}
+                            <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>
+                            $ {{ receipt.total_amount }}
+                        </div>
                     {% empty %}
-                        <p>You haven't issued any receipt in {{ financial_year.year }}.</p>
+                        <p>You haven't issued any receipt in {{ financial_year|add:-1 }}.</p>
                     {% endfor %}
-                </ul>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <h5>Highest Receipts</h5>
+                <div>
+                    {% for receipt in cur_receipt_dict.by_amount %}
+                        <div>
+                            {{ receipt.issue_date|date:"d/m/Y" }}    
+                            <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>
+                            $ {{ receipt.total_amount }}
+                        </div>
+                    {% empty %}
+                        <p>You haven't issued any receipt in {{ financial_year }}.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col">
+                <h5>Highest Receipts</h5>
+                <div>
+                    {% for receipt in prev_receipt_dict.by_amount %}
+                        <div>
+                            {{ receipt.issue_date|date:"d/m/Y" }}    
+                            <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>
+                            $ {{ receipt.total_amount }}
+                        </div>
+                    {% empty %}
+                        <p>You haven't issued any receipt in {{ financial_year|add:-1 }}.</p>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
