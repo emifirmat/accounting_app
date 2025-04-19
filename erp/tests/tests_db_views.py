@@ -1018,11 +1018,16 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         )
 
     def test_sales_overview_webpage(self):
+        self.create_extra_invoices()
         self.check_page_get_response(
             "/erp/sales", 
             "erp:sales_index", 
             "erp/sales_index.html", 
-            ["Sales Overview", "00001-00000001"]
+            ["Sales Overview", "00001-00000001", "31/12/2024", "$ 1365.10", # Total uncollected invoices
+             "Invoices to collect by 31/12/2024", "24/01/2024", "Last invoices",
+             "Invoices to collect", "Highest invoices", "Oldest uncollected invoices",
+             "All invoices issued by"
+            ]
         )
 
     def test_sales_new_invoice_get_webpage(self):

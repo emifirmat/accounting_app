@@ -13,15 +13,15 @@
         <div class="row" id="global_section">
             <div class="col" >
                 <h5>{{ end_date.current|date:"d/m/Y" }}</h5>
-                <p>Receipts: {{ cur_receipt_dict.count }}
-                <p>Amount collected in {{ financial_year }}: $ {{ cur_receipt_dict.total_amount|floatformat:2 }}</p>
-                <p>Total amount collected by {{ end_date.current|date:"d/m/Y"  }}: $ {{ cur_receipt_dict.accumulated_amount|floatformat:2 }}</p>
+                <p>Receipts: {{ receipt_dicts.current.count }}
+                <p>Amount collected in {{ financial_year }}: $ {{ receipt_dicts.current.total_amount|floatformat:2 }}</p>
+                <p>Total amount collected by {{ end_date.current|date:"d/m/Y"  }}: $ {{ receipt_dicts.current.accumulated_amount|floatformat:2 }}</p>
             </div>
             <div class="col">
                 <h5>{{ end_date.previous|date:"d/m/Y" }}</h5>
-                <p>Receipts: {{ prev_receipt_dict.count }}
-                <p>Amount collected in {{ financial_year|add:"-1" }}: $ {{ prev_receipt_dict.total_amount|floatformat:2 }}</p>
-                <p>Total amount collected by {{ end_date.previous|date:"d/m/Y"  }}: $ {{ prev_receipt_dict.accumulated_amount|floatformat:2 }}</p>
+                <p>Receipts: {{ receipt_dicts.previous.count }}
+                <p>Amount collected in {{ financial_year|add:"-1" }}: $ {{ receipt_dicts.previous.total_amount|floatformat:2 }}</p>
+                <p>Total amount collected by {{ end_date.previous|date:"d/m/Y"  }}: $ {{ receipt_dicts.previous.accumulated_amount|floatformat:2 }}</p>
             </div>
         </div>
         <br>
@@ -29,7 +29,7 @@
             <div class="col">
                 <h5>Last Receipts</h5>
                 <div>
-                    {% for receipt in cur_receipt_dict.by_date %}
+                    {% for receipt in receipt_dicts.current.by_date %}
                         <div>
                             {{ receipt.issue_date|date:"d/m/Y" }}
                             <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>
@@ -43,7 +43,7 @@
             <div class="col">
                 <h5>Last Receipts</h5>
                 <div>
-                    {% for receipt in prev_receipt_dict.by_date %}
+                    {% for receipt in receipt_dicts.previous.by_date %}
                         <div>
                             {{ receipt.issue_date|date:"d/m/Y" }}
                             <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>
@@ -59,7 +59,7 @@
             <div class="col">
                 <h5>Highest Receipts</h5>
                 <div>
-                    {% for receipt in cur_receipt_dict.by_amount %}
+                    {% for receipt in receipt_dicts.current.by_amount %}
                         <div>
                             {{ receipt.issue_date|date:"d/m/Y" }}    
                             <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>
@@ -73,7 +73,7 @@
             <div class="col">
                 <h5>Highest Receipts</h5>
                 <div>
-                    {% for receipt in prev_receipt_dict.by_amount %}
+                    {% for receipt in receipt_dicts.previous.by_amount %}
                         <div>
                             {{ receipt.issue_date|date:"d/m/Y" }}    
                             <a href="{{ receipt.get_absolute_url }}">{{ receipt }}</a>

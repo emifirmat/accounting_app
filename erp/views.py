@@ -25,7 +25,7 @@ from .models import (Company, CompanyClient, Supplier, PaymentMethod,
     SaleReceipt, PurchaseInvoice, PurchaseReceipt, ClientCurrentAccount)
 from .utils import (read_uploaded_file, check_column_len, standarize_dataframe,
 check_column_names, list_file_errors, get_model_fields_name, get_sale_invoice_objects,
-update_invoice_collected_status)
+update_invoice_collected_status, get_financial_calendar_dates)
 
 
 # Create your views here.
@@ -367,12 +367,64 @@ def load_doc_types():
 
 def sales_index(request):
     """Sales overview webpage"""
-    financial_year = FinancialYear.objects.filter(current=True).first()
+    current_financial_year = int(FinancialYear.objects.filter(current=True).first().year)
     invoice_list = SaleInvoice.objects.all()
+    year_type = request.GET.get("date_at", "calendar")
+
+    # Set date range
+    current_year, previous_year = get_financial_calendar_dates(
+        year_type, current_financial_year
+    )
+
+    # Divide receipt list by year
+    cur_invoice_list = invoice_list.filter(
+        issue_date__range=(current_year["start"], current_year["end"])
+    )
+    prev_invoice_list = invoice_list.filter(
+        issue_date__range=(previous_year["start"], previous_year["end"])
+    )
+
+    # Add total sum for each invoice
+    cur_invoice_list = cur_invoice_list.annotate(
+        lines_sum=Sum("s_invoice_lines__total_amount")
+    )
+    prev_invoice_list = prev_invoice_list.annotate(
+        lines_sum=Sum("s_invoice_lines__total_amount")
+    )
+    
+    # Get uncollected invoice lists
+    cur_invoice_list_uncollected = cur_invoice_list.filter(collected=False)
+    prev_invoice_list_uncollected = prev_invoice_list.filter(collected=False)
+
+    # Determine invoice lists sorts in a dictionary for each current and previous
+    # invoice lists
+    invoice_dicts = {}
+    for cutoff_status, cutoff_invoice_list, cutoff_uncollected_invoice_list in zip(
+        ["current", "previous"],
+        [cur_invoice_list, prev_invoice_list],
+        [cur_invoice_list_uncollected, prev_invoice_list_uncollected]
+    ):
+        invoice_dicts[cutoff_status] = {
+        "count": len(cutoff_invoice_list),
+        "count_uncollected": len(cutoff_uncollected_invoice_list),
+        "uncollected_amount": cutoff_uncollected_invoice_list.aggregate(
+            global_amount=Sum("lines_sum")
+        )["global_amount"] or 0, 
+        "by_date": cutoff_uncollected_invoice_list.order_by("-issue_date")[:10],
+        "by_amount": cutoff_uncollected_invoice_list.order_by("-lines_sum")[:10],
+        "by_uncollected_newest": cutoff_uncollected_invoice_list.order_by(
+            "-issue_date")[:10],
+        "by_uncollected_oldest": cutoff_uncollected_invoice_list.order_by(
+            "issue_date")[:10],
+    }
 
     return render(request, "erp/sales_index.html", {
-        "financial_year": financial_year,
+        "financial_year": current_financial_year,
+        "end_date": {
+            "current": current_year["end"], "previous": previous_year["end"]
+        },
         "sale_invoices": invoice_list,
+        "invoice_dicts": invoice_dicts
     })
 
 def sales_new(request):
@@ -654,65 +706,50 @@ def sales_list(request):
 
 def receivables_index(request):
     """Overview of receivables webpage"""
-    financial_year = int(FinancialYear.objects.filter(current=True).first().year)
+    current_financial_year = int(FinancialYear.objects.filter(current=True).first().year)
     receipt_list = SaleReceipt.objects.all()
     year_type = request.GET.get("date_at", "calendar")
-    closing_date = Company.objects.first().closing_date
 
     # Set date range
-    if year_type == "financial":
-        cur_start_date = date(
-            financial_year, closing_date.month, closing_date.day
-        ) - relativedelta(years=1) + relativedelta(days=1)
-        cur_end_date = date(
-            financial_year, closing_date.month, closing_date.day
-        )
-    else:
-        cur_start_date = date(financial_year, 1, 1)
-        cur_end_date = date(financial_year, 12, 31)
-    
-    prev_start_date = cur_start_date - relativedelta(years=1)
-    prev_end_date = cur_end_date - relativedelta(years=1)
+    current_year, previous_year = get_financial_calendar_dates(
+        year_type, current_financial_year
+    )
     
     # Divide receipt list by year
     cur_receipt_list = receipt_list.filter(
-        issue_date__range=(cur_start_date, cur_end_date)
+        issue_date__range=(current_year["start"], current_year["end"])
     )
     prev_receipt_list = receipt_list.filter(
-        issue_date__range=(prev_start_date, prev_end_date)
+        issue_date__range=(previous_year["start"], previous_year["end"])
     )
     
-    # Determine receipt lists sorts in a dictionary (max 10)
-    cur_receipt_dict = {
-        "count": len(cur_receipt_list),
-        "total_amount": cur_receipt_list.aggregate(
-            total_sum=Sum("total_amount")
-        )["total_sum"] or 0,
-        "accumulated_amount": receipt_list.filter(
-            issue_date__lte=cur_end_date
-        ).aggregate(total=Sum("total_amount"))["total"] or 0,
-        "by_date": cur_receipt_list.order_by("-issue_date")[:11],
-        "by_amount": cur_receipt_list.order_by("-total_amount")[:11]
-    }
-    prev_receipt_dict = {
-        "count": len(prev_receipt_list),
-        "total_amount": prev_receipt_list.aggregate(
-            total_sum=Sum("total_amount")
-        )["total_sum"] or 0,
-        "accumulated_amount": receipt_list.filter(
-            issue_date__lte=prev_end_date
-        ).aggregate(total=Sum("total_amount"))["total"] or 0,
-        "by_date": prev_receipt_list.order_by("-issue_date")[:11],
-        "by_amount": prev_receipt_list.order_by("-total_amount")[:11]
-    }
-
+    # Determine receipt lists sorts (max 10) and include them in a dictionary for
+    # both current and previous financial year.
+    receipt_dicts = {}
+    for cutoff_status, cutoff_receipt_list, cutoff_year in zip(
+        ["current", "previous"], 
+        [cur_receipt_list, prev_receipt_list],
+        [current_year, previous_year]
+    ):
+        receipt_dicts[cutoff_status] = {
+            "count": len(cutoff_receipt_list),
+            "total_amount": cutoff_receipt_list.aggregate(
+                total_sum=Sum("total_amount")
+            )["total_sum"] or 0,
+            "accumulated_amount": receipt_list.filter(
+                issue_date__lte=cutoff_year["end"]
+            ).aggregate(total=Sum("total_amount"))["total"] or 0,
+            "by_date": cutoff_receipt_list.order_by("-issue_date")[:10],
+            "by_amount": cutoff_receipt_list.order_by("-total_amount")[:10]
+        }
     
     return render(request, "erp/receivables_index.html", {
         "receipt_list": receipt_list,
-        "financial_year": financial_year,
-        "cur_receipt_dict": cur_receipt_dict,
-        "prev_receipt_dict": prev_receipt_dict,
-        "end_date": {"current": cur_end_date, "previous": prev_end_date}
+        "financial_year": current_financial_year,
+        "receipt_dicts": receipt_dicts,
+        "end_date": {
+            "current": current_year["end"], "previous": previous_year["end"]
+        }
     })
 
 def receivables_new(request):

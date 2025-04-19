@@ -5,14 +5,164 @@
 {% block body %}
 
     <h2>Sales Overview</h2>
-
-    <p>Amount to collect in {{ financial_year.year }}: --To do--</p>
-    <p>Invoices to collect: <ul>{% for invoice in sale_invoices %}<li>
-        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a></li>
-    {% empty %}No invoice has been issued yet.{% endfor %}</ul>--filter to uncollected only--</p>
-    <p>Last invoices: <ul>{% for invoice in sale_invoices %}<li>{{ invoice }}</li>
-    {% empty %}No invoice has been issued yet.{% endfor %}</ul>--Set order to cronological--</p></p>
-    <p>Oldest uncollected invoices: <ul>{% for invoice in sale_invoices %}<li>{{ invoice }}</li>
-    {% empty %}No invoice has been issued yet.{% endfor %}</ul>--Filter to uncollected only and set order to oldest first--</p>
-
+    <small id="date_section">
+        <span><a href="?date_at=calendar">Calendar year</a></span>
+        <span><a href="?date_at=financial">Financial year</a></span>
+    </small>
+    <div class="container-fluid">
+        <div id="carousel-page" class="carousel slide">
+            <div class="carousel-inner ms-5">
+                <div class="carousel-item active">
+                    <div class="row global_section">
+                        <div class="col" >
+                            <h5>{{ end_date.current|date:"d/m/Y" }}</h5>
+                            <p>Invoices: {{ invoice_dicts.current.count }}
+                            <p>Invoices to collect by {{ end_date.current|date:"d/m/Y" }}: {{ invoice_dicts.current.count_uncollected }}</p>
+                            <p>Amount to collect by {{ end_date.current|date:"d/m/Y" }}: $ {{ invoice_dicts.current.uncollected_amount|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row">
+                        <div class="col">
+                            <h5>Last invoices</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.current.by_date %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>No invoice has been issued yet.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h5>Invoices to collect</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.current.by_uncollected_newest %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>All invoices issued by {{ end_date.current|date:"d/m/Y"}} have been collected.</p>
+                                {% endfor %}
+                            </div>
+                        </div>    
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <h5>Highest invoices</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.current.by_amount %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>No invoice has been issued yet.</p>
+                                {% endfor %}
+                            </div>    
+                        </div>
+                        <div class="col">
+                            <h5>Oldest uncollected invoices</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.current.by_uncollected_oldest %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>All invoices issued by {{ end_date.current|date:"d/m/Y"}} have been collected.</p>
+                                {% endfor %}    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="row global_section">
+                        <div class="col" >
+                            <h5>{{ end_date.previous|date:"d/m/Y" }}</h5>
+                            <p>Invoices: {{ invoice_dicts.previous.count }}
+                            <p>Invoices to collect by {{ end_date.previous|date:"d/m/Y" }}: {{ invoice_dicts.previous.count_uncollected }}</p>
+                            <p>Amount to collect by {{ end_date.previous|date:"d/m/Y" }}: $ {{ invoice_dicts.previous.uncollected_amount|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row">
+                        <div class="col">
+                            <h5>Last invoices</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.previous.by_date %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>No invoice has been issued yet.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h5>Invoices to collect</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.previous.by_uncollected_newest %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>All invoices issued by {{ end_date.previous|date:"d/m/Y"}} have been collected.</p>
+                                {% endfor %}
+                            </div>
+                        </div>    
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <h5>Highest invoices</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.previous.by_amount %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>No invoice has been issued yet.</p>
+                                {% endfor %}
+                            </div>    
+                        </div>
+                        <div class="col">
+                            <h5>Oldest uncollected invoices</h5>
+                            <div>
+                                {% for invoice in invoice_dicts.previous.by_uncollected_oldest %}
+                                    <div>
+                                        {{ invoice.issue_date|date:"d/m/Y" }}
+                                        <a href="{{ invoice.get_absolute_url }}">{{ invoice }}</a>
+                                        $ {{ invoice.total_lines_sum}}
+                                    </div>
+                                {% empty %}
+                                    <p>All invoices issued by {{ end_date.previous|date:"d/m/Y"}} have been collected.</p>
+                                {% endfor %}    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carousel-page" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carousel-page" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
 {% endblock body %}

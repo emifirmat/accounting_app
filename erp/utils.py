@@ -1,8 +1,11 @@
 """Reutilizable functions for views.py in ERP app"""
 import pandas as pd
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Sum
 from django.http import HttpResponseBadRequest
+
 
 
 from company.models import Company
@@ -119,3 +122,34 @@ def get_object_from_subfield(column, model, columns, row, index, subfield,
             f"{column} doesn't exist in the records."
         )
         raise ValueError(error_message)
+    
+def get_financial_calendar_dates(year_type, current_year):
+    """
+    Get both financial and calendar dates.
+    Input: 
+        - year_type: Determine if it is financial or calendar year.
+        - current_year: Current financial year determined by the company.
+    Returns:
+        - Tuple of two dics: current year {start, end} and previous year {start, end}
+    """
+    closing_date = Company.objects.first().closing_date
+
+    # Set date range
+    if year_type == "financial":
+        cur_start_date = date(
+            current_year, closing_date.month, closing_date.day
+        ) - relativedelta(years=1) + relativedelta(days=1)
+        cur_end_date = date(
+            current_year, closing_date.month, closing_date.day
+        )
+    else:
+        cur_start_date = date(current_year, 1, 1)
+        cur_end_date = date(current_year, 12, 31)
+
+    prev_start_date = cur_start_date - relativedelta(years=1)
+    prev_end_date = cur_end_date - relativedelta(years=1)
+
+    current_year_dict = {"start": cur_start_date, "end": cur_end_date}
+    previous_year_dict = {"start": prev_start_date, "end": prev_end_date}
+
+    return (current_year_dict, previous_year_dict)

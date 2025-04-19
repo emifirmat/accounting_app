@@ -160,3 +160,13 @@
     background: rgba(0, 0, 0, 0.5); 
     z-index: 0; 
 }
+
+.carousel-control-prev, .carousel-control-next {
+    width: 3vw;
+    height: 50vw;
+}
+
+.carousel-control-prev-icon, .carousel-control-next-icon {
+    filter: invert(1); /* Convert from withe to black color */
+    width: 100vw;
+}

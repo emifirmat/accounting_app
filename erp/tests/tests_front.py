@@ -1546,7 +1546,73 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Search Receipt")
         go_to_section(self.driver, "receivables", 4)    
         self.assertEqual(self.driver.title, "Receipt List")
-         
+
+    @tag("erp_front_sales_overview")
+    def test_sales_overview(self):
+        # Create function to get globas fields
+        def get_global_section_fields(year="current"):
+            # Select fields in global section depending on current or previous year
+            # and return a dictionary with those fields.
+            index = 0 if year.lower() == "current" else 1
+            global_section = self.driver.find_elements(By.CLASS_NAME, "global_section")[index]
+            global_section_p_elements = global_section.find_elements(By.TAG_NAME, "p")
+
+            return {
+                "invoices": global_section_p_elements[0],
+                "uncollected_invoices": global_section_p_elements[1],
+                "uncollected_amount": global_section_p_elements[2]
+            }
+        
+        def check_global_fields(global_section, closing_date, invoices, uncollected_invoices, 
+            uncollected_amount):
+            # Assert values (invoices, uncollected_invoices, uncollected_amount) 
+            # in global fields.
+            self.assertEqual(global_section["invoices"].text, 
+                f"Invoices: {invoices}")
+            self.assertEqual(global_section["uncollected_invoices"].text, 
+                f"Invoices to collect by {closing_date}: {uncollected_invoices}"
+            )
+            self.assertEqual(global_section["uncollected_amount"].text, 
+                f"Amount to collect by {closing_date}: {uncollected_amount}"
+            )
+
+        # Change closing date for testing purposes
+        self.company.closing_date = datetime.date(2024, 1, 25)
+        self.company.save()
+        financial_year = "25/01/2024"
+        self.create_extra_invoices()
+
+        # Go to Receivables new receipt page.
+        self.driver.get(f"{self.live_server_url}/erp/sales")
+        self.assertEqual(self.driver.title, "Sales")
+
+        # Check total by 31/12/2024
+        global_section = get_global_section_fields()
+        check_global_fields(global_section, "31/12/2024", "10", "9", "$ 1365.10")  
+
+        # Click on Financial year
+        date_section = self.driver.find_element(By.ID, "date_section")
+        date_section.find_elements(By.TAG_NAME, "span")[1].click()
+
+        # Check update
+        global_section = get_global_section_fields()
+        check_global_fields(global_section, financial_year, "8", "7", "$ 1308.10")  
+
+        # Click on Calendar year
+        date_section = self.driver.find_element(By.ID, "date_section")
+        date_section.find_elements(By.TAG_NAME, "span")[0].click()
+        
+        global_section = get_global_section_fields()
+        check_global_fields(global_section, "31/12/2024", "10", "9", "$ 1365.10")  
+
+        # Check previous year data
+        # Click on carrousel right
+        self.driver.find_element(By.CLASS_NAME, "carousel-control-next").click()
+        
+        global_section = get_global_section_fields("previous")
+        check_global_fields(global_section, "31/12/2023", "0", "0", "$ 0.00")  
+
+
     def test_sales_new_invoice_numbers(self):
         # Go to Sales new invoice page.
         self.create_extra_invoices()
@@ -2399,6 +2465,27 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
     @tag("erp_front_receipt_overview")
     def test_receivables_overview(self):
+        
+        def get_global_section_fields():
+            # Get the fields in global section and return them in a dictionary
+            global_section = self.driver.find_element(By.ID, "global_section")
+
+            print(global_section.find_elements(By.TAG_NAME, "p")[1].text)
+
+            return {
+                "receipts_2024": global_section.find_elements(By.TAG_NAME, "p")[0],
+                "collected_in_2024":  global_section.find_elements(By.TAG_NAME, "p")[1],
+                "collected_by_2024": global_section.find_elements(By.TAG_NAME, "p")[2],
+                "receipts_2023": global_section.find_elements(By.TAG_NAME, "p")[3],
+                "collected_in_2023": global_section.find_elements(By.TAG_NAME, "p")[4],
+                "collected_by_2023": global_section.find_elements(By.TAG_NAME, "p")[5],
+            }
+
+        def check_global_fields(global_section, expected_values):
+            # Check that the exected valus are in the fields of the global section        
+            for field, expected_value in zip(global_section, expected_values):
+                self.assertEqual(global_section[field].text, expected_value)
+
         # Change closing date for testing purposes
         self.company.closing_date = datetime.date(2024, 2, 28)
         self.company.save()
@@ -2409,44 +2496,46 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Receivables")
 
         # Check total by 31/12/2024
-        global_section = self.driver.find_element(By.ID, "global_section")
-        total_by_2024 = global_section.find_elements(By.TAG_NAME, "p")[2]
-        total_by_2023 = global_section.find_elements(By.TAG_NAME, "p")[5]
-        self.assertEqual(total_by_2024.text, 
-            "Total amount collected by 31/12/2024: $ 3736.02"
-        )
-        self.assertEqual(total_by_2023.text, 
-            "Total amount collected by 31/12/2023: $ 0.00"
+        global_section = get_global_section_fields()
+        check_global_fields(
+            global_section,
+            ["Receipts: 6", "Amount collected in 2024: $ 3736.02", 
+             "Total amount collected by 31/12/2024: $ 3736.02", 
+             "Receipts: 0", "Amount collected in 2023: $ 0.00", 
+             "Total amount collected by 31/12/2023: $ 0.00" 
+            ]
         )
 
-
-        # Click on Financial year
+        # Click on Financial year (28/02/2024)
         date_section = self.driver.find_element(By.ID, "date_section")
         date_section.find_elements(By.TAG_NAME, "span")[1].click()
 
         # Check update
-        global_section = self.driver.find_element(By.ID, "global_section")
-        total_by_2024 = global_section.find_elements(By.TAG_NAME, "p")[2]
-        total_by_2023 = global_section.find_elements(By.TAG_NAME, "p")[5]
-        self.assertEqual(total_by_2024.text, 
-            "Total amount collected by 28/02/2024: $ 3718.02"
-        )
-        self.assertEqual(total_by_2023.text, 
-            "Total amount collected by 28/02/2023: $ 0.00"
+        global_section = get_global_section_fields()
+        check_global_fields(
+            global_section,
+            ["Receipts: 3", "Amount collected in 2024: $ 3718.02", 
+             "Total amount collected by 28/02/2024: $ 3718.02", 
+             "Receipts: 0", "Amount collected in 2023: $ 0.00", 
+             "Total amount collected by 28/02/2023: $ 0.00" 
+            ]
         )
 
-        # Click on Calendar year
+        # Click on Calendar year (31/12/2024)
         date_section = self.driver.find_element(By.ID, "date_section")
         date_section.find_elements(By.TAG_NAME, "span")[0].click()
-        global_section = self.driver.find_element(By.ID, "global_section")
-        total_2024 = global_section.find_elements(By.TAG_NAME, "p")[1]
-        total_2023 = global_section.find_elements(By.TAG_NAME, "p")[4]
-        self.assertEqual(total_2024.text, 
-            "Amount collected in 2024: $ 3736.02"
+
+        global_section = get_global_section_fields()
+
+        check_global_fields(
+            global_section,
+            ["Receipts: 6", "Amount collected in 2024: $ 3736.02", 
+             "Total amount collected by 31/12/2024: $ 3736.02", 
+             "Receipts: 0", "Amount collected in 2023: $ 0.00", 
+             "Total amount collected by 31/12/2023: $ 0.00" 
+            ]
         )
-        self.assertEqual(total_2023.text, 
-            "Amount collected in 2023: $ 0.00"
-        )
+
 
     @tag("erp_front_receipt_new")
     def test_receivables_new_receipt_numbers(self):
