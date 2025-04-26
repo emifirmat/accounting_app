@@ -167,6 +167,11 @@
 }
 
 .carousel-control-prev-icon, .carousel-control-next-icon {
-    filter: invert(1); /* Convert from withe to black color */
+    filter: invert(1); /* Convert from white to black color */
     width: 100vw;
+}
+
+.border-half {
+    text-align: center;
+    width: 50%;
 }

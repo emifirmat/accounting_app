@@ -1588,9 +1588,9 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
 
         # Check total by 31/12/2024
         global_section = get_global_section_fields()
-        check_global_fields(global_section, "31/12/2024", "10", "9", "$ 1365.10")  
+        check_global_fields(global_section, "31/12/2024", "10", "9", "$ 138.09")  
 
-        # Click on Financial year
+        # Click on Financial year (25/01/2024)
         date_section = self.driver.find_element(By.ID, "date_section")
         date_section.find_elements(By.TAG_NAME, "span")[1].click()
 
@@ -1603,7 +1603,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         date_section.find_elements(By.TAG_NAME, "span")[0].click()
         
         global_section = get_global_section_fields()
-        check_global_fields(global_section, "31/12/2024", "10", "9", "$ 1365.10")  
+        check_global_fields(global_section, "31/12/2024", "10", "9", "$ 138.09")  
 
         # Check previous year data
         # Click on carrousel right

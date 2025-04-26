@@ -718,11 +718,16 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             )
 
     def test_client_index_webpage(self):
+        self.create_extra_receipts()
         self.check_page_get_response(
             "/erp/client", 
             "erp:client_index", 
             "erp/client_index.html", 
-            "Clients Overview"
+            ["Clients Overview", "Total Sales", "$ 4474.12", "Total Receivables", 
+             "$ 4037.01", "Uncollected Amount", "$ 437.11", "Last Clients", 
+             "Biggest Clients", "Total Sales", "Total Transactions", "1", 
+             "20361382481", "CLIENT1 SRL", "$ 4387.12", "7", "Most Frequent Clients"
+            ]
         )
         
     def test_client_new_get(self):

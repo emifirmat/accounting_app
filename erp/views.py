@@ -6,7 +6,7 @@ from decimal import Decimal
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.conf import settings
 from django.db import transaction, IntegrityError
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Count
 from django.db.models.functions import Coalesce
 from django.http import HttpResponseRedirect, Http404, HttpResponseBadRequest
 from django.shortcuts import render
@@ -34,10 +34,36 @@ def client_index(request):
     """Client's overview page"""
     financial_year = FinancialYear.objects.filter(current=True).first()
     clients = CompanyClient.objects.all()
+
+    total_sales = SaleInvoice.objects.aggregate(
+        lines_sum=Sum("s_invoice_lines__total_amount")
+    )["lines_sum"] or 0
+
+    total_receivables = SaleReceipt.objects.aggregate(
+        total_sum=Sum("total_amount")
+    )["total_sum"] or 0
+
+    clients_with_sales = ClientCurrentAccount.objects.exclude(
+        invoice__isnull=True).values(
+            "client__id", "client__name", "client__tax_number").annotate(
+                total_sales=Coalesce(Sum("amount"), Decimal(0)),
+                transactions=Coalesce(Count('id'), 0)
+            )
+    
+    if clients:
+        clients_dict = {
+            "total_sales": total_sales,
+            "total_receivables": total_receivables,
+            "uncollected_amount": ClientCurrentAccount.objects.aggregate(
+                total_sum=Sum("amount"))["total_sum"] or 0,
+            "by_last_added": clients,
+            "by_amount": clients_with_sales.order_by("-total_sales"),
+            "by_transactions": clients_with_sales.order_by("-transactions"),
+        }
     
     return render(request, "erp/client_index.html", {
         "financial_year": financial_year,
-        "clients": clients,
+        "clients_dict": clients_dict or None,
     })
 
 
@@ -372,56 +398,41 @@ def sales_index(request):
     year_type = request.GET.get("date_at", "calendar")
 
     # Set date range
-    current_year, previous_year = get_financial_calendar_dates(
+    cutoff_years = get_financial_calendar_dates(
         year_type, current_financial_year
     )
 
-    # Divide receipt list by year
-    cur_invoice_list = invoice_list.filter(
-        issue_date__range=(current_year["start"], current_year["end"])
-    )
-    prev_invoice_list = invoice_list.filter(
-        issue_date__range=(previous_year["start"], previous_year["end"])
-    )
-
-    # Add total sum for each invoice
-    cur_invoice_list = cur_invoice_list.annotate(
-        lines_sum=Sum("s_invoice_lines__total_amount")
-    )
-    prev_invoice_list = prev_invoice_list.annotate(
-        lines_sum=Sum("s_invoice_lines__total_amount")
-    )
-    
-    # Get uncollected invoice lists
-    cur_invoice_list_uncollected = cur_invoice_list.filter(collected=False)
-    prev_invoice_list_uncollected = prev_invoice_list.filter(collected=False)
-
-    # Determine invoice lists sorts in a dictionary for each current and previous
-    # invoice lists
+    # Create cutoff invoice dicts  
     invoice_dicts = {}
-    for cutoff_status, cutoff_invoice_list, cutoff_uncollected_invoice_list in zip(
-        ["current", "previous"],
-        [cur_invoice_list, prev_invoice_list],
-        [cur_invoice_list_uncollected, prev_invoice_list_uncollected]
-    ):
+    cutoff_statuses = ["current", "previous"]
+    for cutoff_year, cutoff_status in zip(cutoff_years, cutoff_statuses):
+        cutoff_invoice_list = invoice_list.filter(
+            issue_date__range=(cutoff_year["start"], cutoff_year["end"])
+        )
+        cutoff_invoice_list = cutoff_invoice_list.annotate(
+                lines_sum=Sum("s_invoice_lines__total_amount")
+        ) # Include total amount in each invoice
+        cutoff_invoice_list_uncollected = cutoff_invoice_list.filter(collected=False)
+        
+        # Populate dict
         invoice_dicts[cutoff_status] = {
-        "count": len(cutoff_invoice_list),
-        "count_uncollected": len(cutoff_uncollected_invoice_list),
-        "uncollected_amount": cutoff_uncollected_invoice_list.aggregate(
-            global_amount=Sum("lines_sum")
-        )["global_amount"] or 0, 
-        "by_date": cutoff_uncollected_invoice_list.order_by("-issue_date")[:10],
-        "by_amount": cutoff_uncollected_invoice_list.order_by("-lines_sum")[:10],
-        "by_uncollected_newest": cutoff_uncollected_invoice_list.order_by(
+            "count": len(cutoff_invoice_list),
+            "count_uncollected": len(cutoff_invoice_list_uncollected),
+            "uncollected_amount": ClientCurrentAccount.objects.filter(
+                date__lte=cutoff_year["end"]).aggregate(
+                global_amount=Sum("amount"))["global_amount"] or 0, 
+            "by_date": cutoff_invoice_list.order_by("-issue_date")[:10],
+            "by_amount": cutoff_invoice_list.order_by("-lines_sum")[:10],
+            "by_uncollected_newest": cutoff_invoice_list_uncollected.order_by(
             "-issue_date")[:10],
-        "by_uncollected_oldest": cutoff_uncollected_invoice_list.order_by(
-            "issue_date")[:10],
-    }
+            "by_uncollected_oldest": cutoff_invoice_list_uncollected.order_by(
+            "issue_date")[:10]
+        }
 
     return render(request, "erp/sales_index.html", {
         "financial_year": current_financial_year,
         "end_date": {
-            "current": current_year["end"], "previous": previous_year["end"]
+            "current": cutoff_years[0]["end"], "previous": cutoff_years[1]["end"]
         },
         "sale_invoices": invoice_list,
         "invoice_dicts": invoice_dicts
