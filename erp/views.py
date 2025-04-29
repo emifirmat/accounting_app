@@ -32,24 +32,26 @@ update_invoice_collected_status, get_financial_calendar_dates)
 
 def client_index(request):
     """Client's overview page"""
-    financial_year = FinancialYear.objects.filter(current=True).first()
+
+    # Get total clients
     clients = CompanyClient.objects.all()
 
+    # Get global sums of sales and receuvables
     total_sales = SaleInvoice.objects.aggregate(
         lines_sum=Sum("s_invoice_lines__total_amount")
     )["lines_sum"] or 0
-
     total_receivables = SaleReceipt.objects.aggregate(
         total_sum=Sum("total_amount")
     )["total_sum"] or 0
 
+    # Add sales and transaction to each client
     clients_with_sales = ClientCurrentAccount.objects.exclude(
         invoice__isnull=True).values(
             "client__id", "client__name", "client__tax_number").annotate(
                 total_sales=Coalesce(Sum("amount"), Decimal(0)),
                 transactions=Coalesce(Count('id'), 0)
             )
-    
+    # If there are clients, create a dict to contain all the necessary data
     if clients:
         clients_dict = {
             "total_sales": total_sales,
@@ -62,7 +64,6 @@ def client_index(request):
         }
     
     return render(request, "erp/client_index.html", {
-        "financial_year": financial_year,
         "clients_dict": clients_dict or None,
     })
 

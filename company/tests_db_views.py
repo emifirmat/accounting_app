@@ -27,12 +27,12 @@ class CompanyTestCase(BackBaseTest):
         companies = Company.objects.all()
         self.assertEqual(companies.count(), 1)
 
-        # Test singleton pattern
+        # Test singleton pattern creating a second company
         with self.assertRaises(
             ValidationError,
             msg="An instance of Company already exits"
         ):
-            company2 = Company.objects.create(
+            Company.objects.create(
                 tax_number = "20361382481",
                 name = "Test Company 2 SRL",
                 address = "fake street 345, fakycity, Argentina",
@@ -71,6 +71,20 @@ class CompanyTestCase(BackBaseTest):
             FinancialYear.objects.create(year = "2025", current = True)
 
     """Web Pages"""
+    def test_company_overview_webpage(self):
+
+        self.check_page_get_response(
+            "",
+            "company:index",
+            "company/index.html",
+            ["Company's Name: TEST COMPANY SRL", "Financial Year: 2024", 
+            "Global Information", "Clients\' Information", "Suppliers\' Information",
+            "Total Amount to Collect", "Highest Receipt", "Last Invoice",
+            "Last Receipt", "Oldest Pending Invoice"
+            ]
+        )
+        
+
     def test_company_settings_webpage_get(self):
         self.check_page_get_response(
             "/company/settings",
@@ -105,7 +119,7 @@ class CompanyTestCase(BackBaseTest):
             "company:settings",post_object, 302, (Company, 1)
         )
  
-        new_company = Company.objects.all().first()
+        new_company = Company.objects.first()
         self.assertEqual(new_company.name, "OTHER TEST COMPANY SRL")
         self.assertNotEqual(new_company.tax_number, "20361382482")    
 
@@ -125,7 +139,7 @@ class CompanyTestCase(BackBaseTest):
             "company:settings",post_object, 302, (Company, 1)
         )
         
-        company = Company.objects.all().first()
+        company = Company.objects.first()
         self.assertEqual(company.tax_number, "20361382482")
         
     def test_company_settings_webpage_post_wrong_data(self):
@@ -140,7 +154,7 @@ class CompanyTestCase(BackBaseTest):
         }
         
         response = self.check_page_post_response(
-            "company:settings",post_object, 200, (Company, 1)
+            "company:settings", post_object, 200, (Company, 1)
         )
 
         self.assertContains(response, "20a61382482 must be only digits.")
@@ -169,25 +183,24 @@ class CompanyTestCase(BackBaseTest):
         )
         
     def test_company_year_webpage_post(self):
-        self.financial_year.delete()
+        def create_and_test_year(year, expected_year, expected_current):
+            new_year = FinancialYear.objects.get(year=year)
+            self.assertEqual(new_year.year, expected_year)
+            self.assertEqual(new_year.current, expected_current)
         
+        self.financial_year.delete()
+
         # Add a year
         self.check_page_post_response(
             "company:year", {"year": "2025"}, 302, (FinancialYear, 1)
         )
+        create_and_test_year("2025", "2025", True)
 
-        new_year = FinancialYear.objects.get(year="2025")
-        self.assertEqual(new_year.year, "2025")
-        self.assertEqual(new_year.current, True)
-        
         # Add a second year
         self.check_page_post_response(
             "company:year", {"year": "2026"}, 302, (FinancialYear, 2)
         )
-        
-        second_year = FinancialYear.objects.get(year="2026")
-        self.assertEqual(second_year.year, "2026")
-        self.assertEqual(second_year.current, False)
+        create_and_test_year("2026", "2026", False)
 
     def test_company_year_wrong_year(self):
         response = self.check_page_post_response(

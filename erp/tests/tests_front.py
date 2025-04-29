@@ -106,6 +106,9 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
         self.pay_term1 = PaymentTerm.objects.create(pay_term = "0")
         self.pay_term2 = PaymentTerm.objects.create(pay_term = "30")
 
+    def create_financial_year(self):
+        FinancialYear.objects.create(year="2024", current=True)
+    
     def create_doc_types(self):
         self.doc_type1 = DocumentType.objects.create(
             type = "A",
@@ -159,7 +162,7 @@ class FrontBaseTest(CreateDbInstancesMixin, StaticLiveServerTestCase):
             sender = self.company,
             recipient = self.c_client1,
             total_amount = Decimal("2509.01"),
-        )    
+        )
 
 
 """Tests"""
@@ -179,12 +182,8 @@ class ErpFrontTestCase(FrontBaseTest):
         self.assertEqual(self.driver.title, "Edit Client")
         go_to_section(self.driver, "client", 3)
         self.assertEqual(self.driver.title, "Delete Client")
-        
-        # TODO
-        """
         go_to_section(self.driver, "client", 4)
         self.assertEqual(self.driver.title, "Client Current Account")
-        """
 
         # Supplier
         go_to_section(self.driver, "supplier", 0)
@@ -201,6 +200,31 @@ class ErpFrontTestCase(FrontBaseTest):
         go_to_section(self.driver, "supplier", 4)
         self.assertEqual(self.driver.title, "Supplier Current Account")
         """
+    @tag("erp_front_client_overview")
+    def test_client_overview_links(self):
+        self.create_financial_year()
+        # Go to client overview page
+        self.driver.get(f"{self.live_server_url}/erp/client")
+         
+        # Check invoice link, receipt link, and current account link
+        titles = ["Sales", "Receivables", "Client Current Account"]
+        for expected_title, tag_index in zip(titles, list(range(2))):
+            # Click on link
+            overview_section = self.driver.find_element(By.ID, "overview-section")
+            overview_section.find_elements(By.TAG_NAME, "a")[tag_index].click()
+            
+            # Check page is correct
+            self.assertEqual(self.driver.title, expected_title)
+            
+            # Go back to client overview page
+            self.driver.back()
+            WebDriverWait(self.driver, 5).until(
+                EC.text_to_be_present_in_element(
+                    (By.ID, "overview-section"), "Total Sales"
+                )
+            )
+
+
 
     @tag("erp_front_client_edit")
     def test_client_edit(self):
@@ -1299,7 +1323,7 @@ class ErpFrontDocumentsTestCase(FrontBaseTest):
         """Populate db and load index page"""
         super().setUp()
 
-        FinancialYear.objects.create(year="2024", current=True)        
+           
         self.pos2 = PointOfSell.objects.create(pos_number = "00002")
         self.create_first_invoice_and_receipt()# FrontBaseTest function
         

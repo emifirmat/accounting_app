@@ -5,79 +5,87 @@
 {% block body %}
 
     <h2>Clients Overview</h2>
-    {% if financial_year %}
-        <p>Total Sales: $ {{ clients_dict.total_sales|floatformat:2 }}</p>
-        <p>Total Receivables: $ {{ clients_dict.total_receivables|floatformat:2 }}</p>
-        <p>Uncollected Amount: $ {{ clients_dict.uncollected_amount|floatformat:2 }}</p>
-    {% else %}
-        <p>You haven't picked a financial year yet.<a href="{% url 'company:year' %}">
-        Click Here.</a></p>
-    {% endif %}
     {% if clients_dict %}
-    <div id="carousel-page" class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-inner ms-5">
-            <div class="carousel-item active">
-                <h5>Last Clients</h5>
-                    <div class="headers row border-half">
-                        <div class="col-2">Nº</div>
-                        <div class="col-5">Tax Number</div>
-                        <div class="col-5">Name</div>
-                    </div>
-                    {% for client in clients_dict.by_last_added %}
-                    <div class="client row border-half"> 
-                        <div class="col-2">{{ client.id }}</div>
-                        <div class="col-5">{{ client.tax_number }}</div>
-                        <div class="col-5">{{ client.name }}</div>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="carousel-item">        
-                <h5>Biggest Clients</h5>
-                <div class="headers row border-half">
-                    <div class="col-1">Nº</div>
-                    <div class="col-4">Tax Number</div>
-                    <div class="col-4">Name</div>
-                    <div class="col-3">Total Sales</div>
-                </div>
-                {% for client in clients_dict.by_amount %}
-                <div class="client row border-half"> 
-                    <div class="col-1">{{ client.client__id }}</div>
-                    <div class="col-4">{{ client.client__tax_number }}</div>
-                    <div class="col-4">{{ client.client__name }}</div>
-                    <div class="col-3">$ {{ client.total_sales|floatformat:2 }}</div>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="carousel-item">        
-                <h5>Most Frequent Clients</h5>
-                <div class="headers row border-half">
-                    <div class="col-1">Nº</div>
-                    <div class="col-4">Tax Number</div>
-                    <div class="col-4">Name</div>
-                    <div class="col-3">Total Transactions</div>
-                </div>
-                {% for client in clients_dict.by_transactions %}
-                <div class="client row border-half"> 
-                    <div class="col-1">{{ client.client__id }}</div>
-                    <div class="col-4">{{ client.client__tax_number }}</div>
-                    <div class="col-4">{{ client.client__name }}</div>
-                    <div class="col-3">{{ client.transactions }}</div>
-                </div>
-                {% endfor %}
-            </div>
+        <div id="overview-section">
+            <p>Total Sales: $ {{ clients_dict.total_sales|floatformat:2 }}
+                <spam><a href="{% url 'erp:sales_index' %}">View Invoices</a></spam>    
+            </p>
+            <p>Total Receivables: $ {{ clients_dict.total_receivables|floatformat:2 }}
+                <spam><a href="{% url 'erp:receivables_index' %}">View Receipts</a></spam>    
+            </p>
+            <p>Uncollected Amount: $ {{ clients_dict.uncollected_amount|floatformat:2 }}
+                <spam><a href="{% url 'erp:person_cur_account' 'client' %}">View Current Accounts</a></spam>    
+            </p>
         </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#carousel-page" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#carousel-page" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
-        </button>
-    </div>
+
+   
+        <div id="carousel-page" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner ms-5">
+                <div class="carousel-item active">
+                    <h5>Last Clients</h5>
+                        <div class="headers row border-half">
+                            <div class="col-2">Nº</div>
+                            <div class="col-5">Tax Number</div>
+                            <div class="col-5">Name</div>
+                        </div>
+                        {% for client in clients_dict.by_last_added %}
+                        <div class="client row border-half"> 
+                            <div class="col-2">{{ client.id }}</div>
+                            <div class="col-5">{{ client.tax_number }}</div>
+                            <div class="col-5">{{ client.name }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="carousel-item">        
+                    <h5>Biggest Clients</h5>
+                    <div class="headers row border-half">
+                        <div class="col-1">Nº</div>
+                        <div class="col-4">Tax Number</div>
+                        <div class="col-4">Name</div>
+                        <div class="col-3">Total Sales</div>
+                    </div>
+                    {% for client in clients_dict.by_amount %}
+                    <div class="client row border-half"> 
+                        <div class="col-1">{{ client.client__id }}</div>
+                        <div class="col-4">{{ client.client__tax_number }}</div>
+                        <div class="col-4">{{ client.client__name }}</div>
+                        <div class="col-3">$ {{ client.total_sales|floatformat:2 }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="carousel-item">        
+                    <h5>Most Frequent Clients</h5>
+                    <div class="headers row border-half">
+                        <div class="col-1">Nº</div>
+                        <div class="col-4">Tax Number</div>
+                        <div class="col-4">Name</div>
+                        <div class="col-3">Total Transactions</div>
+                    </div>
+                    {% for client in clients_dict.by_transactions %}
+                    <div class="client row border-half"> 
+                        <div class="col-1">{{ client.client__id }}</div>
+                        <div class="col-4">{{ client.client__tax_number }}</div>
+                        <div class="col-4">{{ client.client__name }}</div>
+                        <div class="col-3">{{ client.transactions }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carousel-page" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carousel-page" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
     {% else %}
-        <p>You haven't added any clients yet.</p>
+        <p>You haven't added any client yet.<a href="{% url 'erp:person_new' %}">
+            Click Here.</a>
+        </p>
     {% endif %}
+       
 
 
 {% endblock body %}

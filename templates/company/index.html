@@ -4,63 +4,38 @@
 
 {% block body %}
     {% if company %}
-        <h1>Company's name: {{ company.name }} </h1>
-        <h5>Company's financial year: {% if financial_year %}{{ financial_year.year }}
+        <h1>Company's Name: {{ company.name }} </h1>
+        <h5>Company's Financial Year: {% if financial_year %}{{ financial_year.year }}
         </h5>{% else %}<p>You haven't picked a year yet. <a href="{% url 'company:year' %}">
         Click Here.</a></p>{% endif %}
         
         <div class="container-fluid"> 
-            <div class="row">
-                <h3>Global information</h3>
-                <div class="col">
-                    <h5>Current Year</h5>
-                    <p>Total amount to collect: --TO DO--</p>
-                    <p>Total amount to pay: --TO DO--</p>
-                    <p>Total Net Working Capital : --TO DO--</p>
-                </div>
-                <div class="col">
-                    <h5>Historical</h5>
-                    <p>Total amount to collect: --TO DO--</p>
-                    <p>Total amount to pay: --TO DO--</p>
-                    <p>Total Net Working Capital : --TO DO--</p>
-                </div>
-            </div>
-        
-            <div class="row">
-                <h3>Clients' information</h3>
-                <div class="col">
-                    <p>Global amount to collect: --TO DO--</p>
-                    <p>Highest receivable and client: --TO DO--</p>
-                    <p>Last Invoice: -- TO DO --</p>
-                    <p>Last Receipt: -- TO DO --</p>
-                    <p>Oldest pending invoice to collect and client: -- TO DO -- </p>
-                </div>
-                <div class="col">
-                    <p>Global amount to collect: --TO DO--</p>
-                    <p>Highest receivable and client: --TO DO--</p>
-                    <p>Last Invoice: -- TO DO --</p>
-                    <p>Last Receipt: -- TO DO --</p>
-                    <p>Oldest pending invoice to collect and client: -- TO DO -- </p>
-                </div>
-            </div>
-            
-            <div class="row">
-                <h3>Suppliers' information</h3>
-                <div class="col">
-                    <p>Global amount to pay: --TO DO--</p>
-                    <p>Highest debt and supplier: --TO DO--</p>
-                    <p>Last Supplier's Invoice: -- TO DO --</p>
-                    <p>Last Supplier's Receipt: -- TO DO --</p>
-                    <p>Oldest pending invoice to pay and supplier: -- TO DO -- </p>
-                </div>
-                <div class="col">
-                    <p>Global amount to pay: --TO DO--</p>
-                    <p>Highest debt and supplier: --TO DO--</p>
-                    <p>Last Supplier's Invoice: -- TO DO --</p>
-                    <p>Last Supplier's Receipt: -- TO DO --</p>
-                    <p>Oldest pending invoice to pay and supplier: -- TO DO -- </p>
-                </div>
-            </div>
+            <h3>Global Information</h3>
+            <p>Total Amount to Collect: $ {{ global_dict.amount_to_collect|floatformat:2 }}</p>
+            <p>Total Amount to Pay: --TO DO--</p>
+            <p>Total Net Working Capital : --TO DO--</p>
+   
+            <h3>Clients' Information</h3>  
+            <p>Total Amount to Collect: $ {{ global_dict.amount_to_collect|floatformat:2 }}</p>
+            <p>Highest Receipt: {{ client_dict.highest_receipt.recipient.name }} <a href="{{ client_dict.highest_receipt.get_absolute_url }}">
+                {{ client_dict.highest_receipt }}</a> $ {{ client_dict.highest_receipt.total_amount }}
+            </p>
+            <p>Last Invoice: {{ client_dict.last_invoice.recipient.name }} <a href="{{ client_dict.last_invoice.get_absolute_url }}">
+                {{ client_dict.last_invoice }}</a> $ {{ client_dict.last_invoice.total_lines_sum }}
+            </p>
+            <p>Last Receipt: {{ client_dict.last_receipt.recipient.name }} <a href="{{ client_dict.last_receipt.get_absolute_url }}">
+                {{ client_dict.last_receipt }}</a> $ {{ client_dict.last_receipt.total_amount }}
+            </p>
+            <p>Oldest Pending Invoice to Collect: {{ client_dict.oldest_pending_invoice.recipient.name }} <a href="{{ client_dict.oldest_pending_invoice.get_absolute_url }}">
+                {{ client_dict.oldest_pending_invoice }}</a> $ {{ client_dict.oldest_pending_invoice.total_lines_sum }}
+            </p>
+      
+            <h3>Suppliers' Information</h3>
+            <p>Global Amount to Pay: --TO DO--</p>
+            <p>Highest Debt and Supplier: --TO DO--</p>
+            <p>Last Supplier's Invoice: -- TO DO --</p>
+            <p>Last Supplier's Receipt: -- TO DO --</p>
+            <p>Oldest Pending Invoice to Pay and supplier: -- TO DO -- </p>
         </div>
         {% else %}
             <p>Please create your company first.</p>

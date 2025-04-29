@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -6,6 +7,7 @@ from django.urls import reverse
 
 from .forms import CompanyForm, FinancialYearForm
 from .models import Company, FinancialYear
+from erp.models import ClientCurrentAccount, SaleInvoice, SaleReceipt
 
 
 # Create your views here.
@@ -16,9 +18,31 @@ def index(request):
         financial_year = FinancialYear.objects.get(current=True)
     except ObjectDoesNotExist:
         financial_year = None
+    
+    # Get global data
+    global_information = {
+        "amount_to_collect": ClientCurrentAccount.objects.aggregate(
+            total_sum=Sum("amount")
+        )["total_sum"] or 0
+    }
+
+    # Get client's information
+    sale_invoices = SaleInvoice.objects.all()
+    sale_receipts = SaleReceipt.objects.all()
+
+    client_information = {
+        "last_invoice": sale_invoices.first(),
+        "last_receipt": sale_receipts.first(),
+        "oldest_pending_invoice": sale_invoices.filter(collected=False).last(),
+        "highest_receipt": sale_receipts.order_by("-total_amount").first()
+    }
+    
+
     return render(request, "company/index.html", {
         "company": company,
         "financial_year": financial_year,
+        "global_dict": global_information,
+        "client_dict": client_information,
     })
 
 

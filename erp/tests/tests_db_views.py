@@ -19,7 +19,7 @@ from utils.base_tests import BackBaseTest, CreateDbInstancesMixin
 
 
 # Create your tests here.
-@tag("erp_db_view")
+@tag("erp_db_views")
 class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
     @classmethod
     def setUpTestData(cls):
@@ -328,7 +328,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
             issue_date = datetime.date(2025, 6, 23),
             type = self.doc_type1,
             point_of_sell = self.pos1,
-            number = "00000005",
+            number = "00000004",
             sender = self.company,
             recipient = self.c_client1,
             payment_method = self.pay_method1,
@@ -706,7 +706,7 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
         self.assertEqual(receipts.count(), 2)
 
         with self.assertRaises(IntegrityError):
-            purchase_receipt3 = PurchaseReceipt.objects.create(
+            PurchaseReceipt.objects.create(
                 issue_date = datetime.date(2024, 2, 14),
                 point_of_sell = "00231",
                 number = "00000023",
@@ -717,6 +717,20 @@ class ErpTestCase(CreateDbInstancesMixin, BackBaseTest):
                 total_amount = "4000.11",
             )
 
+    def test_company_overview_with_data(self):
+        self.create_extra_receipts()
+        response = self.client.get(reverse("company:index"))
+        
+        # Amount to collect, higest receipt, last invoice, last receipt, oldest pending invoice
+        expected_values = ["$ 437.11", "00001-00000001", "$ 2509.01", 
+            "A 00001-00000004", "$ 600.01", "00001-00000005", "$ 300.99",
+            "B 00001-00000001", "$ 1209.10",
+        ]
+
+        for expected_value in expected_values:
+            self.assertContains(response, expected_value)
+
+    
     def test_client_index_webpage(self):
         self.create_extra_receipts()
         self.check_page_get_response(
